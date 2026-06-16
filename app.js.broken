@@ -1,0 +1,198 @@
+const STORAGE_KEY = "neighbor-town-mvp-state-v1";
+
+const crops = [
+  { id: 1001, name: "小麦", icon: "🌾", unlockLevel: 1, growTime: 30, seedPrice: 2, harvestCount: 2, sellPrice: 2 },
+  { id: 1002, name: "番茄", icon: "🍅", unlockLevel: 2, growTime: 120, seedPrice: 5, harvestCount: 2, sellPrice: 6 },
+  { id: 1003, name: "草莓", icon: "🍓", unlockLevel: 4, growTime: 300, seedPrice: 10, harvestCount: 2, sellPrice: 12 },
+  { id: 1004, name: "玉米", icon: "🌽", unlockLevel: 6, growTime: 600, seedPrice: 18, harvestCount: 2, sellPrice: 22 },
+  { id: 1005, name: "南瓜", icon: "🎃", unlockLevel: 8, growTime: 1800, seedPrice: 40, harvestCount: 2, sellPrice: 50 },
+];
+
+const orders = [
+  { id: 2001, name: "面包店订单", unlockLevel: 1, requires: [{ item: "crop_1001", count: 4 }], coin: 20, exp: 5, type: "普通" },
+  { id: 2002, name: "餐厅订单", unlockLevel: 2, requires: [{ item: "crop_1002", count: 3 }], coin: 35, exp: 8, type: "普通" },
+  { id: 2003, name: "水果摊订单", unlockLevel: 4, requires: [{ item: "crop_1003", count: 3 }], coin: 60, exp: 12, type: "普通" },
+  { id: 2004, name: "农贸市场订单", unlockLevel: 6, requires: [{ item: "crop_1004", count: 4 }], coin: 100, exp: 18, type: "普通" },
+  { id: 2005, name: "南瓜派订单", unlockLevel: 8, requires: [{ item: "crop_1005", count: 2 }], coin: 130, exp: 25, type: "特殊" },
+  { id: 2006, name: "镇长早餐篮", unlockLevel: 1, requires: [{ item: "crop_1001", count: 2 }], coin: 12, exp: 3, type: "新手" },
+];
+
+const levels = [
+  { level: 1, needExp: 0, unlock: "小麦、基础农田、基础房间" },
+  { level: 2, needExp: 30, unlock: "番茄" },
+  { level: 3, needExp: 80, unlock: "木桌、木椅" },
+  { level: 4, needExp: 150, unlock: "草莓" },
+  { level: 5, needExp: 250, unlock: "好友拜访" },
+  { level: 6, needExp: 400, unlock: "玉米" },
+  { level: 7, needExp: 600, unlock: "每日任务" },
+  { level: 8, needExp: 850, unlock: "南瓜" },
+  { level: 9, needExp: 1100, unlock: "基础商城" },
+  { level: 10, needExp: 1500, unlock: "社区系统" },
+  { level: 12, needExp: 2200, unlock: "社区捐献" },
+  { level: 15, needExp: 3500, unlock: "公共建筑建设" },
+  { level: 20, needExp: 7000, unlock: "满级奖励" },
+];
+
+const furniture = [
+  { id: 3001, name: "木椅", icon: "🪑", category: "椅子", priceType: "coin", price: 80, unlockLevel: 1 },
+  { id: 3002, name: "木桌", icon: "🪵", category: "桌子", priceType: "coin", price: 120, unlockLevel: 1 },
+  { id: 3003, name: "花瓶", icon: "🏺", category: "装饰", priceType: "coin", price: 160, unlockLevel: 2 },
+  { id: 3004, name: "软床", icon: "🛏️", category: "床", priceType: "coin", price: 260, unlockLevel: 3 },
+  { id: 3005, name: "地毯", icon: "▩", category: "装饰", priceType: "diamond", price: 30, unlockLevel: 3 },
+  { id: 3006, name: "咖啡桌", icon: "☕", category: "桌子", priceType: "diamond", price: 45, unlockLevel: 5 },
+  { id: 3007, name: "田园沙发", icon: "🛋️", category: "椅子", priceType: "diamond", price: 80, unlockLevel: 7 },
+  { id: 3008, name: "欢迎地毯", icon: "🏵️", category: "活动", priceType: "diamond", price: 120, unlockLevel: 1 },
+];
+
+const shopGoods = [
+  { id: 4001, name: "小镇种子箱", icon: "📦", category: "礼包", priceType: "coin", price: 60, rewards: { crop_1001: 6, crop_1002: 2 } },
+  { id: 4002, name: "新手礼包", icon: "🎁", category: "礼包", priceType: "rmb", price: 6, rewards: { diamond: 100, coin: 3000, f_3008: 1, speed_ticket: 5 } },
+  { id: 4003, name: "普通月卡", icon: "📅", category: "月卡", priceType: "rmb", price: 18, rewards: { diamond: 300 }, monthlyCard: true },
+  { id: 4004, name: "钻石小袋", icon: "💎", category: "充值", priceType: "rmb", price: 12, rewards: { diamond: 180 } },
+  { id: 4005, name: "咖啡小屋套装", icon: "☕", category: "家具", priceType: "diamond", price: 180, rewards: { f_3003: 1, f_3005: 1, f_3006: 1 } },
+  { id: 4006, name: "田园花园套装", icon: "🌷", category: "家具", priceType: "diamond", price: 160, rewards: { f_3001: 2, f_3003: 2, wood: 40 } },
+];
+
+const dailyTasks = [
+  { id: "login", name: "登录游戏", type: "login", target: 1, active: 10, rewards: { diamond: 5 } },
+  { id: "harvest", name: "收获作物 5 次", type: "harvest", target: 5, active: 20, rewards: { coin: 50, exp: 10 } },
+  { id: "order", name: "完成订单 3 次", type: "order", target: 3, active: 20, rewards: { coin: 100, exp: 20 } },
+  { id: "visit", name: "拜访好友 3 次", type: "visit", target: 3, active: 15, rewards: { friendPoint: 20 } },
+  { id: "like", name: "点赞好友 3 次", type: "like", target: 3, active: 15, rewards: { friendPoint: 20 } },
+  { id: "donate", name: "捐献社区资源 1 次", type: "donate", target: 1, active: 10, rewards: { communityContribution: 30 } },
+  { id: "buyFurniture", name: "购买家具 1 次", type: "buyFurniture", target: 1, active: 10, rewards: { coin: 50 } },
+];
+
+const activeBoxes = [
+  { score: 20, rewards: { coin: 100 } },
+  { score: 40, rewards: { friendPoint: 30 } },
+  { score: 60, rewards: { diamond: 10 } },
+  { score: 80, rewards: { wood: 5, cloth: 5 } },
+  { score: 100, rewards: { lottery_ticket: 1 } },
+];
+
+const fountainStages = [
+  { stage: 1, label: "修整广场地基", target: 800, accepts: [{ item: "wood", label: "木材" }, { item: "crop_1001", label: "小麦" }], reward: { coin: 100 } },
+  { stage: 2, label: "铺设喷泉石材", target: 600, accepts: [{ item: "stone", label: "石头" }, { item: "crop_1002", label: "番茄" }], reward: { friendPoint: 50 } },
+  { stage: 3, label: "布置花坛水景", target: 1000, accepts: [{ item: "crop_1003", label: "草莓" }, { item: "coin", label: "金币" }], reward: { diamond: 20 } },
+  { stage: 4, label: "安装社区标识", target: 1200, accepts: [{ item: "crop_1004", label: "玉米" }, { item: "communityContribution", label: "社区贡献" }], reward: { f_3008: 1 } },
+  { stage: 5, label: "完成庆典喷泉", target: 1300, accepts: [{ item: "crop_1005", label: "南瓜" }, { item: "coin", label: "金币" }], reward: { diamond: 80, f_3007: 1 } },
+];
+
+const defaultFriends = [
+  { id: "npc_mayor", name: "林镇长", avatar: "🧓", mood: "正在修喷泉", likes: 18, isFriend: true },
+  { id: "npc_baker", name: "麦香面包师", avatar: "👩‍🍳", mood: "想收一篮小麦", likes: 12, isFriend: true },
+  { id: "npc_florist", name: "花园阿梨", avatar: "👩‍🌾", mood: "家里有新花瓶", likes: 9, isFriend: false },
+  { id: "npc_carpenter", name: "木工阿川", avatar: "👨‍🔧", mood: "做了把新椅子", likes: 7, isFriend: false },
+  { id: "npc_barista", name: "咖啡小敏", avatar: "👩‍💼", mood: "欢迎来喝咖啡", likes: 15, isFriend: false },
+];
+
+const avatars = ["🙂", "😊", "😄", "🤠", "🌻", "🍀", "⭐", "🐱", "🐶", "🧑"];
+
+let state;
+let selectedCropId = 1001;
+let selectedAvatar = avatars[0];
+let toastTimer = null;
+let clockTimer = null;
+
+const $ = (id) => document.getElementById(id);
+const itemKey = (id) => `crop_${id}`;
+const furnitureKey = (id) => `f_${id}`;
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+function createDefaultState() {
+  return {
+    version: 1,
+    user: {
+      created: false,
+      userId: `U${Math.floor(100000 + Math.random() * 900000)}`,
+      nickname: "小镇居民",
+      avatar: avatars[0],
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+    },
+    wallet: {
+      coin: 120,
+      diamond: 30,
+      friendPoint: 0,
+      exp: 0,
+      level: 1,
+      communityContribution: 0,
+    },
+    inventory: {
+      wood: 80,
+      stone: 40,
+      cloth: 20,
+      [furnitureKey(3001)]: 1,
+    },
+    farm: {
+      plots: Array.from({ length: 6 }, () => null),
+    },
+    orders: {
+      activeIds: [2006, 2001, 2001],
+      cursor: 0,
+    },
+    home: {
+      layout: Array.from({ length: 36 }, () => null),
+      savedAt: null,
+    },
+    friends: defaultFriends.map(f => ({...f})),
+    community: {
+      joined: false,
+      name: "暖阳社区",
+      role: "成员",
+      stage: 1,
+      progress: 0,
+      members: [
+        { name: "林镇长", role: "社长", contribution: 520 },
+        { name: "麦香面包师", role: "副社长", contribution: 280 },
+        { name: "花园阿梨", role: "成员", contribution: 130 },
+      ],
+    },
+    daily: createDailyState(),
+    shop: {
+      monthlyCard: false,
+      monthlyClaimedDate: "",
+      boughtGoods: {},
+    },
+    analytics: {},
+  };
+}
+
+function createDailyState() {
+  return {
+    date: todayKey(),
+    progress: { login: 1 },
+    claimedTasks: {},
+    claimedBoxes: {},
+    activeScore: 0,
+    friendLikes: {},
+  };
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const base = createDefaultState();
+    if (!saved) return base;
+    const merged = mergeState(base, saved);
+    if (merged.daily.date !== todayKey()) {
+      merged.daily = createDailyState();
+      merged.user.lastLoginAt = new Date().toISOString();
+    }
+    normalizeState(merged);
+    return merged;
+  } catch (error) {
+    console.warn("Failed to load state", error);
+    return createDefaultState();
+  }
+}
+
+function mergeState(base, saved) {
+  return {
+    ...base,
+    ...saved,
+    user: { ...base.user, ...(saved.user || {}) },
+    wallet: { ...base.wallet, ...(saved.wallet || {}) },
+    inventory: { ...base.inventory, ...(saved.inventory || {}) },
+// __CONTINUE_HERE__

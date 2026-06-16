@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>邻里小镇 v2.0</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- 应用容器 -->
+  <div class="app-shell">
+    <!-- 顶部栏 -->
+    <header id="topbar" class="topbar"></header>
+
+    <!-- 主游戏区域 -->
+    <main class="game-layout">
+      <!-- 左侧栏 -->
+      <aside class="left-rail">
+        <div id="notice" class="notice-panel"></div>
+        <div id="miniInventory" class="mini-inventory"></div>
+      </aside>
+
+      <!-- 主舞台 -->
+      <section class="main-stage">
+        <!-- Toast 提示 -->
+        <div id="toast" class="toast"></div>
+
+        <!-- 农场视图 -->
+        <section id="farmView" class="view active-view">
+          <div class="view-header">
+            <h2>🌾 农场</h2>
+            <button id="collectAllButton" class="primary-action">收获成熟作物</button>
+          </div>
+          <div id="farmGrid" class="farm-grid"></div>
+          <div class="seed-shop">
+            <h3>种子铺</h3>
+            <div id="seedList" class="seed-list"></div>
+          </div>
+        </section>
+
+        <!-- 订单视图 -->
+        <section id="ordersView" class="view">
+          <div class="view-header">
+            <h2>📋 订单</h2>
+          </div>
+          <div id="ordersList" class="orders-list"></div>
+        </section>
+
+        <!-- 家园视图 -->
+        <section id="homeView" class="view">
+          <div class="view-header">
+            <h2>🏠 家园</h2>
+            <div class="button-row">
+              <button id="clearRoomButton" class="ghost-action">清空房间</button>
+              <button id="saveRoomButton" class="primary-action">保存布局</button>
+            </div>
+          </div>
+          <div id="roomScore" class="room-score-panel"></div>
+          <div id="roomGrid" class="room-grid"></div>
+          <div class="furniture-shop">
+            <h3>家具商店</h3>
+            <div id="furnitureList" class="furniture-list"></div>
+          </div>
+        </section>
+
+        <!-- 好友视图 -->
+        <section id="friendsView" class="view">
+          <div class="view-header">
+            <h2>👥 好友</h2>
+          </div>
+          <div id="friendsList" class="friends-list"></div>
+        </section>
+
+        <!-- 社区视图 -->
+        <section id="communityView" class="view">
+          <div class="view-header">
+            <h2>⛲ 社区</h2>
+          </div>
+          <div id="communityContent" class="community-content"></div>
+        </section>
+
+        <!-- 商城视图 -->
+        <section id="shopView" class="view">
+          <div class="view-header">
+            <h2>🛍️ 商城</h2>
+          </div>
+          <div id="shopList" class="shop-list"></div>
+        </section>
+
+        <!-- 任务视图 -->
+        <section id="tasksView" class="view">
+          <div class="view-header">
+            <h2>✅ 任务</h2>
+            <button id="resetDailyButton" class="ghost-action">重置每日</button>
+          </div>
+          <div class="tasks-container">
+            <div class="active-score-panel">
+              <h3>活跃度: <span id="activeScoreDisplay">0</span></h3>
+            </div>
+            <div id="activeBoxes" class="active-boxes"></div>
+            <h3>每日任务</h3>
+            <div id="tasksList" class="tasks-list"></div>
+          </div>
+        </section>
+
+        <!-- 成就视图 -->
+        <section id="achievementsView" class="view">
+          <div class="view-header">
+            <h2>🏆 成就</h2>
+            <p id="achievementStats" class="achievement-stats"></p>
+          </div>
+          <div id="achievementsList" class="achievements-list"></div>
+        </section>
+
+        <!-- 后台视图 -->
+        <section id="adminView" class="view">
+          <div class="view-header">
+            <h2>📊 后台</h2>
+          </div>
+          <div id="adminContent" class="admin-content">
+            <button id="testRewardButton" class="primary-action">发放测试补偿</button>
+            <div id="statsPanel" class="stats-panel"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <button class="nav-button" data-view="farmView">🌾<br><small>农场</small></button>
+      <button class="nav-button" data-view="ordersView">📋<br><small>订单</small></button>
+      <button class="nav-button" data-view="homeView">🏠<br><small>家园</small></button>
+      <button class="nav-button" data-view="friendsView">👥<br><small>好友</small></button>
+      <button class="nav-button" data-view="communityView">⛲<br><small>社区</small></button>
+      <button class="nav-button" data-view="shopView">🛍️<br><small>商城</small></button>
+      <button class="nav-button" data-view="tasksView">✅<br><small>任务</small></button>
+      <button class="nav-button" data-view="achievementsView">🏆<br><small>成就</small></button>
+      <button class="nav-button" data-view="adminView">📊<br><small>后台</small></button>
+    </nav>
+  </div>
+
+  <!-- 创建角色模态框 -->
+  <div id="roleModal" class="modal-backdrop">
+    <div class="role-card">
+      <h2>🏡 欢迎来到邻里小镇</h2>
+      <p>请创建你的角色</p>
+
+      <label for="nicknameInput">昵称（2-12个字符）</label>
+      <input type="text" id="nicknameInput" maxlength="12" placeholder="输入你的昵称">
+
+      <label>选择头像</label>
+      <div id="avatarChoices" class="avatar-choices"></div>
+
+      <button class="primary-action" onclick="createRole()">进入小镇</button>
+    </div>
+  </div>
+
+  <!-- 加载主程序（使用 type="module"） -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

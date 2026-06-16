@@ -1,0 +1,29 @@
+{
+  "name": "happy-town",
+  "version": "2.0.0",
+  "description": "邻里小镇 - 温馨的农场经营游戏",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src/**/*.js",
+    "format": "prettier --write src/**/*.js"
+  },
+  "keywords": [
+    "game",
+    "farm",
+    "simulation",
+    "casual"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.1"
+  }
+}
