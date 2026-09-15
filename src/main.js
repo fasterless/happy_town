@@ -19,8 +19,8 @@ import * as CommunitySystem from './systems/community.js';
 import * as ShopSystem from './systems/shop.js';
 import * as TasksSystem from './systems/tasks.js';
 import * as AchievementsSystem from './systems/achievements.js';
-import * as PetsSystem from './systems/pets.js';
-import * as WeatherSystem from './systems/weather.js';
+// 导入系统模块（新增）
+import * as EventsSystem from './systems/events.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
