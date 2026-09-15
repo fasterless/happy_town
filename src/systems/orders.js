@@ -4,7 +4,18 @@ import { getCrop } from '../config/crops.js';
 import { addItem, spendItem, hasEnough } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
-import { itemKey } from '../utils/format.js';
+import { applyWeatherToReward } from './weather.js';
+import { applyPetToOrderReward } from './pets.js';
+
+/**
+ * 计算订单的实际金币奖励（含天气与宠物加成）
+ * @param {Object} state - 游戏状态
+ * @param {Object} order - 订单配置
+ * @returns {number} 实际金币
+ */
+export function getOrderCoinReward(state, order) {
+  return applyPetToOrderReward(applyWeatherToReward(order.coin, state), state);
+}
 
 /**
  * 完成订单
@@ -40,8 +51,9 @@ export function completeOrder(state, orderIndex) {
     spendItem(state, req.item, req.count);
   }
 
-  // 发放奖励
-  addItem(state, "coin", order.coin);
+  // 发放奖励（天气 + 宠物加成作用于金币）
+  const coin = getOrderCoinReward(state, order);
+  addItem(state, "coin", coin);
   addItem(state, "exp", order.exp);
 
   // 刷新订单
@@ -52,9 +64,11 @@ export function completeOrder(state, orderIndex) {
   trackDaily(state, "order", 1);
   emit(Events.ORDER_COMPLETED, { orderId, orderIndex });
 
+  const bonusHint = coin > order.coin ? `（加成 +${coin - order.coin}）` : "";
+
   return {
     success: true,
-    message: `完成订单获得${order.coin}金币和${order.exp}经验`,
+    message: `完成订单获得${coin}金币和${order.exp}经验${bonusHint}`,
     state
   };
 }

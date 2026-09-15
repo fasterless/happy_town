@@ -2,6 +2,10 @@
 import { addItem } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
+import { applyPetToFriendPoint } from './pets.js';
+
+const VISIT_FRIEND_POINT = 3;
+const LIKE_FRIEND_POINT = 5;
 
 /**
  * 添加好友
@@ -50,14 +54,15 @@ export function visitFriend(state, friendId) {
     return { success: false, message: "Lv.5解锁拜访功能" };
   }
 
-  // 获得友情点
-  addItem(state, "friendPoint", 3);
+  // 获得友情点（宠物加成）
+  const point = applyPetToFriendPoint(VISIT_FRIEND_POINT, state);
+  addItem(state, "friendPoint", point);
 
   logEvent(state, "friend_visit");
   trackDaily(state, "visit", 1);
   emit(Events.FRIEND_VISITED, { friendId });
 
-  return { success: true, message: `拜访了${friend.name}，获得3友情点`, state };
+  return { success: true, message: `拜访了${friend.name}，获得${point}友情点`, state };
 }
 
 /**
@@ -86,13 +91,14 @@ export function likeFriend(state, friendId) {
   state.daily.friendLikes[friendId] = true;
   friend.likes = (friend.likes || 0) + 1;
 
-  // 获得友情点
-  addItem(state, "friendPoint", 5);
+  // 获得友情点（宠物加成）
+  const point = applyPetToFriendPoint(LIKE_FRIEND_POINT, state);
+  addItem(state, "friendPoint", point);
 
   logEvent(state, "home_like");
   trackDaily(state, "like", 1);
 
-  return { success: true, message: `点赞了${friend.name}，获得5友情点`, state };
+  return { success: true, message: `点赞了${friend.name}，获得${point}友情点`, state };
 }
 
 /**

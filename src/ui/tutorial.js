@@ -14,7 +14,7 @@ const tutorialSteps = [
   {
     id: "farm",
     title: "种植你的第一块作物",
-    content: "点击农田上的"种植"按钮，选择小麦开始种植。",
+    content: "点击农田上的「种植」按钮，选择小麦开始种植。",
     target: "#farmGrid",
     position: "bottom",
     condition: () => document.querySelector("#farmGrid .plot.empty"),
@@ -22,7 +22,7 @@ const tutorialSteps = [
   {
     id: "wait",
     title: "等待作物成熟",
-    content: "小麦需要30秒成熟。你可以继续探索其他功能，成熟后会显示"可收获"。",
+    content: "小麦需要30秒成熟。你可以继续探索其他功能，成熟后会显示「可收获」。",
     target: "#farmGrid",
     position: "bottom",
     skipDelay: 3000,
@@ -30,7 +30,7 @@ const tutorialSteps = [
   {
     id: "harvest",
     title: "收获作物",
-    content: "作物成熟了！点击"收获"按钮获得作物和经验。",
+    content: "作物成熟了！点击「收获」按钮获得作物和经验。",
     target: "#farmGrid .plot.mature",
     position: "bottom",
     condition: () => document.querySelector("#farmGrid .plot.mature"),
@@ -38,7 +38,7 @@ const tutorialSteps = [
   {
     id: "order",
     title: "完成订单赚取金币",
-    content: "切换到"📋 订单"页面，用收获的作物完成订单获得金币和经验。",
+    content: "切换到「📋 订单」页面，用收获的作物完成订单获得金币和经验。",
     target: "[data-view='ordersView']",
     position: "top",
   },
@@ -85,7 +85,7 @@ function showTutorialStep(stepIndex) {
   }
 
   // 创建遮罩层
-  createTutorialOverlay(step);
+  createTutorialOverlay(step, stepIndex);
 
   // 高亮目标元素
   if (step.target) {
@@ -96,8 +96,9 @@ function showTutorialStep(stepIndex) {
 /**
  * 创建引导遮罩层
  * @param {Object} step - 引导步骤
+ * @param {number} stepIndex - 当前步骤索引，用于自动跳过时确认没有被手动翻页
  */
-function createTutorialOverlay(step) {
+function createTutorialOverlay(step, stepIndex) {
   // 移除旧的遮罩
   removeTutorialOverlay();
 

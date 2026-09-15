@@ -1,6 +1,7 @@
 // 成就系统模块
 import { addRewards } from '../core/inventory.js';
 import { emit, Events } from '../core/events.js';
+import { calculateRoomScore } from './home.js';
 
 // 成就配置
 export const achievements = [
@@ -197,8 +198,6 @@ function getAchievementProgress(state, achievement) {
       return state.daily.progress.order || 0;
 
     case "room_score":
-      // 需要计算房间评分
-      const { calculateRoomScore } = require('./home.js');
       return calculateRoomScore(state).score;
 
     case "furniture_types":

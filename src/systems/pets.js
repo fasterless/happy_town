@@ -1,5 +1,6 @@
 // 宠物系统模块
 import { canAfford, spendPrice, addItem, spendItem, hasEnough } from '../core/inventory.js';
+import { crops } from '../config/crops.js';
 import { todayKey } from '../utils/time.js';
 
 // 宠物配置
@@ -182,7 +183,24 @@ export function getActivePetBuff(state) {
 }
 
 /**
+ * 应用宠物buff到作物生长时间
+ * @param {number} baseGrowTime - 基础生长时间（秒）
+ * @param {Object} state - 游戏状态
+ * @returns {number} 调整后的生长时间
+ */
+export function applyPetToGrowTime(baseGrowTime, state) {
+  const buff = getActivePetBuff(state);
+  if (buff && buff.type === "growthSpeed") {
+    return Math.max(1, Math.floor(baseGrowTime / buff.enhancedValue));
+  }
+  return baseGrowTime;
+}
+
+/**
  * 应用宠物buff到种子价格
+ *
+ * 注意：折扣类 buff 的 value < 1，亲密度增强应让它更小（更便宜），
+ * 因此这里不能直接用 enhancedValue（那是给倍率类 buff 用的）。
  * @param {number} basePrice - 基础价格
  * @param {Object} state - 游戏状态
  * @returns {number} 调整后的价格
@@ -190,7 +208,10 @@ export function getActivePetBuff(state) {
 export function applyPetToSeedPrice(basePrice, state) {
   const buff = getActivePetBuff(state);
   if (buff && buff.type === "seedDiscount") {
-    return Math.floor(basePrice * buff.enhancedValue);
+    const intimacy = state.pets.intimacy[state.pets.active] || 0;
+    const intimacyBonus = Math.min(0.5, intimacy / 200);
+    const rate = buff.value * (1 - intimacyBonus);
+    return Math.max(1, Math.floor(basePrice * rate));
   }
   return basePrice;
 }
@@ -248,5 +269,12 @@ export function claimPetDailyGift(state) {
   addItem(state, itemKey, amount);
   state.pets.lastGiftDate = today;
 
-  return { success: true, message: `${state.pets.active}赠送了${amount}个作物`, state };
+  const activePet = pets.find(p => p.id === state.pets.active);
+  const crop = crops.find(c => c.id === randomCropId);
+
+  return {
+    success: true,
+    message: `${activePet ? activePet.name : "宠物"}赠送了${amount}个${crop ? crop.name : "作物"}`,
+    state
+  };
 }

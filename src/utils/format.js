@@ -1,21 +1,64 @@
 // 格式化工具函数
+import { crops } from '../config/crops.js';
+import { furniture } from '../config/furniture.js';
+
+// 默认配置表，供 getItemName / getItemIcon 在未显式传入 configs 时使用
+const defaultConfigs = { crops, furniture };
+
+// 基础物品的显示名与图标
+const BASIC_LABELS = {
+  coin: "金币",
+  diamond: "钻石",
+  exp: "经验",
+  friendPoint: "友情点",
+  communityContribution: "社区贡献",
+  wood: "木材",
+  stone: "石头",
+  cloth: "布料",
+  speed_ticket: "加速券",
+  lottery_ticket: "抽奖券",
+};
+
+const BASIC_ICONS = {
+  coin: "🪙",
+  diamond: "💎",
+  exp: "⭐",
+  friendPoint: "🤝",
+  communityContribution: "🏅",
+  wood: "🪵",
+  stone: "🪨",
+  cloth: "🧵",
+  speed_ticket: "⏩",
+  lottery_ticket: "🎟️",
+};
+
+/**
+ * 转义 HTML 特殊字符，用于把玩家输入安全地插入 innerHTML
+ * @param {*} value - 任意值
+ * @returns {string} 转义后的字符串
+ */
+export function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * 格式化奖励对象为文本
- * @param {Object} rewards - 奖励对象 { coin: 100, diamond: 50, ... }
+ * @param {Object} rewards - 奖励对象 { coin: 100, crop_1001: 6, f_3008: 1, ... }
+ * @param {Object} configs - 可选的配置覆盖 { crops, furniture }
  * @returns {string} 格式化的奖励文本
  */
-export function formatRewards(rewards) {
+export function formatRewards(rewards, configs = defaultConfigs) {
   const parts = [];
 
-  if (rewards.coin) parts.push(`金币×${rewards.coin}`);
-  if (rewards.diamond) parts.push(`钻石×${rewards.diamond}`);
-  if (rewards.exp) parts.push(`经验×${rewards.exp}`);
-  if (rewards.friendPoint) parts.push(`友情点×${rewards.friendPoint}`);
-  if (rewards.communityContribution) parts.push(`社区贡献×${rewards.communityContribution}`);
-  if (rewards.wood) parts.push(`木材×${rewards.wood}`);
-  if (rewards.stone) parts.push(`石头×${rewards.stone}`);
-  if (rewards.cloth) parts.push(`布料×${rewards.cloth}`);
+  for (const [key, value] of Object.entries(rewards || {})) {
+    if (!value) continue;
+    parts.push(`${getItemName(key, configs)}×${value}`);
+  }
 
   return parts.join("、") || "无";
 }
@@ -63,18 +106,11 @@ export function formatNumber(num) {
 /**
  * 获取物品名称
  * @param {string} key - 物品键名
- * @param {Object} configs - 配置对象
+ * @param {Object} configs - 配置对象（默认使用内置的 crops / furniture）
  * @returns {string} 物品名称
  */
-export function getItemName(key, configs = {}) {
-  if (key === "coin") return "金币";
-  if (key === "diamond") return "钻石";
-  if (key === "friendPoint") return "友情点";
-  if (key === "communityContribution") return "社区贡献";
-  if (key === "wood") return "木材";
-  if (key === "stone") return "石头";
-  if (key === "cloth") return "布料";
-  if (key === "exp") return "经验";
+export function getItemName(key, configs = defaultConfigs) {
+  if (BASIC_LABELS[key]) return BASIC_LABELS[key];
 
   if (key.startsWith("crop_") && configs.crops) {
     const cropId = Number(key.replace("crop_", ""));
@@ -94,18 +130,11 @@ export function getItemName(key, configs = {}) {
 /**
  * 获取物品图标
  * @param {string} key - 物品键名
- * @param {Object} configs - 配置对象
+ * @param {Object} configs - 配置对象（默认使用内置的 crops / furniture）
  * @returns {string} 物品图标
  */
-export function getItemIcon(key, configs = {}) {
-  if (key === "coin") return "🪙";
-  if (key === "diamond") return "💎";
-  if (key === "friendPoint") return "🤝";
-  if (key === "communityContribution") return "🏅";
-  if (key === "wood") return "🪵";
-  if (key === "stone") return "🪨";
-  if (key === "cloth") return "🧵";
-  if (key === "exp") return "⭐";
+export function getItemIcon(key, configs = defaultConfigs) {
+  if (BASIC_ICONS[key]) return BASIC_ICONS[key];
 
   if (key.startsWith("crop_") && configs.crops) {
     const cropId = Number(key.replace("crop_", ""));

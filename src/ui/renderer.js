@@ -1,19 +1,35 @@
 // 统一渲染器模块
+//
+// 这里的函数都是纯函数：接收 state，返回 HTML 字符串（或字符串组成的对象），
+// 由 main.js 负责写入 DOM。这样渲染逻辑可以脱离浏览器单独测试。
 import { crops, getCrop } from '../config/crops.js';
-import { orders, getOrder } from '../config/orders.js';
+import { getOrder } from '../config/orders.js';
 import { furniture, getFurniture } from '../config/furniture.js';
 import { dailyTasks, activeBoxes } from '../config/tasks.js';
 import { shopGoods } from '../config/shop.js';
-import { achievements, getAchievementProgressPercent } from '../systems/achievements.js';
-import { formatTime } from '../utils/time.js';
-import { formatRewards, moneyLabel, itemKey, furnitureKey, getItemName, getItemIcon } from '../utils/format.js';
+import { fountainStages } from '../config/npcs.js';
+import { getNextLevelInfo, levels } from '../config/levels.js';
+import { achievements, getAchievementProgressPercent, getAchievementStats } from '../systems/achievements.js';
+import { pets, getActivePetBuff } from '../systems/pets.js';
+import { formatTime, todayKey } from '../utils/time.js';
+import {
+  formatRewards,
+  moneyLabel,
+  furnitureKey,
+  getItemName,
+  getItemIcon,
+  escapeHtml,
+} from '../utils/format.js';
 import { getTaskProgress, isTaskComplete, getAnalytics } from '../utils/analytics.js';
-import { getLevelFromExp, getNextLevelInfo } from '../config/levels.js';
+import { getCount, getInventoryItems } from '../core/inventory.js';
 import * as FarmSystem from '../systems/farm.js';
 import * as OrdersSystem from '../systems/orders.js';
 import * as HomeSystem from '../systems/home.js';
+import * as FriendsSystem from '../systems/friends.js';
+import * as CommunitySystem from '../systems/community.js';
+import * as ShopSystem from '../systems/shop.js';
 import * as WeatherSystem from '../systems/weather.js';
-import { createProgressBar, createListItem, createBadge } from './components.js';
+import { createProgressBar } from './components.js';
 
 /**
  * 渲染顶部栏
@@ -23,14 +39,17 @@ import { createProgressBar, createListItem, createBadge } from './components.js'
 export function renderTopbar(state) {
   const { user, wallet } = state;
   const nextLevel = getNextLevelInfo(wallet.level);
-  const expProgress = nextLevel
-    ? ((wallet.exp / nextLevel.needExp) * 100).toFixed(1)
-    : 100;
+  const currentLevel = levels.find(lv => lv.level === wallet.level);
+
+  // 经验条画的是「本级已走完多少」，而不是总经验占下一级门槛的比例
+  const base = currentLevel ? currentLevel.needExp : 0;
+  const span = nextLevel ? nextLevel.needExp - base : 0;
+  const expProgress = span > 0 ? Math.min(100, ((wallet.exp - base) / span) * 100).toFixed(1) : 100;
 
   return `
     <div class="player-info">
-      <span class="player-avatar">${user.avatar}</span>
-      <span class="player-name">${user.nickname}</span>
+      <span class="player-avatar">${escapeHtml(user.avatar)}</span>
+      <span class="player-name">${escapeHtml(user.nickname)}</span>
       <span class="player-level">Lv.${wallet.level}</span>
     </div>
     <div class="wallet">
@@ -38,9 +57,11 @@ export function renderTopbar(state) {
       <span class="wallet-item">💎 ${wallet.diamond}</span>
       <span class="wallet-item">🤝 ${wallet.friendPoint}</span>
     </div>
-    <div class="exp-track">
-      <span style="width: ${expProgress}%"></span>
-      <small>${wallet.exp}/${nextLevel ? nextLevel.needExp : wallet.exp}</small>
+    <div class="exp-block">
+      <div class="exp-track">
+        <span style="width: ${expProgress}%"></span>
+      </div>
+      <small>${wallet.exp}${nextLevel ? ` / ${nextLevel.needExp}` : " (满级)"}</small>
     </div>
   `;
 }
@@ -60,17 +81,52 @@ export function renderNotice(state) {
     text = "💡 Lv.7解锁每日任务系统";
   } else if (level < 10) {
     text = "💡 Lv.10解锁社区系统";
-  } else if (level < 11) {
-    text = "💡 Lv.11解锁成就系统";
   } else if (level < 13) {
     text = "💡 Lv.13解锁宠物系统";
   }
 
-  // 显示天气
   const weather = WeatherSystem.getCurrentWeather(state);
-  text += ` | 今日天气：${weather.icon}${weather.name}`;
+  const growthRate = WeatherSystem.getWeatherGrowthRate(state);
+  const orderBonus = WeatherSystem.getWeatherOrderBonus(state);
 
-  return text;
+  const effects = [];
+  if (growthRate !== 1) effects.push(`生长×${growthRate}`);
+  if (orderBonus !== 1) effects.push(`订单×${orderBonus}`);
+
+  const buff = getActivePetBuff(state);
+  const petPart = buff
+    ? ` | 🐾 ${escapeHtml(pets.find(p => p.id === state.pets.active)?.name || "")}`
+    : "";
+
+  return `
+    <p>${text}</p>
+    <p class="notice-weather">
+      今日天气：${weather.icon}${weather.name}
+      ${effects.length ? `<span class="notice-effect">${effects.join(" ")}</span>` : ""}
+      ${petPart}
+    </p>
+  `;
+}
+
+/**
+ * 渲染小背包
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderMiniInventory(state) {
+  const items = getInventoryItems(state, 12).filter(item => item.count > 0);
+
+  if (!items.length) {
+    return `<p class="muted-text">背包空空的，去收获点作物吧</p>`;
+  }
+
+  return items
+    .map(
+      item => `<span class="mini-chip" title="${escapeHtml(getItemName(item.key))}">
+        ${getItemIcon(item.key)} ${item.count}
+      </span>`
+    )
+    .join("");
 }
 
 /**
@@ -84,8 +140,14 @@ export function renderFarmView(state, selectedCropId) {
   const grid = state.farm.plots
     .map((plot, index) => {
       if (!plot) {
+        const crop = getCrop(selectedCropId);
+        const price = crop ? FarmSystem.getSeedPrice(state, crop) : 0;
         return `<div class="plot empty">
-          <button onclick="window.plantCropHandler(${index})">种植</button>
+          <div class="crop-icon">🕳️</div>
+          <div class="crop-status">空地</div>
+          <button onclick="window.plantCropHandler(${index})">
+            种 ${crop ? crop.icon : ""} 🪙${price}
+          </button>
         </div>`;
       }
 
@@ -94,10 +156,14 @@ export function renderFarmView(state, selectedCropId) {
       const remaining = FarmSystem.getRemainingSeconds(plot);
       const stage = FarmSystem.getCropGrowthStage(plot);
       const stageIcon = FarmSystem.getStageIcon(stage);
+      const growTime = FarmSystem.getPlotGrowTime(plot);
+      const percent = growTime ? ((growTime - remaining) / growTime) * 100 : 100;
 
       return `<div class="plot ${isMature ? 'mature' : 'growing'}">
-        <div class="crop-icon">${crop ? crop.icon : stageIcon}</div>
+        <div class="crop-icon">${isMature ? (crop ? crop.icon : "✨") : stageIcon}</div>
+        <div class="crop-name">${crop ? escapeHtml(crop.name) : "未知作物"}</div>
         <div class="crop-status">${isMature ? "✨可收获" : formatTime(remaining)}</div>
+        ${isMature ? "" : createProgressBar(percent)}
         ${isMature ? `<button onclick="window.harvestCropHandler(${index})">收获</button>` : ""}
       </div>`;
     })
@@ -108,12 +174,19 @@ export function renderFarmView(state, selectedCropId) {
     .map(crop => {
       const unlocked = state.wallet.level >= crop.unlockLevel;
       const selected = crop.id === selectedCropId;
+      const price = FarmSystem.getSeedPrice(state, crop);
+      const discounted = price < crop.seedPrice;
+      const growTime = FarmSystem.getGrowTime(state, crop);
+      const faster = growTime < crop.growTime;
 
       return `<div class="seed-item ${selected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}"
-        onclick="${unlocked ? `window.selectCropHandler(${crop.id})` : ''}">
+        ${unlocked ? `onclick="window.selectCropHandler(${crop.id})"` : ''}>
         <span class="seed-icon">${crop.icon}</span>
-        <span class="seed-name">${crop.name}</span>
-        <span class="seed-price">🪙${crop.seedPrice}</span>
+        <span class="seed-name">${escapeHtml(crop.name)}</span>
+        <span class="seed-meta">
+          <span class="${discounted ? 'buffed' : ''}">🪙${price}</span>
+          <span class="${faster ? 'buffed' : ''}">⏱${formatTime(growTime)}</span>
+        </span>
         ${!unlocked ? `<span class="seed-lock">Lv.${crop.unlockLevel}</span>` : ''}
       </div>`;
     })
@@ -134,35 +207,37 @@ export function renderOrdersView(state) {
       if (!order) return "";
 
       const canComplete = OrdersSystem.canCompleteOrder(state, orderId);
+      const coin = OrdersSystem.getOrderCoinReward(state, order);
+      const buffed = coin > order.coin;
+
       const requiresHtml = order.requires
         .map(req => {
-          const has = state.inventory[req.item] || 0;
+          const has = getCount(state, req.item);
           const need = req.count;
-          const cropId = Number(req.item.replace("crop_", ""));
-          const crop = getCrop(cropId);
           const enough = has >= need;
 
-          return `<span class="${enough ? 'enough' : 'not-enough'}">
-            ${crop ? crop.icon : "📦"} ${has}/${need}
+          return `<span class="req-chip ${enough ? 'enough' : 'not-enough'}">
+            ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${has}/${need}
           </span>`;
         })
         .join(" ");
 
       return `<div class="order-card">
         <div class="order-header">
-          <h4>${order.name}</h4>
-          <span class="order-type ${order.type}">${order.type}</span>
+          <h4>${escapeHtml(order.name)}</h4>
+          <span class="order-type">${escapeHtml(order.type)}</span>
         </div>
         <div class="order-requires">${requiresHtml}</div>
         <div class="order-rewards">
-          奖励：🪙${order.coin} 经验+${order.exp}
+          奖励：<span class="${buffed ? 'buffed' : ''}">🪙${coin}</span> ⭐${order.exp}
+          ${buffed ? `<small class="muted-text">（原 ${order.coin}，含天气/宠物加成）</small>` : ""}
         </div>
         <div class="order-actions">
-          <button onclick="window.completeOrderHandler(${index})" ${!canComplete ? 'disabled' : ''}>
+          <button class="primary-action" onclick="window.completeOrderHandler(${index})" ${!canComplete ? 'disabled' : ''}>
             提交
           </button>
           <button class="ghost-action" onclick="window.refreshOrderHandler(${index})">
-            刷新
+            换一单
           </button>
         </div>
       </div>`;
@@ -173,22 +248,25 @@ export function renderOrdersView(state) {
 /**
  * 渲染家园视图
  * @param {Object} state - 游戏状态
+ * @param {number|null} selectedFurnitureId - 当前选中待摆放的家具ID
  * @returns {Object} { layout, furniture, score }
  */
-export function renderHomeView(state) {
+export function renderHomeView(state, selectedFurnitureId = null) {
   // 渲染房间布局
   const layout = state.home.layout
     .map((item, index) => {
       if (!item) {
-        return `<div class="room-cell empty" data-index="${index}"></div>`;
+        const placeable = selectedFurnitureId !== null;
+        return `<div class="room-cell empty ${placeable ? 'placeable' : ''}" data-index="${index}"
+          ${placeable ? `onclick="window.placeFurnitureHandler(${index})"` : ''}></div>`;
       }
 
       const fur = getFurniture(item.id);
       return `<div class="room-cell occupied" data-index="${index}">
         <span class="furniture-icon ${item.rotated ? 'rotated' : ''}">${fur ? fur.icon : "📦"}</span>
         <div class="furniture-actions">
-          <button onclick="window.rotateFurnitureHandler(${index})">↻</button>
-          <button onclick="window.removeFurnitureHandler(${index})">✕</button>
+          <button title="旋转" onclick="window.rotateFurnitureHandler(${index})">↻</button>
+          <button title="收回" onclick="window.removeFurnitureHandler(${index})">✕</button>
         </div>
       </div>`;
     })
@@ -199,34 +277,232 @@ export function renderHomeView(state) {
     .map(fur => {
       const unlocked = state.wallet.level >= fur.unlockLevel;
       const inBag = state.inventory[furnitureKey(fur.id)] || 0;
+      const selected = fur.id === selectedFurnitureId;
 
-      return `<div class="furniture-item ${!unlocked ? 'locked' : ''}">
+      return `<div class="furniture-item ${!unlocked ? 'locked' : ''} ${selected ? 'selected' : ''}">
         <span class="furniture-icon">${fur.icon}</span>
         <div class="furniture-info">
-          <h5>${fur.name}</h5>
-          <p>${moneyLabel(fur.priceType, fur.price)}</p>
+          <h5>${escapeHtml(fur.name)}</h5>
+          <p class="muted-text">${escapeHtml(fur.category)} · ${moneyLabel(fur.priceType, fur.price)}</p>
         </div>
-        <div class="furniture-count">拥有: ${inBag}</div>
-        <button onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
-          ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
-        </button>
+        <div class="furniture-count">背包 ${inBag}</div>
+        <div class="furniture-buttons">
+          <button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
+            ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
+          </button>
+          <button class="small-action" onclick="window.selectFurnitureHandler(${fur.id})" ${inBag < 1 ? 'disabled' : ''}>
+            ${selected ? '已选中' : '摆放'}
+          </button>
+        </div>
       </div>`;
     })
     .join("");
 
   // 计算装饰评分
   const scoreData = HomeSystem.calculateRoomScore(state);
+  const hint = selectedFurnitureId
+    ? `<p class="place-hint">已选中 ${escapeHtml(getFurniture(selectedFurnitureId)?.name || "")}，点击房间空格摆放
+        <button class="small-action" onclick="window.selectFurnitureHandler(null)">取消</button></p>`
+    : `<p class="muted-text">在下方家具商店点「摆放」，再点房间空格</p>`;
+
   const score = `
     <div class="room-score">
-      <h3>装饰评分: ${scoreData.grade} 级</h3>
-      <p>总分: ${scoreData.score}</p>
+      <h3>装饰评分 <span class="score-grade grade-${scoreData.grade}">${scoreData.grade}</span> 级</h3>
+      <p>总分：${scoreData.score}</p>
       <div class="score-details">
-        ${scoreData.details.map(d => `<p class="score-detail">• ${d}</p>`).join('')}
+        ${scoreData.details.map(d => `<p class="score-detail">• ${escapeHtml(d)}</p>`).join('')}
       </div>
+      ${hint}
     </div>
   `;
 
   return { layout, furniture: furnitureList, score };
+}
+
+/**
+ * 渲染好友视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderFriendsView(state) {
+  const unlocked = state.wallet.level >= 5;
+  const myFriends = FriendsSystem.getMyFriends(state);
+  const recommended = FriendsSystem.getRecommendedFriends(state);
+
+  const card = (friend, isFriend) => {
+    const liked = FriendsSystem.hasLikedToday(state, friend.id);
+
+    const actions = isFriend
+      ? `<button class="small-action" onclick="window.visitFriendHandler('${friend.id}')" ${!unlocked ? 'disabled' : ''}>
+          ${unlocked ? '拜访' : 'Lv.5'}
+         </button>
+         <button class="small-action" onclick="window.likeFriendHandler('${friend.id}')" ${liked ? 'disabled' : ''}>
+          ${liked ? '已点赞' : '点赞'}
+         </button>`
+      : `<button class="small-action" onclick="window.addFriendHandler('${friend.id}')">加好友</button>`;
+
+    return `<div class="person-card">
+      <span class="person-avatar">${escapeHtml(friend.avatar)}</span>
+      <h4>${escapeHtml(friend.name)}</h4>
+      <p class="muted-text">${escapeHtml(friend.mood)}</p>
+      <p class="person-likes">👍 ${friend.likes || 0}</p>
+      <div class="item-actions">${actions}</div>
+    </div>`;
+  };
+
+  const sections = [];
+
+  sections.push(`
+    <div class="friends-section">
+      <h3>我的好友（${myFriends.length}）</h3>
+      <div class="people-grid">
+        ${myFriends.length ? myFriends.map(f => card(f, true)).join("") : '<p class="muted-text">还没有好友</p>'}
+      </div>
+    </div>
+  `);
+
+  if (recommended.length) {
+    sections.push(`
+      <div class="friends-section">
+        <h3>推荐邻居（${recommended.length}）</h3>
+        <div class="people-grid">
+          ${recommended.map(f => card(f, false)).join("")}
+        </div>
+      </div>
+    `);
+  }
+
+  if (!unlocked) {
+    sections.unshift('<p class="lock-banner">🔒 Lv.5 解锁拜访功能，点赞现在就可以</p>');
+  }
+
+  return sections.join("");
+}
+
+/**
+ * 渲染社区视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderCommunityView(state) {
+  if (state.wallet.level < 10) {
+    return '<p class="lock-banner">🔒 需要 Lv.10 解锁社区系统</p>';
+  }
+
+  if (!state.community.joined) {
+    return `
+      <div class="fountain-card">
+        <h3>⛲ ${escapeHtml(state.community.name)}</h3>
+        <p>和邻居一起把广场的喷泉修起来吧。</p>
+        <button class="primary-action" onclick="window.joinCommunityHandler()">加入社区</button>
+      </div>
+    `;
+  }
+
+  const stage = CommunitySystem.getCurrentStage(state);
+  const allDone = CommunitySystem.isAllStagesComplete(state);
+  const percent = CommunitySystem.getStageProgress(state);
+
+  const stagePanel = allDone
+    ? `<div class="fountain-card">
+        <div class="fountain-visual">⛲✨</div>
+        <h3>喷泉已完工！</h3>
+        <p>全部 ${fountainStages.length} 个阶段都完成了，感谢你的贡献。</p>
+       </div>`
+    : `<div class="fountain-card">
+        <div class="fountain-visual">🚧</div>
+        <h3>第 ${stage.stage}/${fountainStages.length} 阶段：${escapeHtml(stage.label)}</h3>
+        <div class="build-track"><span style="width:${percent}%"></span></div>
+        <p>${state.community.progress} / ${stage.target}（${percent}%）</p>
+        <p class="muted-text">阶段奖励：${formatRewards(stage.reward)}</p>
+        <div class="donate-list">
+          ${stage.accepts
+            .map(accept => {
+              const owned = getCount(state, accept.item);
+              return `<div class="donate-row">
+                <span class="donate-label">
+                  ${getItemIcon(accept.item)} ${escapeHtml(accept.label)}
+                  <small class="muted-text">持有 ${owned}</small>
+                </span>
+                <input type="number" min="1" value="${Math.min(owned, 10) || 1}"
+                  id="donate-${accept.item}" class="donate-input">
+                <button class="small-action" onclick="window.donateHandler('${accept.item}')"
+                  ${owned < 1 ? 'disabled' : ''}>捐献</button>
+              </div>`;
+            })
+            .join("")}
+        </div>
+        ${stage.accepts.some(a => a.item === "coin")
+          ? '<p class="muted-text">提示：金币捐献的贡献值按一半计算</p>'
+          : ""}
+       </div>`;
+
+  const members = [...state.community.members]
+    .sort((a, b) => b.contribution - a.contribution)
+    .map(
+      (m, i) => `<div class="member-row">
+        <span>${i + 1}. ${escapeHtml(m.name)}</span>
+        <span class="muted-text">${escapeHtml(m.role)}</span>
+        <b>${m.contribution}</b>
+      </div>`
+    )
+    .join("");
+
+  return `
+    <div class="community-layout">
+      ${stagePanel}
+      <div class="member-list">
+        <h3>成员贡献榜</h3>
+        ${members}
+        <p class="muted-text">我的总贡献：${state.wallet.communityContribution}</p>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 渲染商城视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderShopView(state) {
+  const canClaim = ShopSystem.canClaimMonthlyCard(state);
+  const expired = state.shop.monthlyCard && ShopSystem.isMonthlyCardExpired(state);
+
+  let monthlyPanel = "";
+  if (state.shop.monthlyCard) {
+    monthlyPanel = `
+      <div class="monthly-panel ${expired ? 'expired' : ''}">
+        <h3>📅 月卡${expired ? "（已过期）" : "已激活"}</h3>
+        <p class="muted-text">每日可领 60 钻石 + 500 金币</p>
+        <button class="primary-action" onclick="window.claimMonthlyCardHandler()" ${!canClaim ? 'disabled' : ''}>
+          ${expired ? '已过期' : canClaim ? '领取今日奖励' : '今日已领取'}
+        </button>
+      </div>
+    `;
+  }
+
+  const goods = shopGoods
+    .map(item => {
+      const bought = state.shop.boughtGoods[item.id] || 0;
+
+      return `<div class="shop-card">
+        <span class="shop-icon">${item.icon}</span>
+        <h4>${escapeHtml(item.name)}</h4>
+        <p class="muted-text">${escapeHtml(item.category)}</p>
+        <p class="shop-rewards">${escapeHtml(formatRewards(item.rewards))}</p>
+        <p class="shop-price">${moneyLabel(item.priceType, item.price)}</p>
+        ${bought ? `<p class="muted-text">已购 ${bought} 次</p>` : ""}
+        <button class="primary-action" onclick="window.buyGoodsHandler(${item.id})">购买</button>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    ${monthlyPanel}
+    <div class="shop-grid">${goods}</div>
+    <p class="muted-text">￥价商品为演示用途，不会真实扣款。</p>
+  `;
 }
 
 /**
@@ -235,7 +511,8 @@ export function renderHomeView(state) {
  * @returns {Object} { tasks, boxes, activeScore }
  */
 export function renderTasksView(state) {
-  // 渲染任务列表
+  const locked = state.wallet.level < 7;
+
   const tasks = dailyTasks
     .map(task => {
       const progress = state.daily.progress[task.type] || 0;
@@ -245,30 +522,29 @@ export function renderTasksView(state) {
 
       return `<div class="task-item ${complete ? 'complete' : ''} ${claimed ? 'claimed' : ''}">
         <div class="task-info">
-          <h4>${task.name}</h4>
-          <p>${progress}/${task.target}</p>
+          <h4>${escapeHtml(task.name)}</h4>
+          <p class="muted-text">${Math.min(progress, task.target)}/${task.target} · 活跃度+${task.active}</p>
         </div>
         ${createProgressBar(progressPercent)}
-        <div class="task-reward">${formatRewards(task.rewards)}</div>
-        <button onclick="window.claimTaskHandler('${task.id}')"
-          ${!complete || claimed ? 'disabled' : ''}>
-          ${claimed ? '已领取' : '领取'}
+        <div class="task-reward">${escapeHtml(formatRewards(task.rewards))}</div>
+        <button class="small-action" onclick="window.claimTaskHandler('${task.id}')"
+          ${!complete || claimed || locked ? 'disabled' : ''}>
+          ${claimed ? '已领取' : locked ? 'Lv.7' : '领取'}
         </button>
       </div>`;
     })
     .join("");
 
-  // 渲染宝箱
   const boxes = activeBoxes
     .map(box => {
       const canClaim = state.daily.activeScore >= box.score;
       const claimed = state.daily.claimedBoxes[box.score];
 
       return `<div class="active-box ${canClaim ? 'can-claim' : ''} ${claimed ? 'claimed' : ''}">
-        <div class="box-icon">📦</div>
+        <div class="box-icon">${claimed ? "📭" : canClaim ? "🎁" : "📦"}</div>
         <div class="box-score">${box.score}分</div>
-        <div class="box-reward">${formatRewards(box.rewards)}</div>
-        <button onclick="window.claimBoxHandler(${box.score})"
+        <div class="box-reward">${escapeHtml(formatRewards(box.rewards))}</div>
+        <button class="small-action" onclick="window.claimBoxHandler(${box.score})"
           ${!canClaim || claimed ? 'disabled' : ''}>
           ${claimed ? '已领取' : '领取'}
         </button>
@@ -277,7 +553,7 @@ export function renderTasksView(state) {
     .join("");
 
   return {
-    tasks,
+    tasks: locked ? '<p class="lock-banner">🔒 Lv.7 解锁每日任务领奖</p>' + tasks : tasks,
     boxes,
     activeScore: state.daily.activeScore,
   };
@@ -298,15 +574,167 @@ export function renderAchievementsView(state) {
       return `<div class="achievement-item ${unlocked ? 'unlocked' : ''}">
         <div class="achievement-icon">${achievement.icon}</div>
         <div class="achievement-info">
-          <h4>${achievement.name}</h4>
-          <p>${achievement.desc}</p>
-          ${!unlocked ? `<div class="achievement-progress">${progress}/${achievement.target}</div>` : ''}
-          ${!unlocked ? createProgressBar(progressPercent) : '<span class="achievement-badge">✅ 已完成</span>'}
+          <h4>${escapeHtml(achievement.name)}</h4>
+          <p class="muted-text">${escapeHtml(achievement.desc)}</p>
+          ${unlocked
+            ? '<span class="achievement-badge">✅ 已完成</span>'
+            : `<div class="achievement-progress">${Math.min(progress, achievement.target)}/${achievement.target}</div>
+               ${createProgressBar(progressPercent)}`}
         </div>
-        <div class="achievement-reward">
-          ${formatRewards(achievement.rewards)}
-        </div>
+        <div class="achievement-reward">${escapeHtml(formatRewards(achievement.rewards))}</div>
       </div>`;
     })
     .join("");
+}
+
+/**
+ * 渲染成就统计文字
+ * @param {Object} state - 游戏状态
+ * @returns {string} 文本
+ */
+export function renderAchievementStats(state) {
+  const stats = getAchievementStats(state);
+  return `已完成 ${stats.unlocked}/${stats.total}（${stats.percent}%）`;
+}
+
+/**
+ * 渲染宠物视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderPetsView(state) {
+  if (state.wallet.level < 13) {
+    return '<p class="lock-banner">🔒 需要 Lv.13 解锁宠物系统</p>';
+  }
+
+  const buff = getActivePetBuff(state);
+  const activePet = pets.find(p => p.id === state.pets.active);
+  const giftClaimed = state.pets.lastGiftDate === todayKey();
+
+  const activePanel = activePet
+    ? `<div class="pet-active-panel">
+        <span class="pet-icon-large">${activePet.icon}</span>
+        <div>
+          <h3>出战中：${escapeHtml(activePet.name)}</h3>
+          <p class="muted-text">${escapeHtml(activePet.desc)}</p>
+          <p>亲密度 ${state.pets.intimacy[activePet.id] || 0}
+            ${buff ? `· 实际效果 ${buff.enhancedValue.toFixed(2)}` : ""}</p>
+          ${buff && buff.type === "dailyGift"
+            ? `<button class="primary-action" onclick="window.claimPetGiftHandler()" ${giftClaimed ? 'disabled' : ''}>
+                ${giftClaimed ? '今日已领取' : '领取每日礼物'}
+               </button>`
+            : ""}
+          <button class="ghost-action" onclick="window.setActivePetHandler(null)">让它休息</button>
+        </div>
+       </div>`
+    : '<p class="muted-text">还没有出战宠物，选一只带上吧（亲密度会增强效果）</p>';
+
+  const list = pets
+    .map(pet => {
+      const owned = state.pets.owned.includes(pet.id);
+      const isActive = state.pets.active === pet.id;
+      const intimacy = state.pets.intimacy[pet.id] || 0;
+      const fedToday = state.pets[`${pet.id}_lastFeed`] === todayKey();
+      const foodText = Object.entries(pet.foodCost)
+        .map(([key, count]) => `${getItemIcon(key)}${escapeHtml(getItemName(key))}×${count}`)
+        .join("、");
+
+      return `<div class="pet-card ${owned ? 'owned' : ''} ${isActive ? 'active' : ''}">
+        <span class="pet-icon">${pet.icon}</span>
+        <h4>${escapeHtml(pet.name)}</h4>
+        <p class="muted-text">${escapeHtml(pet.desc)}</p>
+        ${owned
+          ? `<p>亲密度 ${intimacy}</p>
+             ${createProgressBar(Math.min(100, (intimacy / 200) * 100))}
+             <p class="muted-text">口粮：${foodText}</p>
+             <div class="item-actions">
+               <button class="small-action" onclick="window.feedPetHandler('${pet.id}')" ${fedToday ? 'disabled' : ''}>
+                 ${fedToday ? '今日已喂' : '喂养'}
+               </button>
+               <button class="small-action" onclick="window.setActivePetHandler('${pet.id}')" ${isActive ? 'disabled' : ''}>
+                 ${isActive ? '出战中' : '出战'}
+               </button>
+             </div>`
+          : `<p class="shop-price">${moneyLabel(pet.priceType, pet.price)}</p>
+             <button class="primary-action" onclick="window.buyPetHandler('${pet.id}')">领养</button>`}
+      </div>`;
+    })
+    .join("");
+
+  return `${activePanel}<div class="pet-grid">${list}</div>`;
+}
+
+/**
+ * 渲染后台视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderAdminView(state) {
+  const stats = getAnalytics(state).sort((a, b) => b.count - a.count);
+  const achievementStats = getAchievementStats(state);
+
+  const overview = [
+    { label: "昵称", value: escapeHtml(state.user.nickname) },
+    { label: "用户ID", value: escapeHtml(state.user.userId) },
+    { label: "等级 / 经验", value: `Lv.${state.wallet.level} / ${state.wallet.exp}` },
+    { label: "金币 / 钻石", value: `${state.wallet.coin} / ${state.wallet.diamond}` },
+    { label: "友情点", value: state.wallet.friendPoint },
+    { label: "社区贡献", value: state.wallet.communityContribution },
+    { label: "今日活跃度", value: state.daily.activeScore },
+    { label: "成就", value: `${achievementStats.unlocked}/${achievementStats.total}` },
+    { label: "已拥有宠物", value: state.pets.owned.length },
+    { label: "创建时间", value: escapeHtml(String(state.user.createdAt).slice(0, 10)) },
+  ]
+    .map(
+      row => `<div class="data-row"><span>${row.label}</span><b>${row.value}</b></div>`
+    )
+    .join("");
+
+  const statRows = stats.length
+    ? stats
+        .map(s => `<div class="data-row"><span>${escapeHtml(s.name)}</span><b>${s.count}</b></div>`)
+        .join("")
+    : '<p class="muted-text">还没有埋点数据</p>';
+
+  const soundOn = state.settings.soundEnabled !== false;
+  const volume = typeof state.settings.volume === 'number' ? state.settings.volume : 0.7;
+
+  return `
+    <div class="admin-grid">
+      <div class="data-card">
+        <h3>账号概览</h3>
+        <div class="data-list">${overview}</div>
+      </div>
+      <div class="data-card">
+        <h3>行为统计</h3>
+        <div class="data-list">${statRows}</div>
+      </div>
+      <div class="data-card">
+        <h3>设置</h3>
+        <div class="data-row">
+          <span>音效</span>
+          <button class="small-action" onclick="window.toggleSoundHandler()">
+            ${soundOn ? '🔊 已开启' : '🔇 已关闭'}
+          </button>
+        </div>
+        <div class="data-row">
+          <span>音量</span>
+          <input type="range" min="0" max="1" step="0.1" value="${volume}"
+            oninput="window.setVolumeHandler(this.value)">
+        </div>
+        <p class="muted-text">音效由 WebAudio 实时合成，不需要音频文件。</p>
+      </div>
+      <div class="data-card">
+        <h3>存档管理</h3>
+        <div class="button-row">
+          <button class="small-action" onclick="window.exportSaveHandler()">导出存档</button>
+          <button class="small-action" onclick="window.importSaveHandler()">导入存档</button>
+        </div>
+        <p class="muted-text">导出的 JSON 可以直接粘回来恢复进度。</p>
+        <div class="button-row">
+          <button class="danger-action" onclick="window.resetGameHandler()">清空进度</button>
+        </div>
+      </div>
+    </div>
+  `;
 }

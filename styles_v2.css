@@ -1,0 +1,1193 @@
+/* ==========================================================================
+   邻里小镇 v2 专属样式
+   --------------------------------------------------------------------------
+   styles.css 是给 v1（index.html + app.js）的标记写的，v2 的渲染器输出了
+   一套不同的类名。这个文件只补 v2 独有的部分，并覆盖少量与 v2 结构不兼容
+   的 v1 规则。加载顺序必须在 styles.css 之后。
+   所有颜色都取 styles.css :root 里已有的设计变量，不引入新的调色板。
+   ========================================================================== */
+
+/* --- 布局骨架 ------------------------------------------------------------ */
+
+/* v2 底部导航有 10 项（多了成就和宠物） */
+.bottom-nav {
+  grid-template-columns: repeat(10, minmax(52px, 1fr));
+  width: min(1080px, calc(100vw - 28px));
+}
+
+.nav-button small {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* v1 叫 .view-head，v2 渲染器输出 .view-header */
+.view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.view-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.view-header h3 {
+  margin: 22px 0 10px;
+  font-size: 15px;
+}
+
+/* --- 顶部栏 -------------------------------------------------------------- */
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-size: 20px;
+}
+
+.player-level {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e4f0df;
+  color: var(--green-strong);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.wallet-item {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.exp-block {
+  display: grid;
+  gap: 4px;
+  min-width: 140px;
+  justify-items: end;
+}
+
+.exp-block small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* --- 左侧提示 / 背包 ---------------------------------------------------- */
+
+.notice-panel p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.notice-weather {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.notice-effect {
+  margin-left: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e4f0df;
+  color: var(--green-strong);
+  font-size: 11px;
+}
+
+/* --- 通用零件 ------------------------------------------------------------ */
+
+.progress-bar {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(70, 98, 71, 0.14);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--green), var(--green-strong));
+  transition: width 300ms ease;
+}
+
+.progress-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* 被天气 / 宠物加成过的数值 */
+.buffed {
+  color: var(--green-strong);
+  font-weight: 900;
+}
+
+.locked {
+  opacity: 0.55;
+}
+
+.lock-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* --- 农场 ---------------------------------------------------------------- */
+
+/* v2 把内容直接放在 .plot 里，不再包一层 .plot-content */
+.plot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px;
+  text-align: center;
+}
+
+.plot.empty {
+  border-style: dashed;
+  background: rgba(166, 111, 69, 0.32);
+  color: #4a3a2c;
+}
+
+.plot.mature {
+  border-color: var(--yellow);
+  box-shadow:
+    inset 0 -8px 0 rgba(0, 0, 0, 0.08),
+    0 0 0 3px rgba(244, 191, 85, 0.35);
+}
+
+.plot .crop-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.plot .crop-name {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plot .crop-status {
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.plot .progress-bar {
+  width: 76%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.plot button {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--green);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plot.empty button {
+  background: var(--soil);
+}
+
+.seed-shop,
+.furniture-shop {
+  margin-top: 18px;
+}
+
+.seed-shop h3,
+.furniture-shop h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.seed-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.seed-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+
+.seed-item:hover {
+  transform: translateY(-2px);
+}
+
+.seed-item.selected {
+  border-color: var(--green);
+  background: #eaf4ee;
+  box-shadow: 0 0 0 2px rgba(75, 143, 111, 0.24);
+}
+
+.seed-item.locked {
+  cursor: not-allowed;
+}
+
+.seed-item.locked:hover {
+  transform: none;
+}
+
+.seed-icon {
+  font-size: 22px;
+}
+
+.seed-name {
+  font-weight: 800;
+}
+
+.seed-meta {
+  grid-column: 2;
+  display: flex;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.seed-lock {
+  grid-column: 2;
+  color: var(--rose);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* --- 订单 ---------------------------------------------------------------- */
+
+.orders-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.order-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.order-header h4 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.order-type {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.order-requires {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.req-chip {
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.req-chip.enough {
+  background: #e4f0df;
+  color: var(--green-strong);
+}
+
+.req-chip.not-enough {
+  background: #fbe3e3;
+  color: #a34848;
+}
+
+.order-rewards {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.order-actions button {
+  flex: 1;
+}
+
+/* --- 家园 ---------------------------------------------------------------- */
+
+.room-score-panel {
+  margin-bottom: 14px;
+}
+
+.room-score {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+}
+
+.room-score h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.room-score p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.score-grade {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--muted);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.score-grade.grade-S {
+  background: var(--yellow);
+  color: #5a4413;
+}
+
+.score-grade.grade-A {
+  background: var(--green-strong);
+}
+
+.score-grade.grade-B {
+  background: var(--green);
+}
+
+.score-grade.grade-C {
+  background: var(--blue);
+}
+
+.score-details {
+  display: grid;
+  gap: 2px;
+}
+
+.score-detail {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.place-hint {
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.room-cell {
+  display: grid;
+  place-items: center;
+}
+
+.room-cell.placeable {
+  border-style: solid;
+  border-color: var(--green);
+  background: rgba(75, 143, 111, 0.14);
+  cursor: pointer;
+}
+
+.room-cell.placeable:hover {
+  background: rgba(75, 143, 111, 0.26);
+}
+
+.room-cell.occupied {
+  border-style: solid;
+  background: var(--panel-strong);
+}
+
+.furniture-icon {
+  font-size: 24px;
+  transition: transform 200ms ease;
+}
+
+.furniture-icon.rotated {
+  transform: rotate(90deg);
+}
+
+/* 悬停时才露出旋转 / 收回按钮，避免 36 格全是按钮 */
+.furniture-actions {
+  position: absolute;
+  inset: auto 2px 2px auto;
+  display: none;
+  gap: 3px;
+}
+
+.room-cell.occupied:hover .furniture-actions {
+  display: flex;
+}
+
+.furniture-actions button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: rgba(47, 42, 37, 0.72);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.furniture-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.furniture-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.furniture-item.selected {
+  border-color: var(--green);
+  background: #eaf4ee;
+}
+
+.furniture-info h5 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.furniture-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.furniture-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.furniture-buttons {
+  grid-column: 2 / -1;
+  display: flex;
+  gap: 8px;
+}
+
+/* --- 好友 ---------------------------------------------------------------- */
+
+.friends-section {
+  margin-bottom: 22px;
+}
+
+.friends-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.person-card h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.person-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.person-likes {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+/* --- 社区 ---------------------------------------------------------------- */
+
+.community-layout {
+  display: grid;
+  /* v1 是三列，v2 只有「阶段卡 + 贡献榜」两块 */
+  grid-template-columns: minmax(320px, 1.4fr) minmax(240px, 0.8fr);
+  gap: 14px;
+  align-items: start;
+}
+
+/* v1 的 .fountain-card 是 118px + 1fr 两列，v2 是纵向堆叠 */
+.fountain-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 18px;
+}
+
+.fountain-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.fountain-card p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.fountain-card .fountain-visual {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.fountain-card .build-track {
+  width: 100%;
+  height: 10px;
+}
+
+.donate-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.donate-row {
+  display: grid;
+  grid-template-columns: 1fr 80px auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.donate-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.donate-label small {
+  font-weight: 600;
+}
+
+.donate-input {
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf6;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.member-list h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.member-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+/* --- 商城 ---------------------------------------------------------------- */
+
+.monthly-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+}
+
+.monthly-panel.expired {
+  border-color: var(--line);
+  background: var(--panel-strong);
+  opacity: 0.75;
+}
+
+.monthly-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.monthly-panel p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.monthly-panel button {
+  justify-self: start;
+}
+
+.shop-card h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.shop-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.shop-rewards {
+  color: var(--green-strong);
+  font-weight: 700;
+}
+
+.shop-price {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* --- 任务 ---------------------------------------------------------------- */
+
+.tasks-container {
+  display: grid;
+  gap: 16px;
+}
+
+.active-score-panel {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+}
+
+.active-score-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.active-boxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.active-box {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+  text-align: center;
+}
+
+.active-box.can-claim {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(244, 191, 85, 0.3);
+}
+
+.active-box.claimed {
+  opacity: 0.55;
+}
+
+.box-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.box-score {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.box-reward {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tasks-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-item {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.3fr) minmax(90px, 0.7fr) minmax(110px, 0.8fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.task-item.complete {
+  border-color: var(--green);
+}
+
+.task-item.claimed {
+  opacity: 0.6;
+}
+
+.task-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.task-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.task-reward {
+  color: var(--green-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* --- 成就 ---------------------------------------------------------------- */
+
+.achievement-stats {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.achievements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.achievement-item {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: start;
+  gap: 6px 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.achievement-item.unlocked {
+  border-color: var(--yellow);
+  background: #fff6df;
+}
+
+.achievement-icon {
+  font-size: 28px;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+.achievement-item.unlocked .achievement-icon {
+  filter: none;
+  opacity: 1;
+}
+
+.achievement-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.achievement-info p {
+  margin: 2px 0 6px;
+  font-size: 12px;
+}
+
+.achievement-progress {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.achievement-badge {
+  color: var(--green-strong);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.achievement-reward {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* --- 宠物 ---------------------------------------------------------------- */
+
+.pet-active-panel {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  background: #eaf4ee;
+}
+
+.pet-active-panel h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.pet-active-panel p {
+  margin: 2px 0 8px;
+  font-size: 13px;
+}
+
+.pet-active-panel button {
+  margin-right: 8px;
+}
+
+.pet-icon-large {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 38px;
+}
+
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.pet-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+  text-align: center;
+}
+
+.pet-card.active {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(75, 143, 111, 0.24);
+}
+
+.pet-card h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pet-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.pet-card .progress-bar {
+  width: 100%;
+}
+
+.pet-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* --- 后台 ---------------------------------------------------------------- */
+
+.admin-content {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+
+.admin-content .stats-panel {
+  width: 100%;
+}
+
+.data-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.data-card p {
+  margin: 0;
+}
+
+.data-card input[type="range"] {
+  width: 140px;
+}
+
+.data-list .data-row:last-child {
+  border-bottom: 0;
+}
+
+.data-row span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.data-row b {
+  font-size: 13px;
+}
+
+/* --- 模态框（components.js） -------------------------------------------- */
+
+.modal-card {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.modal-body {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.modal-body p {
+  margin: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.modal-footer button {
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 800;
+}
+
+.btn-cancel {
+  border: 1px solid var(--line) !important;
+  background: #fff7e7;
+  color: var(--ink);
+}
+
+.btn-confirm {
+  background: var(--green);
+  color: #fff;
+}
+
+.save-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf6;
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  resize: vertical;
+}
+
+/* --- 新手引导（tutorial.js） ------------------------------------------- */
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(47, 42, 37, 0.55);
+}
+
+.tutorial-tooltip {
+  width: min(400px, 100%);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.tutorial-tooltip.top {
+  align-self: start;
+  margin-top: 40px;
+}
+
+.tutorial-tooltip.bottom {
+  align-self: end;
+  margin-bottom: 90px;
+}
+
+.tutorial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.tutorial-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.tutorial-content {
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+.tutorial-progress {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tutorial-skip {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tutorial-next {
+  min-height: 34px;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--green);
+  color: #fff;
+  font-weight: 800;
+}
+
+/* 聚光灯只描边，不挖洞——遮罩层在它下面，所以这里靠 z-index 浮上来 */
+.tutorial-spotlight {
+  position: fixed;
+  z-index: 201;
+  border: 2px solid var(--yellow);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 4px rgba(244, 191, 85, 0.25);
+  pointer-events: none;
+}
+
+/* --- 响应式 ------------------------------------------------------------- */
+
+@media (max-width: 1080px) {
+  .community-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .bottom-nav {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .task-item {
+    grid-template-columns: 1fr auto;
+  }
+
+  .pet-active-panel {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}

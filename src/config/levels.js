@@ -31,6 +31,9 @@ export function getLevelFromExp(exp) {
   return currentLevel;
 }
 
+// 取下一个等级档位。
+// 等级表是跳跃的（13 → 15 → 18 → 20），所以不能查 currentLevel + 1，
+// 否则 Lv.13 会查不到 Lv.14 而被误判成满级。
 export function getNextLevelInfo(currentLevel) {
-  return levels.find((lv) => lv.level === currentLevel + 1);
+  return levels.find((lv) => lv.level > currentLevel);
 }

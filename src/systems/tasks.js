@@ -2,6 +2,7 @@
 import { dailyTasks } from '../config/tasks.js';
 import { activeBoxes } from '../config/tasks.js';
 import { addRewards } from '../core/inventory.js';
+import { createDailyState } from '../core/state.js';
 import { logEvent } from '../utils/analytics.js';
 import { isTaskComplete } from '../utils/analytics.js';
 
@@ -80,7 +81,6 @@ export function claimActiveBox(state, score) {
  * @returns {Object} 结果 { success, message, state }
  */
 export function resetDaily(state) {
-  const { createDailyState } = require('../core/state.js');
   state.daily = createDailyState();
   return { success: true, message: "每日任务已重置", state };
 }

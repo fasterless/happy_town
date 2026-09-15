@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>邻里小镇 v2.0</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- v2 的渲染结构和 v1 不同，这里补齐 v2 专属的类名样式 -->
+  <link rel="stylesheet" href="styles_v2.css">
 </head>
 <body>
   <!-- 应用容器 -->
@@ -112,6 +114,14 @@
           <div id="achievementsList" class="achievements-list"></div>
         </section>
 
+        <!-- 宠物视图 -->
+        <section id="petsView" class="view">
+          <div class="view-header">
+            <h2>🐾 宠物</h2>
+          </div>
+          <div id="petsList" class="pets-content"></div>
+        </section>
+
         <!-- 后台视图 -->
         <section id="adminView" class="view">
           <div class="view-header">
@@ -135,6 +145,7 @@
       <button class="nav-button" data-view="shopView">🛍️<br><small>商城</small></button>
       <button class="nav-button" data-view="tasksView">✅<br><small>任务</small></button>
       <button class="nav-button" data-view="achievementsView">🏆<br><small>成就</small></button>
+      <button class="nav-button" data-view="petsView">🐾<br><small>宠物</small></button>
       <button class="nav-button" data-view="adminView">📊<br><small>后台</small></button>
     </nav>
   </div>

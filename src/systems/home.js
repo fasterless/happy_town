@@ -1,5 +1,5 @@
 // 家园系统模块
-import { furniture, getFurniture } from '../config/furniture.js';
+import { getFurniture } from '../config/furniture.js';
 import { canAfford, spendPrice, addItem, spendItem, getCount } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
@@ -41,6 +41,16 @@ export function buyFurniture(state, furnitureId) {
   emit(Events.FURNITURE_BOUGHT, { furnitureId });
 
   return { success: true, message: `购买了${fur.name}`, state };
+}
+
+/**
+ * 查询背包里某件家具的剩余数量
+ * @param {Object} state - 游戏状态
+ * @param {number} furnitureId - 家具ID
+ * @returns {number} 数量
+ */
+export function getFurnitureStock(state, furnitureId) {
+  return getCount(state, furnitureKey(furnitureId));
 }
 
 /**

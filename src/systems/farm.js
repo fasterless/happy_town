@@ -1,8 +1,47 @@
 // 农场系统模块
-import { crops, getCrop } from '../config/crops.js';
+import { getCrop } from '../config/crops.js';
 import { addItem, spendItem, hasEnough } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
+import { applyWeatherToGrowTime } from './weather.js';
+import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
+
+/**
+ * 计算一次种植的实际种子价格（含宠物折扣）
+ * @param {Object} state - 游戏状态
+ * @param {Object} crop - 作物配置
+ * @returns {number} 实际价格
+ */
+export function getSeedPrice(state, crop) {
+  return applyPetToSeedPrice(crop.seedPrice, state);
+}
+
+/**
+ * 计算一次种植的实际生长时长（含天气与宠物加成）
+ *
+ * 结果在种植时写入地块，之后天气变化不会回溯影响已种下的作物，
+ * 这样倒计时才是稳定的。
+ * @param {Object} state - 游戏状态
+ * @param {Object} crop - 作物配置
+ * @returns {number} 生长秒数
+ */
+export function getGrowTime(state, crop) {
+  return applyPetToGrowTime(applyWeatherToGrowTime(crop.growTime, state), state);
+}
+
+/**
+ * 读取地块的生长时长，兼容没有 growTime 字段的旧存档
+ * @param {Object} plot - 地块对象
+ * @returns {number} 生长秒数
+ */
+export function getPlotGrowTime(plot) {
+  if (!plot) return 0;
+  if (typeof plot.growTime === 'number' && plot.growTime > 0) {
+    return plot.growTime;
+  }
+  const crop = getCrop(plot.cropId);
+  return crop ? crop.growTime : 0;
+}
 
 /**
  * 种植作物
@@ -27,24 +66,25 @@ export function plantCrop(state, plotIndex, cropId) {
     return { success: false, message: "地块已种植作物" };
   }
 
-  // 检查金币
-  if (!hasEnough(state, "coin", crop.seedPrice)) {
+  // 检查金币（宠物折扣后的价格）
+  const price = getSeedPrice(state, crop);
+  if (!hasEnough(state, "coin", price)) {
     return { success: false, message: "金币不足" };
   }
 
   // 扣除金币
-  spendItem(state, "coin", crop.seedPrice);
+  spendItem(state, "coin", price);
 
-  // 种植
+  // 种植，并固化本次的生长时长
   state.farm.plots[plotIndex] = {
     cropId: crop.id,
     plantedAt: new Date().toISOString(),
+    growTime: getGrowTime(state, crop),
   };
 
   // 记录事件
   logEvent(state, "plant_crop");
   logEvent(state, "buy_seed");
-  trackDaily(state, "harvest", 0); // 为后续收获做准备
   emit(Events.CROP_PLANTED, { cropId, plotIndex });
 
   return { success: true, message: `种植了${crop.name}`, state };
@@ -137,6 +177,17 @@ export function harvestAllMature(state) {
 }
 
 /**
+ * 获取地块已生长的秒数
+ * @param {Object} plot - 地块对象
+ * @returns {number} 已经过的秒数
+ */
+export function getElapsedSeconds(plot) {
+  if (!plot) return 0;
+  const plantedTime = new Date(plot.plantedAt).getTime();
+  return Math.floor((Date.now() - plantedTime) / 1000);
+}
+
+/**
  * 判断地块是否成熟
  * @param {Object} plot - 地块对象
  * @returns {boolean} 是否成熟
@@ -144,14 +195,10 @@ export function harvestAllMature(state) {
 export function isPlotMature(plot) {
   if (!plot) return false;
 
-  const crop = getCrop(plot.cropId);
-  if (!crop) return false;
+  const growTime = getPlotGrowTime(plot);
+  if (!growTime) return false;
 
-  const plantedTime = new Date(plot.plantedAt).getTime();
-  const now = Date.now();
-  const elapsed = Math.floor((now - plantedTime) / 1000);
-
-  return elapsed >= crop.growTime;
+  return getElapsedSeconds(plot) >= growTime;
 }
 
 /**
@@ -162,15 +209,10 @@ export function isPlotMature(plot) {
 export function getRemainingSeconds(plot) {
   if (!plot) return 0;
 
-  const crop = getCrop(plot.cropId);
-  if (!crop) return 0;
+  const growTime = getPlotGrowTime(plot);
+  if (!growTime) return 0;
 
-  const plantedTime = new Date(plot.plantedAt).getTime();
-  const now = Date.now();
-  const elapsed = Math.floor((now - plantedTime) / 1000);
-  const remaining = crop.growTime - elapsed;
-
-  return Math.max(0, remaining);
+  return Math.max(0, growTime - getElapsedSeconds(plot));
 }
 
 /**
@@ -181,13 +223,10 @@ export function getRemainingSeconds(plot) {
 export function getCropGrowthStage(plot) {
   if (!plot) return 'empty';
 
-  const crop = getCrop(plot.cropId);
-  if (!crop) return 'empty';
+  const growTime = getPlotGrowTime(plot);
+  if (!growTime) return 'empty';
 
-  const plantedTime = new Date(plot.plantedAt).getTime();
-  const now = Date.now();
-  const elapsed = Math.floor((now - plantedTime) / 1000);
-  const progress = elapsed / crop.growTime;
+  const progress = getElapsedSeconds(plot) / growTime;
 
   if (progress >= 1.0) return 'mature';
   if (progress >= 0.66) return 'growing';

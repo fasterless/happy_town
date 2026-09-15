@@ -1,17 +1,14 @@
 // 主入口文件 - 模块化版本
-import { loadState, saveState, debouncedSave } from './core/storage.js';
-import { createDefaultState } from './core/state.js';
-import { emit, on, Events } from './core/events.js';
+//
+// 这里只负责三件事：状态生命周期、DOM 写入、把用户操作转发给对应系统模块。
+// 所有 HTML 生成都在 ui/renderer.js，所有规则都在 systems/*，本文件不含游戏逻辑。
+import { loadState, saveState, debouncedSave, clearStorage, exportSave, importSave } from './core/storage.js';
+import { addRewards } from './core/inventory.js';
 
 // 导入配置
 import { crops } from './config/crops.js';
-import { orders } from './config/orders.js';
-import { furniture } from './config/furniture.js';
 import { levels } from './config/levels.js';
-import { shopGoods } from './config/shop.js';
-import { dailyTasks, activeBoxes } from './config/tasks.js';
-import { defaultFriends, fountainStages } from './config/npcs.js';
-import { avatars, STORAGE_KEY } from './config/constants.js';
+import { avatars } from './config/constants.js';
 
 // 导入系统模块
 import * as FarmSystem from './systems/farm.js';
@@ -25,45 +22,65 @@ import * as AchievementsSystem from './systems/achievements.js';
 import * as PetsSystem from './systems/pets.js';
 import * as WeatherSystem from './systems/weather.js';
 
-// 导入工具函数
-import { formatTime, todayKey } from './utils/time.js';
-import { formatRewards, moneyLabel, itemKey, furnitureKey, getItemName, getItemIcon } from './utils/format.js';
-import { logEvent, trackDaily, isTaskComplete, getTaskProgress } from './utils/analytics.js';
+// 导入 UI 层
+import * as Renderer from './ui/renderer.js';
+import { showToast } from './ui/toast.js';
+import { createModal, confirm } from './ui/components.js';
+import { initAudio, playSound, audioManager } from './ui/audio.js';
+import { startTutorial, shouldStartTutorial } from './ui/tutorial.js';
 
 // 全局状态
 let state;
-let selectedCropId = 1001;
+let selectedCropId = crops[0].id;
+let selectedFurnitureId = null;
 let selectedAvatar = avatars[0];
-let toastTimer = null;
 let clockTimer = null;
 
 // DOM 选择器简写
 const $ = (id) => document.getElementById(id);
 
+/** 把 HTML 写进指定容器（容器不存在时静默跳过） */
+function setHtml(id, html) {
+  const el = $(id);
+  if (el) el.innerHTML = html;
+}
+
 /**
  * 初始化游戏
  */
 function init() {
-  console.log("🎮 邻里小镇 v2.0 - 模块化版本");
-  console.log("📦 加载游戏状态...");
+  console.log('🎮 邻里小镇 v2.0 - 模块化版本');
 
-  // 加载状态
   state = loadState();
 
-  // 更新天气
   WeatherSystem.updateDailyWeather(state);
+  initAudio(state.settings);
 
-  // 显示创建角色界面或游戏界面
   if (!state.user.created) {
     showRoleModal();
   } else {
     hideRoleModal();
-    attachEvents();
-    renderAll();
-    startClock();
+    startGame();
   }
+}
 
-  console.log("✅ 游戏初始化完成");
+/**
+ * 进入游戏主流程（创建角色后与老存档启动共用）
+ */
+function startGame() {
+  attachEvents();
+  renderAll();
+  startClock();
+
+  // 新手引导完成后要把标记写回存档
+  document.addEventListener('tutorialCompleted', () => {
+    state.settings.tutorialCompleted = true;
+    saveState(state);
+  });
+
+  if (shouldStartTutorial(state)) {
+    startTutorial(state);
+  }
 }
 
 /**
@@ -71,90 +88,91 @@ function init() {
  */
 function attachEvents() {
   // 导航事件
-  document.querySelectorAll(".nav-button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const viewId = btn.dataset.view;
-      showView(viewId);
+  document.querySelectorAll('.nav-button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      playSound('click');
+      showView(btn.dataset.view);
     });
   });
 
   // 通用操作按钮
-  $("collectAllButton")?.addEventListener("click", collectAllMature);
-  $("clearRoomButton")?.addEventListener("click", clearRoom);
-  $("saveRoomButton")?.addEventListener("click", saveRoom);
-  $("resetDailyButton")?.addEventListener("click", resetDaily);
-  $("testRewardButton")?.addEventListener("click", giveTestRewards);
+  $('collectAllButton')?.addEventListener('click', collectAllMature);
+  $('clearRoomButton')?.addEventListener('click', clearRoom);
+  $('saveRoomButton')?.addEventListener('click', saveRoom);
+  $('resetDailyButton')?.addEventListener('click', resetDaily);
+  $('testRewardButton')?.addEventListener('click', giveTestRewards);
+
+  // 默认高亮农场
+  markActiveNav('farmView');
 }
 
 /**
  * 切换视图
  */
 function showView(viewId) {
-  document.querySelectorAll(".view").forEach((view) => {
-    view.classList.remove("active-view");
+  document.querySelectorAll('.view').forEach((view) => {
+    view.classList.remove('active-view');
   });
 
-  const targetView = $(viewId);
-  if (targetView) {
-    targetView.classList.add("active-view");
-  }
+  $(viewId)?.classList.add('active-view');
+  markActiveNav(viewId);
 
-  // 渲染当前视图
   renderAll();
 }
 
-/**
- * 显示创建角色模态框
- */
+/** 高亮底部导航当前项（复用 styles.css 里的 .active-nav） */
+function markActiveNav(viewId) {
+  document.querySelectorAll('.nav-button').forEach((btn) => {
+    btn.classList.toggle('active-nav', btn.dataset.view === viewId);
+  });
+}
+
+/** 当前是否停留在农场页 */
+function isFarmViewActive() {
+  return !!$('farmView')?.classList.contains('active-view');
+}
+
+// ---------------------------------------------------------------------------
+// 创建角色
+// ---------------------------------------------------------------------------
+
 function showRoleModal() {
-  const modal = $("roleModal");
+  const modal = $('roleModal');
   if (modal) {
-    modal.classList.add("show");
+    modal.classList.add('show');
     renderAvatarChoices();
   }
 }
 
-/**
- * 隐藏创建角色模态框
- */
 function hideRoleModal() {
-  const modal = $("roleModal");
-  if (modal) {
-    modal.classList.remove("show");
-  }
+  $('roleModal')?.classList.remove('show');
 }
 
-/**
- * 渲染头像选择
- */
 function renderAvatarChoices() {
-  const container = $("avatarChoices");
+  const container = $('avatarChoices');
   if (!container) return;
 
   container.innerHTML = avatars
     .map(
       (av) =>
-        `<span class="avatar-choice ${av === selectedAvatar ? "selected" : ""}" data-avatar="${av}">${av}</span>`
+        `<span class="avatar-choice ${av === selectedAvatar ? 'selected' : ''}" data-avatar="${av}">${av}</span>`
     )
-    .join("");
+    .join('');
 
-  container.querySelectorAll(".avatar-choice").forEach((choice) => {
-    choice.addEventListener("click", () => {
+  container.querySelectorAll('.avatar-choice').forEach((choice) => {
+    choice.addEventListener('click', () => {
       selectedAvatar = choice.dataset.avatar;
       renderAvatarChoices();
     });
   });
 }
 
-/**
- * 创建角色
- */
 function createRole() {
-  const nicknameInput = $("nicknameInput");
-  const nickname = nicknameInput?.value.trim();
+  const nickname = $('nicknameInput')?.value.trim();
 
   if (!nickname || nickname.length < 2 || nickname.length > 12) {
-    showToast("昵称需要2-12个字符");
+    showToast('昵称需要2-12个字符', 'error');
+    playSound('error');
     return;
   }
 
@@ -163,41 +181,25 @@ function createRole() {
   state.user.created = true;
 
   hideRoleModal();
-  attachEvents();
-  renderAll();
-  startClock();
+  startGame();
   saveState(state);
 
-  showToast(`欢迎来到邻里小镇，${nickname}！`);
+  playSound('success');
+  showToast(`欢迎来到邻里小镇，${nickname}！`, 'success');
 }
 
-// 将createRole绑定到全局
-window.createRole = createRole;
+// ---------------------------------------------------------------------------
+// 渲染
+// ---------------------------------------------------------------------------
 
-/**
- * 显示提示消息
- */
-function showToast(message, type = "info") {
-  const toast = $("toast");
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.className = `toast ${type}`;
-  toast.classList.add("show");
-
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2300);
-}
-
-/**
- * 启动定时器
- */
+/** 每秒刷新农场倒计时和天气提示 */
 function startClock() {
+  clearInterval(clockTimer);
   clockTimer = setInterval(() => {
-    renderFarm();
-    renderNotice();
+    if (isFarmViewActive()) {
+      setHtml('farmGrid', Renderer.renderFarmView(state, selectedCropId).grid);
+    }
+    setHtml('notice', Renderer.renderNotice(state));
   }, 1000);
 }
 
@@ -205,219 +207,196 @@ function startClock() {
  * 渲染所有界面
  */
 function renderAll() {
-  renderTopbar();
-  renderNotice();
-  renderMiniInventory();
-  renderFarm();
-  renderOrders();
-  renderHome();
-  renderFriends();
-  renderCommunity();
-  renderShop();
-  renderTasks();
-  renderAdmin();
+  setHtml('topbar', Renderer.renderTopbar(state));
+  setHtml('notice', Renderer.renderNotice(state));
+  setHtml('miniInventory', Renderer.renderMiniInventory(state));
 
-  // 防抖保存
+  const farm = Renderer.renderFarmView(state, selectedCropId);
+  setHtml('farmGrid', farm.grid);
+  setHtml('seedList', farm.seeds);
+
+  setHtml('ordersList', Renderer.renderOrdersView(state));
+
+  const home = Renderer.renderHomeView(state, selectedFurnitureId);
+  setHtml('roomGrid', home.layout);
+  setHtml('furnitureList', home.furniture);
+  setHtml('roomScore', home.score);
+
+  setHtml('friendsList', Renderer.renderFriendsView(state));
+  setHtml('communityContent', Renderer.renderCommunityView(state));
+  setHtml('shopList', Renderer.renderShopView(state));
+
+  const tasks = Renderer.renderTasksView(state);
+  setHtml('tasksList', tasks.tasks);
+  setHtml('activeBoxes', tasks.boxes);
+  const scoreDisplay = $('activeScoreDisplay');
+  if (scoreDisplay) scoreDisplay.textContent = tasks.activeScore;
+
+  setHtml('achievementsList', Renderer.renderAchievementsView(state));
+  const achievementStats = $('achievementStats');
+  if (achievementStats) achievementStats.textContent = Renderer.renderAchievementStats(state);
+
+  setHtml('petsList', Renderer.renderPetsView(state));
+  setHtml('statsPanel', Renderer.renderAdminView(state));
+
   debouncedSave(state);
 }
 
-/**
- * 渲染顶部栏
- */
-function renderTopbar() {
-  const topbar = $("topbar");
-  if (!topbar) return;
-
-  const { user, wallet } = state;
-  const expProgress = ((wallet.exp / (wallet.exp + 100)) * 100).toFixed(1);
-
-  topbar.innerHTML = `
-    <div class="player-info">
-      <span class="player-avatar">${user.avatar}</span>
-      <span class="player-name">${user.nickname}</span>
-      <span class="player-level">Lv.${wallet.level}</span>
-    </div>
-    <div class="wallet">
-      <span class="wallet-item">🪙 ${wallet.coin}</span>
-      <span class="wallet-item">💎 ${wallet.diamond}</span>
-      <span class="wallet-item">🤝 ${wallet.friendPoint}</span>
-    </div>
-    <div class="exp-track">
-      <span style="width: ${expProgress}%"></span>
-    </div>
-  `;
-}
+// ---------------------------------------------------------------------------
+// 操作转发
+// ---------------------------------------------------------------------------
 
 /**
- * 渲染提示信息
+ * 执行一次会改变状态的操作，统一处理提示音、成就检查、升级播报和重渲染
+ *
+ * @param {Function} fn - 返回 { success, message } 的系统函数调用
+ * @param {string} sound - 成功时播放的音效名
+ * @returns {Object} 系统函数的原始返回值
  */
-function renderNotice() {
-  const notice = $("notice");
-  if (!notice) return;
+function runAction(fn, sound = 'success') {
+  const levelBefore = state.wallet.level;
+  const result = fn();
 
-  const level = state.wallet.level;
-  let text = "🌾 欢迎来到邻里小镇";
-
-  if (level < 5) {
-    text = "💡 Lv.5解锁好友拜访完整功能";
-  } else if (level < 7) {
-    text = "💡 Lv.7解锁每日任务系统";
-  } else if (level < 10) {
-    text = "💡 Lv.10解锁社区系统";
-  } else if (level < 13) {
-    text = "💡 Lv.13解锁宠物系统";
+  if (!result || !result.success) {
+    showToast(result?.message || '操作失败', 'error');
+    playSound('error');
+    return result;
   }
 
-  // 显示天气
-  const weather = WeatherSystem.getCurrentWeather(state);
-  text += ` | 今日天气：${weather.icon}${weather.name}`;
+  const messages = [result.message];
 
-  notice.textContent = text;
-}
-
-/**
- * 渲染小背包
- */
-function renderMiniInventory() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染农场
- */
-function renderFarm() {
-  // 使用 FarmSystem 模块
-  const farmGrid = $("farmGrid");
-  if (!farmGrid) return;
-
-  farmGrid.innerHTML = state.farm.plots
-    .map((plot, index) => {
-      if (!plot) {
-        return `<div class="plot empty">
-          <button onclick="window.plantCropHandler(${index})">种植</button>
-        </div>`;
-      }
-
-      const isMature = FarmSystem.isPlotMature(plot);
-      const remaining = FarmSystem.getRemainingSeconds(plot);
-      const stage = FarmSystem.getCropGrowthStage(plot);
-      const stageIcon = FarmSystem.getStageIcon(stage);
-
-      return `<div class="plot ${isMature ? 'mature' : 'growing'}">
-        <div class="crop-icon">${stageIcon}</div>
-        <div class="crop-status">${isMature ? "可收获" : formatTime(remaining)}</div>
-        ${isMature ? `<button onclick="window.harvestCropHandler(${index})">收获</button>` : ""}
-      </div>`;
-    })
-    .join("");
-}
-
-// 导出操作函数到全局（供 HTML onclick 使用）
-window.plantCropHandler = (index) => {
-  const result = FarmSystem.plantCrop(state, index, selectedCropId);
-  showToast(result.message, result.success ? "success" : "error");
-  if (result.success) renderAll();
-};
-
-window.harvestCropHandler = (index) => {
-  const result = FarmSystem.harvestCrop(state, index);
-  showToast(result.message, result.success ? "success" : "error");
-  if (result.success) {
-    AchievementsSystem.checkAchievements(state);
-    renderAll();
+  // 成就奖励里可能含经验，所以要先结算成就再判断是否升级
+  const unlocked = AchievementsSystem.checkAchievements(state);
+  if (unlocked.length) {
+    messages.push(`🏆 达成成就「${unlocked.map((a) => a.name).join('、')}」`);
   }
+
+  if (state.wallet.level > levelBefore) {
+    const reached = levels.find((lv) => lv.level === state.wallet.level);
+    messages.push(`🎉 升级到 Lv.${state.wallet.level}${reached ? `，解锁${reached.unlock}` : ''}`);
+    playSound('levelup');
+  } else {
+    playSound(sound);
+  }
+
+  showToast(messages.join(' · '), 'success', messages.length > 1 ? 3600 : 2300);
+  renderAll();
+  return result;
+}
+
+// 农场
+window.selectCropHandler = (cropId) => {
+  const crop = crops.find((c) => c.id === cropId);
+  if (!crop) return;
+  if (state.wallet.level < crop.unlockLevel) {
+    showToast(`需要Lv.${crop.unlockLevel}解锁${crop.name}`, 'error');
+    playSound('error');
+    return;
+  }
+  selectedCropId = cropId;
+  playSound('click');
+  renderAll();
 };
+
+window.plantCropHandler = (index) => runAction(() => FarmSystem.plantCrop(state, index, selectedCropId), 'plant');
+window.harvestCropHandler = (index) => runAction(() => FarmSystem.harvestCrop(state, index), 'harvest');
 
 function collectAllMature() {
-  const result = FarmSystem.harvestAllMature(state);
-  showToast(result.message, result.success ? "success" : "error");
-  if (result.success) {
-    AchievementsSystem.checkAchievements(state);
+  runAction(() => FarmSystem.harvestAllMature(state), 'harvest');
+}
+
+// 订单
+window.completeOrderHandler = (index) => runAction(() => OrdersSystem.completeOrder(state, index), 'coin');
+window.refreshOrderHandler = (index) => runAction(() => OrdersSystem.refreshOrder(state, index), 'click');
+
+// 家园
+window.buyFurnitureHandler = (furnitureId) => runAction(() => HomeSystem.buyFurniture(state, furnitureId), 'coin');
+
+window.selectFurnitureHandler = (furnitureId) => {
+  selectedFurnitureId = selectedFurnitureId === furnitureId ? null : furnitureId;
+  playSound('click');
+  renderAll();
+};
+
+window.placeFurnitureHandler = (layoutIndex) => {
+  if (selectedFurnitureId === null) {
+    showToast('请先在家具商店选择要摆放的家具', 'error');
+    playSound('error');
+    return;
+  }
+
+  const result = runAction(() => HomeSystem.placeFurniture(state, layoutIndex, selectedFurnitureId), 'plant');
+
+  // 背包里这件家具用完了就自动退出摆放模式
+  if (result?.success && HomeSystem.getFurnitureStock(state, selectedFurnitureId) < 1) {
+    selectedFurnitureId = null;
     renderAll();
   }
-}
+};
 
-/**
- * 渲染订单
- */
-function renderOrders() {
-  // 简化版本，后续完善
-}
+window.rotateFurnitureHandler = (layoutIndex) => runAction(() => HomeSystem.rotateFurniture(state, layoutIndex), 'click');
+window.removeFurnitureHandler = (layoutIndex) => runAction(() => HomeSystem.removeFurniture(state, layoutIndex), 'click');
 
-/**
- * 渲染家园
- */
-function renderHome() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染好友
- */
-function renderFriends() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染社区
- */
-function renderCommunity() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染商城
- */
-function renderShop() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染任务
- */
-function renderTasks() {
-  // 简化版本，后续完善
-}
-
-/**
- * 渲染后台
- */
-function renderAdmin() {
-  // 简化版本，后续完善
-}
-
-/**
- * 清空房间
- */
 function clearRoom() {
-  const result = HomeSystem.clearRoom(state);
-  showToast(result.message, result.success ? "success" : "error");
-  if (result.success) renderAll();
+  confirm('确定收回房间里所有家具吗？', () => {
+    runAction(() => HomeSystem.clearRoom(state), 'click');
+  });
 }
 
-/**
- * 保存房间
- */
 function saveRoom() {
-  const result = HomeSystem.saveRoom(state);
-  showToast(result.message, result.success ? "success" : "error");
-  if (result.success) renderAll();
+  runAction(() => HomeSystem.saveRoom(state));
 }
 
-/**
- * 重置每日任务
- */
+// 好友
+window.addFriendHandler = (friendId) => runAction(() => FriendsSystem.addFriend(state, friendId));
+window.visitFriendHandler = (friendId) => runAction(() => FriendsSystem.visitFriend(state, friendId));
+window.likeFriendHandler = (friendId) => runAction(() => FriendsSystem.likeFriend(state, friendId));
+
+// 社区
+window.joinCommunityHandler = () => runAction(() => CommunitySystem.joinCommunity(state));
+
+window.donateHandler = (itemKey) => {
+  const input = $(`donate-${itemKey}`);
+  const amount = Math.floor(Number(input?.value));
+
+  if (!Number.isFinite(amount) || amount < 1) {
+    showToast('请输入有效的捐献数量', 'error');
+    playSound('error');
+    return;
+  }
+
+  const stageBefore = state.community.stage;
+  const result = runAction(() => CommunitySystem.donateToCommunity(state, itemKey, amount), 'coin');
+
+  if (result?.success && state.community.stage > stageBefore) {
+    playSound('levelup');
+    showToast(`⛲ 第${stageBefore}阶段完工！奖励已发放`, 'success', 3200);
+  }
+};
+
+// 商城
+window.buyGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyGoods(state, goodsId), 'coin');
+window.claimMonthlyCardHandler = () => runAction(() => ShopSystem.claimMonthlyCard(state), 'coin');
+
+// 任务
+window.claimTaskHandler = (taskId) => runAction(() => TasksSystem.claimTask(state, taskId), 'coin');
+window.claimBoxHandler = (score) => runAction(() => TasksSystem.claimActiveBox(state, score), 'coin');
+
 function resetDaily() {
-  const result = TasksSystem.resetDaily(state);
-  showToast(result.message);
-  renderAll();
+  runAction(() => TasksSystem.resetDaily(state), 'click');
 }
 
-/**
- * 发放测试奖励
- */
+// 宠物
+window.buyPetHandler = (petId) => runAction(() => PetsSystem.buyPet(state, petId), 'success');
+window.setActivePetHandler = (petId) => runAction(() => PetsSystem.setActivePet(state, petId), 'click');
+window.feedPetHandler = (petId) => runAction(() => PetsSystem.feedPet(state, petId), 'success');
+window.claimPetGiftHandler = () => runAction(() => PetsSystem.claimPetDailyGift(state), 'harvest');
+
+// ---------------------------------------------------------------------------
+// 后台 / 设置
+// ---------------------------------------------------------------------------
+
 function giveTestRewards() {
-  const { addRewards } = require('./core/inventory.js');
   addRewards(state, {
     coin: 3000,
     diamond: 300,
@@ -425,13 +404,100 @@ function giveTestRewards() {
     stone: 100,
     cloth: 100,
   });
-  showToast("已发放测试补偿");
+  playSound('coin');
+  showToast('已发放测试补偿');
   renderAll();
 }
 
+window.toggleSoundHandler = () => {
+  const enabled = audioManager.toggle();
+  state.settings.soundEnabled = enabled;
+  saveState(state);
+  if (enabled) playSound('click');
+  showToast(enabled ? '音效已开启' : '音效已关闭');
+  renderAll();
+};
+
+window.setVolumeHandler = (value) => {
+  const volume = Number(value);
+  audioManager.setVolume(volume);
+  state.settings.volume = audioManager.volume;
+  debouncedSave(state);
+  playSound('click');
+};
+
+window.exportSaveHandler = () => {
+  createModal({
+    title: '导出存档',
+    content: `
+      <p class="muted-text">复制下面的 JSON 保存到别处，之后可以用「导入存档」恢复。</p>
+      <textarea id="exportSaveText" class="save-textarea" rows="10" readonly>${exportSave(state)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')}</textarea>
+    `,
+    showCancel: false,
+    confirmText: '复制并关闭',
+    onConfirm: () => {
+      const textarea = $('exportSaveText');
+      if (!textarea) return;
+      textarea.select();
+      navigator.clipboard
+        ?.writeText(textarea.value)
+        .then(() => showToast('存档已复制到剪贴板', 'success'))
+        .catch(() => showToast('复制失败，请手动选中复制', 'warning'));
+    },
+  });
+};
+
+window.importSaveHandler = () => {
+  createModal({
+    title: '导入存档',
+    content: `
+      <p class="muted-text">粘贴之前导出的 JSON，导入后会覆盖当前进度。</p>
+      <textarea id="importSaveText" class="save-textarea" rows="10" placeholder="粘贴存档 JSON"></textarea>
+    `,
+    confirmText: '导入',
+    onConfirm: () => {
+      const text = $('importSaveText')?.value.trim();
+      if (!text) {
+        showToast('没有内容可导入', 'error');
+        playSound('error');
+        return;
+      }
+
+      const imported = importSave(text);
+      if (!imported) {
+        showToast('存档格式不正确', 'error');
+        playSound('error');
+        return;
+      }
+
+      state = imported;
+      saveState(state);
+      initAudio(state.settings);
+      selectedCropId = crops[0].id;
+      selectedFurnitureId = null;
+      playSound('success');
+      showToast('存档已导入', 'success');
+      renderAll();
+    },
+  });
+};
+
+window.resetGameHandler = () => {
+  confirm('清空后无法恢复，确定要重新开始吗？', () => {
+    clearStorage();
+    clearInterval(clockTimer);
+    window.location.reload();
+  });
+};
+
+// 将createRole绑定到全局
+window.createRole = createRole;
+
 // 页面加载完成后初始化
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
