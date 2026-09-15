@@ -1,5 +1,6 @@
 // 农场系统模块
 import { getCrop } from '../config/crops.js';
+import { PLOT_UNLOCK_LEVELS, GAME_CONFIG } from '../config/constants.js';
 import { addItem, spendItem, hasEnough } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
@@ -14,6 +15,34 @@ import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
  */
 export function getSeedPrice(state, crop) {
   return applyPetToSeedPrice(crop.seedPrice, state);
+}
+
+/**
+ * 某块农田需要的解锁等级
+ * @param {number} plotIndex
+ * @returns {number}
+ */
+export function getPlotUnlockLevel(plotIndex) {
+  return PLOT_UNLOCK_LEVELS[plotIndex] ?? 99;
+}
+
+/**
+ * 农田是否已解锁
+ * @param {Object} state
+ * @param {number} plotIndex
+ * @returns {boolean}
+ */
+export function isPlotUnlocked(state, plotIndex) {
+  return state.wallet.level >= getPlotUnlockLevel(plotIndex);
+}
+
+/**
+ * 已解锁的农田数量
+ * @param {Object} state
+ * @returns {number}
+ */
+export function getUnlockedPlotCount(state) {
+  return PLOT_UNLOCK_LEVELS.filter((lv) => state.wallet.level >= lv).length;
 }
 
 /**
@@ -61,7 +90,14 @@ export function plantCrop(state, plotIndex, cropId) {
     return { success: false, message: `需要Lv.${crop.unlockLevel}解锁` };
   }
 
-  // 检查地块是否空闲
+  if (plotIndex < 0 || plotIndex >= GAME_CONFIG.farm.maxPlots) {
+    return { success: false, message: "地块不存在" };
+  }
+
+  if (!isPlotUnlocked(state, plotIndex)) {
+    return { success: false, message: `需要Lv.${getPlotUnlockLevel(plotIndex)}解锁这块田` };
+  }
+
   if (state.farm.plots[plotIndex] !== null) {
     return { success: false, message: "地块已种植作物" };
   }
@@ -81,6 +117,13 @@ export function plantCrop(state, plotIndex, cropId) {
     plantedAt: new Date().toISOString(),
     growTime: getGrowTime(state, crop),
   };
+
+  if (!Array.isArray(state.farm.plantedTypes)) {
+    state.farm.plantedTypes = [];
+  }
+  if (!state.farm.plantedTypes.includes(crop.id)) {
+    state.farm.plantedTypes.push(crop.id);
+  }
 
   // 记录事件
   logEvent(state, "plant_crop");

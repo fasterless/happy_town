@@ -5,6 +5,14 @@
  * @param {Object} options - 配置选项
  * @returns {HTMLElement} 模态框元素
  */
+function escapeText(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function createModal(options) {
   const {
     title = "提示",
@@ -23,7 +31,7 @@ export function createModal(options) {
   modal.className = "modal-card";
   modal.innerHTML = `
     <div class="modal-header">
-      <h3>${title}</h3>
+      <h3>${escapeText(title)}</h3>
     </div>
     <div class="modal-body">${content}</div>
     <div class="modal-footer">

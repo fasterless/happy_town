@@ -200,13 +200,19 @@ function getAchievementProgress(state, achievement) {
     case "room_score":
       return calculateRoomScore(state).score;
 
-    case "furniture_types":
-      // 统计购买过的家具种类
-      return Object.keys(state.inventory).filter(key => key.startsWith('f_')).length;
+    case "furniture_types": {
+      const ids = new Set();
+      Object.entries(state.inventory || {}).forEach(([key, count]) => {
+        if (key.startsWith("f_") && count > 0) ids.add(key);
+      });
+      (state.home.layout || []).forEach((item) => {
+        if (item) ids.add(`f_${item.id}`);
+      });
+      return ids.size;
+    }
 
     case "crop_types":
-      // 统计种植过的作物种类（通过分析背包）
-      return Object.keys(state.inventory).filter(key => key.startsWith('crop_')).length;
+      return (state.farm.plantedTypes || []).length;
 
     case "login_streak":
       // 连续登录天数（需要额外追踪）

@@ -113,12 +113,12 @@ function createTutorialOverlay(step, stepIndex) {
   tooltip.innerHTML = `
     <div class="tutorial-header">
       <h3>${step.title}</h3>
-      <button class="tutorial-skip" onclick="window.skipTutorial()">跳过</button>
+      <button type="button" class="tutorial-skip">跳过</button>
     </div>
     <div class="tutorial-content">${step.content}</div>
     <div class="tutorial-footer">
       <span class="tutorial-progress">${currentStep + 1}/${tutorialSteps.length}</span>
-      <button class="tutorial-next" onclick="window.nextTutorialStep()">
+      <button type="button" class="tutorial-next">
         ${currentStep === tutorialSteps.length - 1 ? "完成" : "下一步"}
       </button>
     </div>
@@ -126,6 +126,9 @@ function createTutorialOverlay(step, stepIndex) {
 
   overlay.appendChild(tooltip);
   document.body.appendChild(overlay);
+
+  tooltip.querySelector(".tutorial-skip")?.addEventListener("click", skipTutorial);
+  tooltip.querySelector(".tutorial-next")?.addEventListener("click", nextTutorialStep);
 
   // 自动跳过（如果设置了延迟）
   if (step.skipDelay) {

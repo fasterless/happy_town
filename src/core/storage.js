@@ -1,7 +1,7 @@
 // 数据持久化模块
 import { STORAGE_KEY } from '../config/constants.js';
 import { createDefaultState, mergeState, normalizeState, createDailyState } from './state.js';
-import { todayKey } from '../utils/time.js';
+import { todayKey, yesterdayKey } from '../utils/time.js';
 
 let saveTimer = null;
 
@@ -19,19 +19,43 @@ export function loadState() {
     }
 
     const merged = mergeState(base, saved);
-
-    // 检查是否需要重置每日数据
-    if (merged.daily.date !== todayKey()) {
-      merged.daily = createDailyState();
-      merged.user.lastLoginAt = new Date().toISOString();
-    }
-
     normalizeState(merged);
+    rollDailyState(merged);
     return merged;
   } catch (error) {
     console.warn("Failed to load state", error);
     return createDefaultState();
   }
+}
+
+/**
+ * 跨日重置每日任务，并累计连续登录天数
+ * @param {Object} state
+ */
+export function rollDailyState(state) {
+  const today = todayKey();
+  if (state.daily?.date === today) {
+    return state;
+  }
+
+  const yesterday = yesterdayKey();
+  const lastLogin = state.achievements?.lastLoginDate;
+  const streak = state.achievements?.loginStreak || 1;
+
+  if (!state.achievements) {
+    state.achievements = { unlocked: [], progress: {}, loginStreak: 1, lastLoginDate: today };
+  }
+
+  if (lastLogin === yesterday) {
+    state.achievements.loginStreak = streak + 1;
+  } else if (lastLogin !== today) {
+    state.achievements.loginStreak = 1;
+  }
+  state.achievements.lastLoginDate = today;
+
+  state.daily = createDailyState();
+  state.user.lastLoginAt = new Date().toISOString();
+  return state;
 }
 
 /**

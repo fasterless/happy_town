@@ -18,11 +18,26 @@ export function formatTime(seconds) {
 }
 
 /**
- * 获取今天的日期键（YYYY-MM-DD）
+ * 获取本地日期键（YYYY-MM-DD）
+ * 用本地时区而不是 UTC，避免国内玩家在早上 8 点前被当成“昨天”。
+ * @param {Date} [date]
  * @returns {string} 日期字符串
  */
-export function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+export function todayKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * 获取本地昨天的日期键
+ * @returns {string}
+ */
+export function yesterdayKey() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return todayKey(date);
 }
 
 /**

@@ -10,7 +10,7 @@ import { shopGoods } from '../config/shop.js';
 import { fountainStages } from '../config/npcs.js';
 import { getNextLevelInfo, levels } from '../config/levels.js';
 import { achievements, getAchievementProgressPercent, getAchievementStats } from '../systems/achievements.js';
-import { pets, getActivePetBuff } from '../systems/pets.js';
+import { pets, getActivePetBuff, hasFedToday } from '../systems/pets.js';
 import { formatTime, todayKey } from '../utils/time.js';
 import {
   formatRewards,
@@ -136,37 +136,8 @@ export function renderMiniInventory(state) {
  * @returns {Object} { grid, seeds }
  */
 export function renderFarmView(state, selectedCropId) {
-  // 渲染农田
   const grid = state.farm.plots
-    .map((plot, index) => {
-      if (!plot) {
-        const crop = getCrop(selectedCropId);
-        const price = crop ? FarmSystem.getSeedPrice(state, crop) : 0;
-        return `<div class="plot empty">
-          <div class="crop-icon">🕳️</div>
-          <div class="crop-status">空地</div>
-          <button onclick="window.plantCropHandler(${index})">
-            种 ${crop ? crop.icon : ""} 🪙${price}
-          </button>
-        </div>`;
-      }
-
-      const crop = getCrop(plot.cropId);
-      const isMature = FarmSystem.isPlotMature(plot);
-      const remaining = FarmSystem.getRemainingSeconds(plot);
-      const stage = FarmSystem.getCropGrowthStage(plot);
-      const stageIcon = FarmSystem.getStageIcon(stage);
-      const growTime = FarmSystem.getPlotGrowTime(plot);
-      const percent = growTime ? ((growTime - remaining) / growTime) * 100 : 100;
-
-      return `<div class="plot ${isMature ? 'mature' : 'growing'}">
-        <div class="crop-icon">${isMature ? (crop ? crop.icon : "✨") : stageIcon}</div>
-        <div class="crop-name">${crop ? escapeHtml(crop.name) : "未知作物"}</div>
-        <div class="crop-status">${isMature ? "✨可收获" : formatTime(remaining)}</div>
-        ${isMature ? "" : createProgressBar(percent)}
-        ${isMature ? `<button onclick="window.harvestCropHandler(${index})">收获</button>` : ""}
-      </div>`;
-    })
+    .map((_, index) => renderPlotCell(state, index, selectedCropId))
     .join("");
 
   // 渲染种子列表
@@ -193,6 +164,51 @@ export function renderFarmView(state, selectedCropId) {
     .join("");
 
   return { grid, seeds };
+}
+
+/**
+ * 渲染单块农田，时钟刷新成熟态时只替换这一格
+ * @param {Object} state
+ * @param {number} index
+ * @param {number} selectedCropId
+ * @returns {string}
+ */
+export function renderPlotCell(state, index, selectedCropId) {
+  if (!FarmSystem.isPlotUnlocked(state, index)) {
+    return `<div class="plot locked" data-plot="${index}">
+      <div class="crop-icon">🔒</div>
+      <div class="crop-status">Lv.${FarmSystem.getPlotUnlockLevel(index)} 解锁</div>
+    </div>`;
+  }
+
+  const plot = state.farm.plots[index];
+  if (!plot) {
+    const crop = getCrop(selectedCropId);
+    const price = crop ? FarmSystem.getSeedPrice(state, crop) : 0;
+    return `<div class="plot empty" data-plot="${index}">
+      <div class="crop-icon">🕳️</div>
+      <div class="crop-status">空地</div>
+      <button type="button" onclick="window.plantCropHandler(${index})">
+        种 ${crop ? crop.icon : ""} 🪙${price}
+      </button>
+    </div>`;
+  }
+
+  const crop = getCrop(plot.cropId);
+  const isMature = FarmSystem.isPlotMature(plot);
+  const remaining = FarmSystem.getRemainingSeconds(plot);
+  const stage = FarmSystem.getCropGrowthStage(plot);
+  const stageIcon = FarmSystem.getStageIcon(stage);
+  const growTime = FarmSystem.getPlotGrowTime(plot);
+  const percent = growTime ? ((growTime - remaining) / growTime) * 100 : 100;
+
+  return `<div class="plot ${isMature ? "mature" : "growing"}" data-plot="${index}">
+    <div class="crop-icon">${isMature ? (crop ? crop.icon : "✨") : stageIcon}</div>
+    <div class="crop-name">${crop ? escapeHtml(crop.name) : "未知作物"}</div>
+    <div class="crop-status">${isMature ? "✨可收获" : formatTime(remaining)}</div>
+    ${isMature ? "" : createProgressBar(percent)}
+    ${isMature ? `<button type="button" onclick="window.harvestCropHandler(${index})">收获</button>` : ""}
+  </div>`;
 }
 
 /**
@@ -634,7 +650,7 @@ export function renderPetsView(state) {
       const owned = state.pets.owned.includes(pet.id);
       const isActive = state.pets.active === pet.id;
       const intimacy = state.pets.intimacy[pet.id] || 0;
-      const fedToday = state.pets[`${pet.id}_lastFeed`] === todayKey();
+      const fedToday = hasFedToday(state, pet.id);
       const foodText = Object.entries(pet.foodCost)
         .map(([key, count]) => `${getItemIcon(key)}${escapeHtml(getItemName(key))}×${count}`)
         .join("、");

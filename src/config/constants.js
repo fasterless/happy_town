@@ -6,6 +6,9 @@ export const STORAGE_KEY = "neighbor-town-mvp-state-v2";
 // 头像选项
 export const avatars = ["🙂", "😊", "😄", "🤠", "🌻", "🍀", "⭐", "🐱", "🐶", "🧑"];
 
+// 12 块农田的解锁等级：前 6 块开局就有，后面随升级逐步开放
+export const PLOT_UNLOCK_LEVELS = [1, 1, 1, 1, 1, 1, 3, 5, 8, 12, 15, 18];
+
 // 游戏配置参数
 export const GAME_CONFIG = {
   farm: {

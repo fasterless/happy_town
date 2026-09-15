@@ -1,5 +1,5 @@
 // 状态管理核心模块
-import { avatars, INITIAL_RESOURCES } from '../config/constants.js';
+import { avatars, INITIAL_RESOURCES, GAME_CONFIG } from '../config/constants.js';
 import { defaultFriends } from '../config/npcs.js';
 import { todayKey } from '../utils/time.js';
 import { furnitureKey } from '../utils/format.js';
@@ -10,7 +10,7 @@ import { furnitureKey } from '../utils/format.js';
  */
 export function createDefaultState() {
   return {
-    version: 2,
+    version: 3,
     user: {
       created: false,
       userId: `U${Math.floor(100000 + Math.random() * 900000)}`,
@@ -34,7 +34,8 @@ export function createDefaultState() {
       [furnitureKey(3001)]: 1,
     },
     farm: {
-      plots: Array.from({ length: 6 }, () => null),
+      plots: Array.from({ length: GAME_CONFIG.farm.maxPlots }, () => null),
+      plantedTypes: [],
     },
     orders: {
       activeIds: [2006, 2001, 2001],
@@ -67,11 +68,15 @@ export function createDefaultState() {
     achievements: {
       unlocked: [],
       progress: {},
+      loginStreak: 1,
+      lastLoginDate: todayKey(),
     },
     pets: {
       owned: [],
       active: null,
       intimacy: {},
+      lastFeed: {},
+      lastGiftDate: "",
     },
     weather: {
       current: "sunny",
@@ -136,29 +141,67 @@ export function mergeState(base, saved) {
  * @returns {Object} 规范化后的状态
  */
 export function normalizeState(state) {
-  // 确保农田数组长度
-  if (!Array.isArray(state.farm.plots) || state.farm.plots.length !== 6) {
-    state.farm.plots = Array.from({ length: 6 }, () => null);
+  const plotCount = GAME_CONFIG.farm.maxPlots;
+  if (!Array.isArray(state.farm.plots)) {
+    state.farm.plots = Array.from({ length: plotCount }, () => null);
+  } else if (state.farm.plots.length < plotCount) {
+    // 旧存档只有 6 块地，扩到 12 块时保留已种作物
+    state.farm.plots = [
+      ...state.farm.plots,
+      ...Array.from({ length: plotCount - state.farm.plots.length }, () => null),
+    ];
+  } else if (state.farm.plots.length > plotCount) {
+    state.farm.plots = state.farm.plots.slice(0, plotCount);
   }
 
-  // 确保房间布局数组长度
   if (!Array.isArray(state.home.layout) || state.home.layout.length !== 36) {
     state.home.layout = Array.from({ length: 36 }, () => null);
   }
 
-  // 确保好友列表包含所有 NPC
-  const friendIds = state.friends.map(f => f.id);
-  defaultFriends.forEach(npc => {
-    if (!friendIds.includes(npc.id)) {
-      state.friends.push({ ...npc });
-    }
-  });
+  if (!Array.isArray(state.friends)) {
+    state.friends = JSON.parse(JSON.stringify(defaultFriends));
+  } else {
+    const friendIds = state.friends.map((f) => f.id);
+    defaultFriends.forEach((npc) => {
+      if (!friendIds.includes(npc.id)) {
+        state.friends.push({ ...npc });
+      }
+    });
+  }
 
-  // 确保订单槽位数量
   if (!Array.isArray(state.orders.activeIds) || state.orders.activeIds.length !== 3) {
     state.orders.activeIds = [2006, 2001, 2001];
     state.orders.cursor = 0;
   }
 
+  if (!state.achievements) {
+    state.achievements = { unlocked: [], progress: {}, loginStreak: 1, lastLoginDate: todayKey() };
+  }
+  if (typeof state.achievements.loginStreak !== "number") {
+    state.achievements.loginStreak = 1;
+  }
+
+  if (!state.pets) {
+    state.pets = { owned: [], active: null, intimacy: {}, lastFeed: {}, lastGiftDate: "" };
+  }
+  if (!Array.isArray(state.farm.plantedTypes)) {
+    state.farm.plantedTypes = [];
+  }
+
+  if (!state.pets.lastFeed || typeof state.pets.lastFeed !== "object") {
+    state.pets.lastFeed = {};
+  }
+  // 把旧存档里散落的 `${petId}_lastFeed` 迁到 lastFeed 对象
+  Object.keys(state.pets).forEach((key) => {
+    if (key.endsWith("_lastFeed")) {
+      const petId = key.slice(0, -"_lastFeed".length);
+      if (!state.pets.lastFeed[petId]) {
+        state.pets.lastFeed[petId] = state.pets[key];
+      }
+      delete state.pets[key];
+    }
+  });
+
+  state.version = 3;
   return state;
 }

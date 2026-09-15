@@ -107,17 +107,17 @@ export function checkStageCompletion(state) {
   const currentStage = getCurrentStage(state);
   if (!currentStage) return state;
 
-  if (state.community.progress >= currentStage.target) {
-    // 发放奖励
-    addRewards(state, currentStage.reward);
+  while (true) {
+    const stage = getCurrentStage(state);
+    if (!stage || state.community.progress < stage.target) break;
 
-    // 进入下一阶段
+    addRewards(state, stage.reward);
+    state.community.progress -= stage.target;
     state.community.stage++;
-    state.community.progress = 0;
 
     emit(Events.COMMUNITY_STAGE_COMPLETE, {
-      stage: currentStage.stage,
-      reward: currentStage.reward
+      stage: stage.stage,
+      reward: stage.reward,
     });
   }
 

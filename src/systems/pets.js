@@ -133,10 +133,9 @@ export function feedPet(state, petId) {
     return { success: false, message: "尚未拥有该宠物" };
   }
 
-  // 检查今天是否已喂养过
   const today = todayKey();
-  const lastFeedKey = `${petId}_lastFeed`;
-  if (state.pets[lastFeedKey] === today) {
+  if (!state.pets.lastFeed) state.pets.lastFeed = {};
+  if (state.pets.lastFeed[petId] === today) {
     return { success: false, message: "今天已经喂养过了" };
   }
 
@@ -155,8 +154,7 @@ export function feedPet(state, petId) {
   // 增加亲密度
   state.pets.intimacy[petId] = (state.pets.intimacy[petId] || 0) + 10;
 
-  // 记录喂养时间
-  state.pets[lastFeedKey] = today;
+  state.pets.lastFeed[petId] = today;
 
   return { success: true, message: `喂养了${pet.name}，亲密度+10`, state };
 }
@@ -277,4 +275,14 @@ export function claimPetDailyGift(state) {
     message: `${activePet ? activePet.name : "宠物"}赠送了${amount}个${crop ? crop.name : "作物"}`,
     state
   };
+}
+
+/**
+ * 今天是否已喂养过
+ * @param {Object} state
+ * @param {string} petId
+ * @returns {boolean}
+ */
+export function hasFedToday(state, petId) {
+  return state.pets.lastFeed?.[petId] === todayKey();
 }

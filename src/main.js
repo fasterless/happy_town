@@ -101,8 +101,25 @@ function attachEvents() {
   $('saveRoomButton')?.addEventListener('click', saveRoom);
   $('resetDailyButton')?.addEventListener('click', resetDaily);
   $('testRewardButton')?.addEventListener('click', giveTestRewards);
+  $('createRoleButton')?.addEventListener('click', createRole);
+  $('nicknameInput')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') createRole();
+  });
 
-  // 默认高亮农场
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(clockTimer);
+      if (state) saveState(state);
+    } else if (state?.user?.created) {
+      startClock();
+      renderFarmTick();
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (state) saveState(state);
+  });
+
   markActiveNav('farmView');
 }
 
@@ -192,15 +209,58 @@ function createRole() {
 // 渲染
 // ---------------------------------------------------------------------------
 
-/** 每秒刷新农场倒计时和天气提示 */
+/** 每秒只刷新正在生长的地块，避免整表 innerHTML 把按钮焦点冲掉 */
 function startClock() {
   clearInterval(clockTimer);
-  clockTimer = setInterval(() => {
-    if (isFarmViewActive()) {
-      setHtml('farmGrid', Renderer.renderFarmView(state, selectedCropId).grid);
+  clockTimer = setInterval(renderFarmTick, 1000);
+}
+
+function renderFarmTick() {
+  if (!isFarmViewActive()) return;
+
+  const grid = $('farmGrid');
+  if (!grid) return;
+
+  let matured = false;
+  state.farm.plots.forEach((plot, index) => {
+    if (!plot) return;
+    const wasMature = plot._wasMature;
+    const isMature = FarmSystem.isPlotMature(plot);
+    const cell = grid.querySelector(`[data-plot="${index}"]`);
+    if (!cell) return;
+
+    if (isMature) {
+      if (!wasMature) {
+        cell.outerHTML = Renderer.renderPlotCell(state, index, selectedCropId);
+        matured = true;
+      }
+      plot._wasMature = true;
+      return;
     }
-    setHtml('notice', Renderer.renderNotice(state));
-  }, 1000);
+
+    plot._wasMature = false;
+    const remaining = FarmSystem.getRemainingSeconds(plot);
+    const growTime = FarmSystem.getPlotGrowTime(plot);
+    const percent = growTime ? ((growTime - remaining) / growTime) * 100 : 100;
+    const status = cell.querySelector('.crop-status');
+    const fill = cell.querySelector('.progress-fill');
+    const icon = cell.querySelector('.crop-icon');
+    if (status) status.textContent = formatTickTime(remaining);
+    if (fill) fill.style.width = `${percent}%`;
+    const stageIcon = FarmSystem.getStageIcon(FarmSystem.getCropGrowthStage(plot));
+    if (icon && stageIcon) icon.textContent = stageIcon;
+  });
+
+  if (matured) playSound('success');
+}
+
+function formatTickTime(seconds) {
+  if (seconds < 0) return '00:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 /**
