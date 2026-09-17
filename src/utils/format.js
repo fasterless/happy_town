@@ -1,9 +1,11 @@
 // 格式化工具函数
 import { crops } from '../config/crops.js';
 import { furniture } from '../config/furniture.js';
+import { craftingRecipes } from '../config/crafting.js';
+import { fishes } from '../systems/fishing.js';
 
 // 默认配置表，供 getItemName / getItemIcon 在未显式传入 configs 时使用
-const defaultConfigs = { crops, furniture };
+const defaultConfigs = { crops, furniture, craftingRecipes, fishes };
 
 // 基础物品的显示名与图标
 const BASIC_LABELS = {
@@ -124,6 +126,18 @@ export function getItemName(key, configs = defaultConfigs) {
     return fur ? fur.name : key;
   }
 
+  if (key.startsWith("goods_") && configs.craftingRecipes) {
+    const recipeId = Number(key.replace("goods_", ""));
+    const recipe = configs.craftingRecipes.find(r => r.id === recipeId);
+    return recipe ? recipe.name : key;
+  }
+
+  if (key.startsWith("fish_") && configs.fishes) {
+    const fishId = Number(key.replace("fish_", ""));
+    const fish = configs.fishes.find(f => f.id === fishId);
+    return fish ? fish.name : key;
+  }
+
   return key;
 }
 
@@ -146,6 +160,18 @@ export function getItemIcon(key, configs = defaultConfigs) {
     const furId = Number(key.replace("f_", ""));
     const fur = configs.furniture.find(f => f.id === furId);
     return fur ? fur.icon : "🎁";
+  }
+
+  if (key.startsWith("goods_") && configs.craftingRecipes) {
+    const recipeId = Number(key.replace("goods_", ""));
+    const recipe = configs.craftingRecipes.find(r => r.id === recipeId);
+    return recipe ? recipe.icon : "📦";
+  }
+
+  if (key.startsWith("fish_") && configs.fishes) {
+    const fishId = Number(key.replace("fish_", ""));
+    const fish = configs.fishes.find(f => f.id === fishId);
+    return fish ? fish.icon : "🐟";
   }
 
   return "📦";

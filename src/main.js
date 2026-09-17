@@ -19,8 +19,12 @@ import * as CommunitySystem from './systems/community.js';
 import * as ShopSystem from './systems/shop.js';
 import * as TasksSystem from './systems/tasks.js';
 import * as AchievementsSystem from './systems/achievements.js';
-// 导入系统模块（新增）
-import * as EventsSystem from './systems/events.js';
+import * as WeatherSystem from './systems/weather.js';
+import * as PetsSystem from './systems/pets.js';
+import * as CraftingSystem from './systems/crafting.js';
+import * as FishingSystem from './systems/fishing.js';
+import * as LotterySystem from './systems/lottery.js';
+import * as SeasonsSystem from './systems/seasons.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -101,6 +105,7 @@ function attachEvents() {
   $('saveRoomButton')?.addEventListener('click', saveRoom);
   $('resetDailyButton')?.addEventListener('click', resetDaily);
   $('testRewardButton')?.addEventListener('click', giveTestRewards);
+  $('claimAllCraftButton')?.addEventListener('click', claimAllCraft);
   $('createRoleButton')?.addEventListener('click', createRole);
   $('nicknameInput')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') createRole();
@@ -299,6 +304,21 @@ function renderAll() {
   setHtml('petsList', Renderer.renderPetsView(state));
   setHtml('statsPanel', Renderer.renderAdminView(state));
 
+  const crafting = Renderer.renderCraftingView(state);
+  setHtml('craftQueue', crafting.queue);
+  setHtml('recipeList', crafting.recipes);
+
+  const fishing = Renderer.renderFishingView(state);
+  setHtml('fishingPond', fishing.pond);
+  setHtml('fishCollection', fishing.catches);
+  setHtml('fishingActions', fishing.stats);
+
+  const lottery = Renderer.renderLotteryView(state);
+  setHtml('lotteryPanel', lottery.wheel);
+  setHtml('prizeList', lottery.prizes);
+
+  setHtml('seasonsList', Renderer.renderSeasonsView(state));
+
   debouncedSave(state);
 }
 
@@ -451,6 +471,32 @@ window.buyPetHandler = (petId) => runAction(() => PetsSystem.buyPet(state, petId
 window.setActivePetHandler = (petId) => runAction(() => PetsSystem.setActivePet(state, petId), 'click');
 window.feedPetHandler = (petId) => runAction(() => PetsSystem.feedPet(state, petId), 'success');
 window.claimPetGiftHandler = () => runAction(() => PetsSystem.claimPetDailyGift(state), 'harvest');
+
+// 加工坊
+window.startCraftingHandler = (recipeId) => runAction(() => CraftingSystem.startCrafting(state, recipeId), 'plant');
+window.claimCraftingHandler = (queueIndex) => runAction(() => CraftingSystem.claimCrafting(state, queueIndex), 'harvest');
+window.cancelCraftingHandler = (queueIndex) => runAction(() => CraftingSystem.cancelCrafting(state, queueIndex), 'click');
+
+function claimAllCraft() {
+  runAction(() => CraftingSystem.claimAllCrafting(state), 'harvest');
+}
+
+// 湖畔钓鱼
+window.castRodHandler = () => runAction(() => FishingSystem.castRod(state), 'success');
+window.sellFishHandler = (fishId) => runAction(() => FishingSystem.sellFish(state, fishId), 'coin');
+window.sellFishAllHandler = () => runAction(() => FishingSystem.sellAllFish(state), 'coin');
+
+// 幸运转盘
+window.spinLotteryHandler = () => {
+  const result = runAction(() => LotterySystem.spinLottery(state), 'levelup');
+  // 抽中大奖时多给一个特效提示
+  if (result?.success && result.prize?.id === 'jackpot') {
+    showToast('🎊🎊🎊 恭喜抽中超级大奖！', 'success', 4200);
+  }
+};
+
+// 季节活动
+window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSeasonalReward(state, eventId), 'levelup');
 
 // ---------------------------------------------------------------------------
 // 后台 / 设置

@@ -107,10 +107,8 @@ export function checkStageCompletion(state) {
   const currentStage = getCurrentStage(state);
   if (!currentStage) return state;
 
-  while (true) {
-    const stage = getCurrentStage(state);
-    if (!stage || state.community.progress < stage.target) break;
-
+  let stage = getCurrentStage(state);
+  while (stage && state.community.progress >= stage.target) {
     addRewards(state, stage.reward);
     state.community.progress -= stage.target;
     state.community.stage++;
@@ -119,6 +117,8 @@ export function checkStageCompletion(state) {
       stage: stage.stage,
       reward: stage.reward,
     });
+
+    stage = getCurrentStage(state);
   }
 
   return state;

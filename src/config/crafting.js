@@ -1,100 +1,65 @@
-// 物品合成系统
-// 让玩家通过资源组合创造新物品，提升游戏深度
-
+// 加工坊配方配置
+//
+// 作物 -> 成品的加工流水线，成品的库存键是 `goods_<id>`，
+// 高等级订单会需要这些成品，让后期金币有去处。
 export const craftingRecipes = [
   {
-    id: "chair_wood",
-    name: "木制椅子",
-    icon: "🪑",
-    category: "furniture",
-    requires: [
-      { item: "wood", count: 2 },
-      { item: "stone", count: 1 }
-    ],
-    result: { f_3009: 1 },  // 新家具 ID
-    unlockLevel: 3
-  },
-  {
-    id: "seed_pack",
-    name: "种子大包",
-    icon: "📦",
-    category: "item",
-    requires: [
-      { item: "coin", count: 50 },
-      { item: "crop_1001", count: 5 }
-    ],
-    result: { seed_pack: 1 },
-    unlockLevel: 5
-  },
-  {
-    id: "food_bread",
-    name: "新鲜面包",
+    id: 5001,
+    name: "小麦面包",
     icon: "🍞",
-    category: "food",
-    requires: [
-      { item: "wheat", count: 3 },
-      { item: "stone", count: 1 }
-    ],
-    result: { food_bread: 3 },
-    unlockLevel: 4
+    unlockLevel: 4,
+    time: 300, // 加工秒数
+    requires: [{ item: "crop_1001", count: 4 }],
+    result: { key: "goods_5001", count: 1 },
   },
   {
-    id: "furniture_suit",
-    name: "田园套装",
-    icon: "🏠",
-    category: "furniture",
-    requires: [
-      { item: "f_3001", count: 1 },
-      { item: "f_3002", count: 1 },
-      { item: "coin", count: 200 }
-    ],
-    result: { f_3010: 1 },  // 新家具
-    unlockLevel: 7
-  }
+    id: 5002,
+    name: "番茄酱",
+    icon: "🥫",
+    unlockLevel: 6,
+    time: 600,
+    requires: [{ item: "crop_1002", count: 3 }],
+    result: { key: "goods_5002", count: 1 },
+  },
+  {
+    id: 5003,
+    name: "草莓果酱",
+    icon: "🍯",
+    unlockLevel: 8,
+    time: 900,
+    requires: [{ item: "crop_1003", count: 3 }],
+    result: { key: "goods_5003", count: 1 },
+  },
+  {
+    id: 5004,
+    name: "香浓薯条",
+    icon: "🍟",
+    unlockLevel: 10,
+    time: 1200,
+    requires: [{ item: "crop_1007", count: 4 }],
+    result: { key: "goods_5004", count: 1 },
+  },
+  {
+    id: 5005,
+    name: "南瓜派",
+    icon: "🥧",
+    unlockLevel: 12,
+    time: 1800,
+    requires: [{ item: "crop_1005", count: 2 }, { item: "goods_5001", count: 1 }],
+    result: { key: "goods_5005", count: 1 },
+  },
+  {
+    id: 5006,
+    name: "向日葵花束",
+    icon: "💐",
+    unlockLevel: 14,
+    time: 1500,
+    requires: [{ item: "crop_1009", count: 2 }, { item: "crop_1008", count: 1 }],
+    result: { key: "goods_5006", count: 1 },
+  },
 ];
 
-// 辅助函数
-export function canCraft(state, recipeId) {
-  const recipe = craftingRecipes.find(r => r.id === recipeId);
-  if (!recipe) return false;
-
-  return recipe.requires.every(req => {
-    if (req.item.startsWith('f_')) {
-      return (state.inventory[req.item] || 0) >= req.count;
-    }
-    return state.wallet[req.item] >= req.count;
-  });
-}
-
-export function craftItem(state, recipeId) {
-  const recipe = craftingRecipes.find(r => r.id === recipeId);
-  if (!recipe) return false;
-
-  // 检查解锁
-  if (state.wallet.level < recipe.unlockLevel) {
-    return false;
-  }
-
-  // 检查资源
-  if (!canCraft(state, recipeId)) {
-    return false;
-  }
-
-  // 扣除资源
-  recipe.requires.forEach(req => {
-    if (req.item.startsWith('f_')) {
-      state.inventory[req.item] = (state.inventory[req.item] || 0) - req.count;
-    } else {
-      state.wallet[req.item] = (state.wallet[req.item] || 0) - req.count;
-    }
-  });
-
-  // 添加结果
-  const resultKey = recipe.result.result.startsWith('f_')
-    ? recipe.result.result
-    : recipe.result.item || recipe.result.key;
-
-  addItem(state, resultKey, recipe.result.count || 1);
-
-  return true;
+// 配方查询辅助函数
+export function getRecipe(id) {
+  return craftingRecipes.find((r) => r.id === id);
 }

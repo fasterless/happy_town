@@ -3,6 +3,7 @@ import { avatars, INITIAL_RESOURCES, GAME_CONFIG } from '../config/constants.js'
 import { defaultFriends } from '../config/npcs.js';
 import { todayKey } from '../utils/time.js';
 import { furnitureKey } from '../utils/format.js';
+import { initNeighborEvents } from '../systems/events.js';
 
 /**
  * 创建默认游戏状态
@@ -10,7 +11,7 @@ import { furnitureKey } from '../utils/format.js';
  */
 export function createDefaultState() {
   return {
-    version: 3,
+    version: 4,
     user: {
       created: false,
       userId: `U${Math.floor(100000 + Math.random() * 900000)}`,
@@ -64,7 +65,28 @@ export function createDefaultState() {
       monthlyClaimedDate: "",
       boughtGoods: {},
     },
-    // 新增系统状态
+    // 加工坊：正在进行的加工批次
+    crafting: {
+      queue: [],
+    },
+    // 湖畔钓鱼：每日免费次数使用记录
+    fishing: {
+      lastFreeDate: "",
+      freeCastsUsed: 0,
+    },
+    // 幸运转盘：保底计数与累计抽数
+    lottery: {
+      pity: 0,
+      spins: 0,
+    },
+    // 季节活动：本次活动已领标记
+    seasons: {
+      claimedEventId: "",
+    },
+    // 邻居回礼：每天每位邻居的领取标记
+    npcEvents: {
+      claimedToday: {},
+    },
     achievements: {
       unlocked: [],
       progress: {},
@@ -127,6 +149,11 @@ export function mergeState(base, saved) {
     community: { ...base.community, ...(saved.community || {}) },
     daily: { ...base.daily, ...(saved.daily || {}) },
     shop: { ...base.shop, ...(saved.shop || {}) },
+    crafting: { ...base.crafting, ...(saved.crafting || {}) },
+    fishing: { ...base.fishing, ...(saved.fishing || {}) },
+    lottery: { ...base.lottery, ...(saved.lottery || {}) },
+    seasons: { ...base.seasons, ...(saved.seasons || {}) },
+    npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
     achievements: { ...base.achievements, ...(saved.achievements || {}) },
     pets: { ...base.pets, ...(saved.pets || {}) },
     weather: { ...base.weather, ...(saved.weather || {}) },
@@ -136,7 +163,7 @@ export function mergeState(base, saved) {
 }
 
 /**
- * 规范化状态数据（修复数组长度、同步NPC等）
+ * 规范化状态数据（修复数组长度、同步NPC、迁移旧存档等）
  * @param {Object} state - 状态对象
  * @returns {Object} 规范化后的状态
  */
@@ -174,6 +201,20 @@ export function normalizeState(state) {
     state.orders.cursor = 0;
   }
 
+  // 引入了向日葵（1009）/葡萄（1010）作为真作物后，老存档里「种过所有作物」的
+  // 记录可能引用了旧版不可收获的 1009/1010 假作物，把它们清掉，玩家重种即可
+  if (Array.isArray(state.farm.plantedTypes)) {
+    state.farm.plantedTypes = state.farm.plantedTypes.filter((id) => id !== 1009 && id !== 1010);
+  }
+
+  // 地块上如果还留着旧版假作物，直接清空并退还种子钱
+  state.farm.plots.forEach((plot, index) => {
+    if (plot && (plot.cropId === 1009 || plot.cropId === 1010)) {
+      state.farm.plots[index] = null;
+      state.wallet.coin += 10;
+    }
+  });
+
   if (!state.achievements) {
     state.achievements = { unlocked: [], progress: {}, loginStreak: 1, lastLoginDate: todayKey() };
   }
@@ -202,6 +243,15 @@ export function normalizeState(state) {
     }
   });
 
-  state.version = 3;
+  // 新系统状态兜底（老存档合并时已由 mergeState 带上默认值，这里再做形状校验）
+  if (!Array.isArray(state.crafting.queue)) state.crafting.queue = [];
+  if (typeof state.fishing.lastFreeDate !== "string") state.fishing.lastFreeDate = "";
+  if (typeof state.fishing.freeCastsUsed !== "number") state.fishing.freeCastsUsed = 0;
+  if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
+  if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
+  if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";
+  initNeighborEvents(state);
+
+  state.version = 4;
   return state;
 }

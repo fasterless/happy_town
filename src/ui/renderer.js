@@ -10,7 +10,8 @@ import { shopGoods } from '../config/shop.js';
 import { fountainStages } from '../config/npcs.js';
 import { getNextLevelInfo, levels } from '../config/levels.js';
 import { achievements, getAchievementProgressPercent, getAchievementStats } from '../systems/achievements.js';
-import { pets, getActivePetBuff, hasFedToday } from '../systems/pets.js';
+import { pets } from '../config/pets.js';
+import { getActivePetBuff, hasFedToday } from '../systems/pets.js';
 import { formatTime, todayKey } from '../utils/time.js';
 import {
   formatRewards,
@@ -29,6 +30,11 @@ import * as FriendsSystem from '../systems/friends.js';
 import * as CommunitySystem from '../systems/community.js';
 import * as ShopSystem from '../systems/shop.js';
 import * as WeatherSystem from '../systems/weather.js';
+import * as CraftingSystem from '../systems/crafting.js';
+import * as FishingSystem from '../systems/fishing.js';
+import * as LotterySystem from '../systems/lottery.js';
+import * as SeasonsSystem from '../systems/seasons.js';
+import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
 /**
@@ -754,3 +760,219 @@ export function renderAdminView(state) {
     </div>
   `;
 }
+
+/**
+ * 渲染加工坊视图
+ * @param {Object} state - 游戏状态
+ * @returns {Object} { queue, recipes }
+ */
+export function renderCraftingView(state) {
+  if (!CraftingSystem.isCraftingUnlocked(state)) {
+    return {
+      queue: '',
+      recipes: '<p class="lock-banner">🔒 需要 Lv.10 解锁加工坊</p>',
+    };
+  }
+
+  // 加工台：正在进行的批次
+  const queue = state.crafting.queue
+    .map((batch, index) => {
+      const recipe = craftingRecipes.find(r => r.id === batch.recipeId);
+      if (!recipe) return '';
+
+      const elapsed = Math.floor((Date.now() - new Date(batch.startedAt).getTime()) / 1000);
+      const remaining = Math.max(0, batch.time - elapsed);
+      const percent = Math.min(100, (elapsed / batch.time) * 100);
+      const done = remaining <= 0;
+
+      return `<div class="craft-batch ${done ? 'done' : ''}" data-batch="${index}">
+        <span class="craft-batch-icon">${recipe.icon}</span>
+        <div class="craft-batch-info">
+          <h4>${escapeHtml(recipe.name)}</h4>
+          <p class="muted-text">${done ? '✅ 加工完成' : formatTime(remaining)}</p>
+        </div>
+        ${done ? '' : createProgressBar(percent)}
+        <div class="craft-batch-actions">
+          ${done
+            ? `<button class="small-action" onclick="window.claimCraftingHandler(${index})">领取</button>`
+            : `<button class="ghost-action" onclick="window.cancelCraftingHandler(${index})">取消</button>`}
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const queuePanel = state.crafting.queue.length
+    ? queue
+    : '<p class="muted-text">加工台空着，选一个配方开工吧</p>';
+
+  // 配方列表
+  const recipes = craftingRecipes
+    .map(recipe => {
+      const unlocked = state.wallet.level >= recipe.unlockLevel;
+      const affordable = CraftingSystem.getRecipeAffordableCount(state, recipe);
+      const canStart = unlocked && affordable > 0 && state.crafting.queue.length < 2;
+
+      const requiresHtml = recipe.requires
+        .map(req => {
+          const has = getCount(state, req.item);
+          return `<span class="req-chip ${has >= req.count ? 'enough' : 'not-enough'}">
+            ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${has}/${req.count}
+          </span>`;
+        })
+        .join(" ");
+
+      return `<div class="recipe-item ${!unlocked ? 'locked' : ''}">
+        <span class="recipe-icon">${recipe.icon}</span>
+        <div class="recipe-info">
+          <h4>${escapeHtml(recipe.name)}</h4>
+          <div class="order-requires">${requiresHtml}</div>
+          <p class="muted-text">⏱ ${formatTime(recipe.time)} → 产出 ${escapeHtml(getItemName(recipe.result.key))}×${recipe.result.count}</p>
+        </div>
+        <div class="recipe-actions">
+          ${unlocked
+            ? `<button class="small-action" onclick="window.startCraftingHandler(${recipe.id})" ${!canStart ? 'disabled' : ''}>
+                ${affordable > 0 ? '开工' : '缺料'}
+              </button>`
+            : `<span class="seed-lock">Lv.${recipe.unlockLevel}</span>`}
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  return { queue: queuePanel, recipes };
+}
+
+/**
+ * 渲染钓鱼视图
+ * @param {Object} state - 游戏状态
+ * @returns {Object} { pond, catches, stats }
+ */
+export function renderFishingView(state) {
+  if (!FishingSystem.isFishingUnlocked(state)) {
+    return {
+      pond: '<p class="lock-banner">🔒 需要 Lv.6 解锁湖畔钓鱼</p>',
+      catches: '',
+      stats: '',
+    };
+  }
+
+  const freeLeft = FishingSystem.getFreeCastsLeft(state);
+  const canCast = FishingSystem.canCast(state);
+
+  const pond = `
+    <div class="fishing-pond">
+      <div class="pond-water">🎣</div>
+      <div class="pond-info">
+        <h3>宁静小湖</h3>
+        <p class="muted-text">今天还有 <b>${freeLeft}</b> 次免费垂钓，之后每次消耗 5 金币买鱼饵</p>
+        <p class="muted-text">累计垂钓 <b>${FishingSystem.getTotalCasts(state)}</b> 次 · 有概率钓到黄金锦鲤！</p>
+        <button class="primary-action" onclick="window.castRodHandler()" ${!canCast ? 'disabled' : ''}>
+          🎣 甩竿${freeLeft > 0 ? '（免费）' : '（5金币）'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  const catches = FishingSystem.fishes
+    .map(fish => {
+      const count = getCount(state, `fish_${fish.id}`);
+      return `<div class="fish-card ${count > 0 ? 'owned' : ''}">
+        <span class="fish-icon">${fish.icon}</span>
+        <h4>${escapeHtml(fish.name)}</h4>
+        <p class="muted-text">🪙${fish.sellPrice}</p>
+        <div class="item-actions">
+          <span class="fish-count">持有 ${count}</span>
+          <button class="small-action" onclick="window.sellFishHandler(${fish.id})" ${count < 1 ? 'disabled' : ''}>卖出</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const stats = `
+    <div class="button-row">
+      <button class="ghost-action" onclick="window.sellFishAllHandler()">一键卖出全部鱼获</button>
+    </div>
+  `;
+
+  return { pond, catches, stats };
+}
+
+/**
+ * 渲染幸运转盘视图
+ * @param {Object} state - 游戏状态
+ * @returns {Object} { wheel, prizes, ticketCount, pityText }
+ */
+export function renderLotteryView(state) {
+  if (!LotterySystem.isLotteryUnlocked(state)) {
+    return {
+      wheel: '<p class="lock-banner">🔒 需要 Lv.7 解锁幸运转盘</p>',
+      prizes: '',
+      ticketCount: 0,
+      pityText: '',
+    };
+  }
+
+  const ticketCount = getCount(state, "lottery_ticket");
+  const pityLeft = LotterySystem.getSpinsToJackpot(state);
+
+  const wheel = `
+    <div class="lottery-panel">
+      <div class="lottery-wheel">🎡</div>
+      <div class="lottery-info">
+        <h3>幸运转盘</h3>
+        <p class="muted-text">持有抽奖券：<b>🎟️ ${ticketCount}</b> 张</p>
+        <p class="muted-text">再抽 <b>${pityLeft}</b> 次必出「超级大奖」🏆</p>
+        <p class="muted-text">累计已抽 ${state.lottery.spins} 次</p>
+        <button class="primary-action" onclick="window.spinLotteryHandler()" ${ticketCount < 1 ? 'disabled' : ''}>
+          🎟️ 抽！
+        </button>
+      </div>
+    </div>
+  `;
+
+  const prizes = LotterySystem.lotteryPrizes
+    .map(prize => `
+      <div class="prize-item ${prize.id === 'jackpot' ? 'jackpot' : ''}">
+        <span class="prize-icon">${prize.icon}</span>
+        <h4>${escapeHtml(prize.name)}</h4>
+        <p class="muted-text">${escapeHtml(formatRewards(prize.rewards))}</p>
+      </div>
+    `)
+    .join("");
+
+  return { wheel, prizes, ticketCount, pityText: '' };
+}
+
+/**
+ * 渲染季节活动视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderSeasonsView(state) {
+  const events = SeasonsSystem.getSeasonalEvents(state);
+
+  return events
+    .map(event => {
+      const statusText = {
+        active: '<span class="season-tag active">进行中</span>',
+        claimed: '<span class="season-tag claimed">已领取</span>',
+        inactive: '<span class="season-tag inactive">未开放</span>',
+      }[event.status];
+
+      const canClaim = event.status === "active";
+
+      return `<div class="season-card ${event.status}">
+        <span class="season-icon">${event.icon}</span>
+        <div class="season-info">
+          <h4>${escapeHtml(event.name)} ${statusText}</h4>
+          <p class="muted-text">${escapeHtml(event.description)}</p>
+          <p class="muted-text">开放时间：${event.startMonth}月 - ${event.endMonth}月 · 礼物：${escapeHtml(formatRewards(event.rewards))}</p>
+        </div>
+        <button class="primary-action" onclick="window.claimSeasonalHandler('${event.id}')" ${!canClaim ? 'disabled' : ''}>
+          ${event.status === 'claimed' ? '已领取' : '领取礼物'}
+        </button>
+      </div>`;
+    })
+    .join("");
+}
+

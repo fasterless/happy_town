@@ -56,6 +56,14 @@ function getEventDisplayName(eventName) {
     task_claim: "领取任务",
     box_claim: "领取宝箱",
     shop_buy: "商城购买",
+    craft_start: "开始加工",
+    craft_finish: "完成加工",
+    fishing_cast: "湖畔垂钓",
+    fishing_sell: "卖出鱼获",
+    lottery_spin: "幸运抽奖",
+    seasonal_claim: "季节活动领奖",
+    neighbor_gift: "邻居回礼",
+    pet_feed: "喂养宠物",
   };
 
   return names[eventName] || eventName;

@@ -1,61 +1,9 @@
 // 宠物系统模块
 import { canAfford, spendPrice, addItem, spendItem, hasEnough } from '../core/inventory.js';
+import { pets } from '../config/pets.js';
 import { crops } from '../config/crops.js';
 import { todayKey } from '../utils/time.js';
-
-// 宠物配置
-export const pets = [
-  {
-    id: "cat",
-    name: "农场小猫",
-    icon: "🐱",
-    desc: "加速作物生长5%",
-    price: 200,
-    priceType: "diamond",
-    buff: { type: "growthSpeed", value: 1.05 },
-    foodCost: { crop_1001: 2 }, // 小麦
-  },
-  {
-    id: "dog",
-    name: "牧羊犬",
-    icon: "🐶",
-    desc: "增加订单奖励10%",
-    price: 250,
-    priceType: "diamond",
-    buff: { type: "orderBonus", value: 1.10 },
-    foodCost: { crop_1002: 2 }, // 番茄
-  },
-  {
-    id: "rabbit",
-    name: "兔子",
-    icon: "🐰",
-    desc: "每日赠送随机作物",
-    price: 180,
-    priceType: "diamond",
-    buff: { type: "dailyGift", value: "random_crop" },
-    foodCost: { crop_1003: 1 }, // 草莓
-  },
-  {
-    id: "duck",
-    name: "鸭子",
-    icon: "🦆",
-    desc: "增加好友点获取50%",
-    price: 150,
-    priceType: "diamond",
-    buff: { type: "friendPointBonus", value: 1.50 },
-    foodCost: { crop_1001: 3 }, // 小麦
-  },
-  {
-    id: "pig",
-    name: "小猪",
-    icon: "🐷",
-    desc: "降低种子价格10%",
-    price: 220,
-    priceType: "diamond",
-    buff: { type: "seedDiscount", value: 0.90 },
-    foodCost: { crop_1004: 1 }, // 玉米
-  },
-];
+import { logEvent } from '../utils/analytics.js';
 
 /**
  * 购买宠物
@@ -155,6 +103,7 @@ export function feedPet(state, petId) {
   state.pets.intimacy[petId] = (state.pets.intimacy[petId] || 0) + 10;
 
   state.pets.lastFeed[petId] = today;
+  logEvent(state, "pet_feed");
 
   return { success: true, message: `喂养了${pet.name}，亲密度+10`, state };
 }
@@ -240,6 +189,38 @@ export function applyPetToFriendPoint(basePoint, state) {
     return Math.floor(basePoint * buff.enhancedValue);
   }
   return basePoint;
+}
+
+/**
+ * 应用宠物buff到钓鱼稀有度（fishing.js 用它调整稀有鱼权重）
+ * @param {number} baseWeightMultiplier - 基础稀有倍率
+ * @param {Object} state - 游戏状态
+ * @returns {number} 调整后的倍率
+ */
+export function applyPetToFishingLuck(baseWeightMultiplier, state) {
+  const buff = getActivePetBuff(state);
+  if (buff && buff.type === "fishingLuck") {
+    return baseWeightMultiplier * buff.enhancedValue;
+  }
+  return baseWeightMultiplier;
+}
+
+/**
+ * 应用宠物buff到加工时长（crafting.js 用它缩短加工时间）
+ * @param {number} baseTime - 基础加工秒数
+ * @param {Object} state - 游戏状态
+ * @returns {number} 调整后的秒数
+ */
+export function applyPetToCraftTime(baseTime, state) {
+  const buff = getActivePetBuff(state);
+  if (buff && buff.type === "craftSpeed") {
+    // 折扣类 buff：亲密度越高压得越低（越快）
+    const intimacy = state.pets.intimacy[state.pets.active] || 0;
+    const intimacyBonus = Math.min(0.5, intimacy / 200);
+    const rate = buff.value * (1 - intimacyBonus);
+    return Math.max(30, Math.floor(baseTime * rate));
+  }
+  return baseTime;
 }
 
 /**

@@ -3,6 +3,7 @@ import { addItem } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
+import { tryNeighborGift } from './events.js';
 
 const VISIT_FRIEND_POINT = 3;
 const LIKE_FRIEND_POINT = 5;
@@ -62,7 +63,15 @@ export function visitFriend(state, friendId) {
   trackDaily(state, "visit", 1);
   emit(Events.FRIEND_VISITED, { friendId });
 
-  return { success: true, message: `拜访了${friend.name}，获得${point}友情点`, state };
+  // 惊喜回礼：邻居今天心情好就塞点东西给你（每日每人限一次）
+  const gift = tryNeighborGift(state, friendId);
+
+  const giftText = gift ? ` ${gift.line}（获得${gift.rewardText}）` : "";
+  return {
+    success: true,
+    message: `拜访了${friend.name}，获得${point}友情点${giftText}`,
+    state,
+  };
 }
 
 /**

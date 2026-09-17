@@ -9,14 +9,14 @@
 
 /* --- 布局骨架 ------------------------------------------------------------ */
 
-/* v2 底部导航有 10 项（多了成就和宠物） */
+/* v2 底部导航有 14 项（成就、宠物 + 加工坊、湖畔、转盘、季节） */
 .bottom-nav {
-  grid-template-columns: repeat(10, minmax(52px, 1fr));
-  width: min(1080px, calc(100vw - 28px));
+  grid-template-columns: repeat(14, minmax(44px, 1fr));
+  width: min(1180px, calc(100vw - 28px));
 }
 
 .nav-button small {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
 }
 
@@ -1177,8 +1177,35 @@
 }
 
 @media (max-width: 900px) {
+  .craft-batch {
+    grid-template-columns: 36px 1fr;
+  }
+
+  .craft-batch .progress-bar {
+    grid-column: 2;
+  }
+
+  .craft-batch-actions {
+    grid-column: 2;
+  }
+
+  .fishing-pond,
+  .lottery-panel {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .season-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 900px) {
   .bottom-nav {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(7, 1fr);
   }
 
   .task-item {
@@ -1190,4 +1217,331 @@
     justify-items: center;
     text-align: center;
   }
+}
+
+/* --- 加工坊 ---------------------------------------------------------------- */
+
+.craft-queue {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.craft-batch {
+  display: grid;
+  grid-template-columns: 40px 1fr minmax(90px, 0.8fr) auto;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.craft-batch.done {
+  border-color: var(--yellow);
+  background: #fff6df;
+  box-shadow: 0 0 0 2px rgba(244, 191, 85, 0.25);
+}
+
+.craft-batch-icon {
+  font-size: 26px;
+  text-align: center;
+}
+
+.craft-batch-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.craft-batch-info p {
+  margin: 0;
+}
+
+.craft-batch .progress-bar {
+  width: 100%;
+}
+
+.craft-batch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.recipe-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.recipe-item {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: start;
+  gap: 6px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.recipe-item.locked {
+  opacity: 0.55;
+}
+
+.recipe-icon {
+  font-size: 26px;
+}
+
+.recipe-info h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.recipe-info p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.recipe-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* --- 湖畔钓鱼 -------------------------------------------------------------- */
+
+.fishing-pond {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, #d7f2f1, #bfe4e6),
+    #bde2e4;
+}
+
+.pond-water {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 55%),
+    linear-gradient(180deg, #7db8d4, #4b80a8);
+  font-size: 52px;
+}
+
+.pond-info h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.pond-info p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #2f4a5a;
+}
+
+.pond-info .primary-action {
+  margin-top: 10px;
+}
+
+.fish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.fish-card {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+  text-align: center;
+}
+
+.fish-card.owned {
+  border-color: var(--blue);
+  background: #eaf4f4;
+}
+
+.fish-card h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.fish-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.fish-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.fish-count {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.fishing-actions {
+  margin-top: 16px;
+}
+
+/* --- 幸运转盘 ------------------------------------------------------------ */
+
+.lottery-panel {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+}
+
+.lottery-wheel {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    conic-gradient(var(--green) 0 25%, var(--yellow) 0 50%, var(--blue) 0 75%, var(--rose) 0);
+  font-size: 46px;
+}
+
+.lottery-info h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.lottery-info p {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.lottery-info .primary-action {
+  margin-top: 10px;
+}
+
+.prize-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.prize-item {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+  text-align: center;
+}
+
+.prize-item.jackpot {
+  border-color: var(--yellow);
+  background: #fff6df;
+  box-shadow: 0 0 0 2px rgba(244, 191, 85, 0.35);
+}
+
+.prize-item h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.prize-item p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.prize-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
+/* --- 季节活动 -------------------------------------------------------------- */
+
+.seasons-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.season-card {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.season-card.active {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(75, 143, 111, 0.22);
+}
+
+.season-card.inactive {
+  opacity: 0.6;
+}
+
+.season-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-size: 30px;
+}
+
+.season-info h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.season-info p {
+  margin: 2px 0;
+  font-size: 12px;
+}
+
+.season-tag {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.season-tag.active {
+  background: #e4f0df;
+  color: var(--green-strong);
+}
+
+.season-tag.claimed {
+  background: var(--panel-strong);
+  color: var(--muted);
+}
+
+.season-tag.inactive {
+  background: #f1e3c8;
+  color: #4c4034;
 }

@@ -1,4 +1,5 @@
 // NPC 好友配置
+// mood 是拜访时可能触发的彩蛋描述（systems/events.js 的回礼池与之一一对应）
 export const defaultFriends = [
   { id: "npc_mayor", name: "林镇长", avatar: "🧓", mood: "正在修喷泉", likes: 18, isFriend: true },
   { id: "npc_baker", name: "麦香面包师", avatar: "👩‍🍳", mood: "想收一篮小麦", likes: 12, isFriend: true },

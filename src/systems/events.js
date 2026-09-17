@@ -1,118 +1,76 @@
-// 村民动态事件系统
-// 用于让NPC有“今天心情”和日常事件，极大提升沉浸感
+// 邻居日常事件系统
+//
+// 拜访好友时随机触发邻居的回礼彩蛋（每天每位邻居最多一次），
+// 让「拜访」这个动作在拿满每日任务进度之后仍有惊喜。
+import { addItem } from '../core/inventory.js';
+import { todayKey } from '../utils/time.js';
+import { getItemName, getItemIcon } from '../utils/format.js';
+import { logEvent } from '../utils/analytics.js';
 
-import { addItem, spendPrice } from '../core/inventory.js';
-import { showToast } from '../ui/toast.js';
-import { playSound } from '../ui/audio.js';
+// 触发概率
+const TRIGGER_CHANCE = 0.35;
 
-export const npcEvents = [
-  {
-    id: "mayor_fruit",
-    name: "林镇长水果派",
-    trigger: "daily",           // daily / visit / like / donate
-    message: "镇长今天心情很好，愿意分享{count}个水果！",
-    rewards: { crop_1003: 3 }   // 草莓
-  },
-  {
-    id: "baker_daily",
-    name: "面包师日常",
-    trigger: "daily",
-    message: "麦香面包师今天烤了新面包，送你1个！",
-    rewards: { item: "bread", count: 1 }   // 需要在inventory中添加bread物品
-  },
-  {
-    id: "florist_visit",
-    name: "花园阿梨感谢",
-    trigger: "visit",
-    message: "花园阿梨很开心，送你1个花瓶！",
-    rewards: { f_3003: 1 }
-  },
-  {
-    id: "carpenter_like",
-    name: "木工阿川喜欢",
-    trigger: "like",
-    message: "木工阿川很感动，送你1个木头！",
-    rewards: { wood: 5 }
-  },
-  {
-    id: "barista_gift",
-    name: "咖啡小敏小礼物",
-    trigger: "donate",
-    message: "咖啡小敏今天心情好，送你1个幸运币！",
-    rewards: { lucky_coin: 1 }
-  }
+// 每位邻居的回礼池（权重随机）
+export const neighborGifts = [
+  { id: "mayor", npc: "npc_mayor", rewards: [{ key: "coin", count: 25, weight: 1 }], lines: ["镇长塞给你一把糖果：拿去，年轻人！" ] },
+  { id: "baker", npc: "npc_baker", rewards: [{ key: "goods_5001", count: 1, weight: 1 }], lines: ["面包师从烤箱里拿出一块刚出炉的面包递给你。"] },
+  { id: "florist", npc: "npc_florist", rewards: [{ key: "crop_1003", count: 2, weight: 1 }], lines: ["阿梨剪下两颗草莓：尝尝今年第一批！"] },
+  { id: "carpenter", npc: "npc_carpenter", rewards: [{ key: "wood", count: 6, weight: 1 }], lines: ["阿川把边角料装进你的口袋：留着总有用。"] },
+  { id: "barista", npc: "npc_barista", rewards: [{ key: "speed_ticket", count: 1, weight: 1 }], lines: ["小敏隔着柜台晃了晃瓶子：这瓶能让作物快点长大。"] },
 ];
 
-// 触发NPC事件
-export function triggerNpcEvent(state, friendId) {
-  const friend = defaultFriends.find(f => f.id === friendId);
-  if (!friend) return;
-
-  // 根据触发类型决定事件
-  let event = null;
-  const today = new Date().toDateString(); // 简单日期判断
-
-  // 每天触发一次
-  if (state.npcEvents.lastTriggerDate !== today) {
-    event = npcEvents.find(e => e.trigger === "daily");
-    state.npcEvents.lastTriggerDate = today;
+/**
+ * 初始化邻居事件状态（normalizeState 里调用）
+ */
+export function initNeighborEvents(state) {
+  if (!state.npcEvents || typeof state.npcEvents !== "object") {
+    state.npcEvents = {};
   }
-  // 拜访触发
-  else if (state.npcEvents.lastVisitTrigger === friendId) {
-    event = npcEvents.find(e => e.trigger === "visit");
-    state.npcEvents.lastVisitTrigger = null;
-  }
-  // 点赞触发
-  else if (state.npcEvents.lastLikeTrigger === friendId) {
-    event = npcEvents.find(e => e.trigger === "like");
-    state.npcEvents.lastLikeTrigger = null;
-  }
-  // 捐献触发
-  else if (state.npcEvents.lastDonateTrigger === friendId) {
-    event = npcEvents.find(e => e.trigger === "donate");
-    state.npcEvents.lastDonateTrigger = null;
-  }
-
-  if (!event) return;
-
-  // 执行奖励
-  if (event.rewards) {
-    Object.entries(event.rewards).forEach(([key, count]) => {
-      if (key.startsWith('f_')) {
-        addItem(state, key, count);
-      } else {
-        // 普通物品
-        addItem(state, key, count);
-      }
-    });
-
-    // 显示消息
-    const message = event.message.replace('{count}', count);
-    showToast(message, 'success');
-    playSound('success');
-  }
-
-  return true;
-}
-
-// 获取NPC事件列表
-export function getNpcEvents(state) {
-  return npcEvents.filter(event => {
-    // 根据当前状态过滤可触发的事件
-    return state.npcEvents.unlocked.includes(event.id);
-  });
-}
-
-// 初始化NPC事件系统
-export function initNpcEvents(state) {
-  if (!state.npcEvents) {
-    state.npcEvents = {
-      lastTriggerDate: "",
-      lastVisitTrigger: null,
-      lastLikeTrigger: null,
-      lastDonateTrigger: null,
-      unlocked: ["mayor_fruit", "baker_daily"] // 默认解锁的事件
-    };
+  if (typeof state.npcEvents.claimedToday !== "object" || state.npcEvents.claimedToday === null) {
+    state.npcEvents.claimedToday = {};
   }
   return state;
+}
+
+/**
+ * 今天是否已领过该邻居的回礼
+ */
+export function hasClaimedToday(state, friendId) {
+  const record = state.npcEvents.claimedToday[friendId];
+  return record === todayKey();
+}
+
+/**
+ * 拜访后尝试触发邻居回礼
+ * @returns {Object|null} 触发了的事件（null = 本次没有彩蛋）
+ */
+export function tryNeighborGift(state, friendId) {
+  initNeighborEvents(state);
+
+  const gift = neighborGifts.find((g) => g.npc === friendId);
+  if (!gift) return null;
+  if (hasClaimedToday(state, friendId)) return null;
+  if (Math.random() > TRIGGER_CHANCE) return null;
+
+  const reward = pickReward(gift.rewards);
+  addItem(state, reward.key, reward.count);
+
+  state.npcEvents.claimedToday[friendId] = todayKey();
+  logEvent(state, "neighbor_gift");
+
+  return {
+    npc: gift.npc,
+    line: gift.lines[Math.floor(Math.random() * gift.lines.length)],
+    rewardText: `${getItemIcon(reward.key)} ${getItemName(reward.key)}×${reward.count}`,
+  };
+}
+
+function pickReward(rewards) {
+  const total = rewards.reduce((sum, r) => sum + r.weight, 0);
+  let roll = Math.random() * total;
+  for (const reward of rewards) {
+    roll -= reward.weight;
+    if (roll <= 0) return reward;
+  }
+  return rewards[rewards.length - 1];
 }

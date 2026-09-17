@@ -100,7 +100,7 @@ export const achievements = [
     name: "农场大亨",
     desc: "种植过所有类型的作物",
     icon: "🎃",
-    target: 5,
+    target: 10,
     trackKey: "crop_types",
     rewards: { diamond: 40, coin: 800 },
   },
@@ -112,6 +112,51 @@ export const achievements = [
     target: 7,
     trackKey: "login_streak",
     rewards: { diamond: 70, coin: 1500 },
+  },
+  {
+    id: "fish_50",
+    name: "垂钓高手",
+    desc: "累计钓鱼50次",
+    icon: "🎣",
+    target: 50,
+    trackKey: "fishing_cast",
+    rewards: { diamond: 40, fish_5: 1 },
+  },
+  {
+    id: "craft_20",
+    name: "工坊巧匠",
+    desc: "完成20次加工",
+    icon: "🍞",
+    target: 20,
+    trackKey: "craft_finish",
+    rewards: { diamond: 40, goods_5001: 3 },
+  },
+  {
+    id: "lottery_30",
+    name: "小镇锦鲤",
+    desc: "转盘累计抽奖30次",
+    icon: "🎡",
+    target: 30,
+    trackKey: "lottery_spin",
+    rewards: { diamond: 60, lottery_ticket: 3 },
+  },
+  {
+    id: "neighbor_15",
+    name: "人缘之星",
+    desc: "收到15次邻居回礼",
+    icon: "🎁",
+    target: 15,
+    trackKey: "neighbor_gift",
+    rewards: { friendPoint: 80, diamond: 30 },
+  },
+  {
+    id: "feed_pet_14",
+    name: "铲屎官",
+    desc: "累计喂养宠物14次",
+    icon: "🐾",
+    target: 14,
+    trackKey: "pet_feed",
+    rewards: { diamond: 50, coin: 800 },
   },
 ];
 
@@ -180,6 +225,11 @@ function getAchievementProgress(state, achievement) {
     case "harvest_crop":
     case "order_complete":
     case "friend_visit":
+    case "fishing_cast":
+    case "craft_finish":
+    case "lottery_spin":
+    case "neighbor_gift":
+    case "pet_feed":
       return state.analytics[achievement.trackKey] || 0;
 
     case "level":

@@ -1,6 +1,6 @@
 {
   "name": "happy-town",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "邻里小镇 - 温馨的农场经营游戏",
   "type": "module",
   "main": "src/main.js",
@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "eslint src/**/*.js",
     "format": "prettier --write src/**/*.js"
   },
