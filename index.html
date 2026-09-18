@@ -1,228 +1,217 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>邻里小镇</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <link rel="stylesheet" href="./styles_v2.css" />
-  </head>
-  <body>
-    <div id="app" class="app-shell">
-      <header class="topbar">
-        <div class="profile">
-          <button id="avatarButton" class="avatar-button" type="button" title="角色资料">
-            <span id="avatarIcon">🙂</span>
-          </button>
-          <div>
-            <div id="playerName" class="player-name">新居民</div>
-            <div class="level-row">
-              <span id="playerLevel">Lv.1</span>
-              <div class="exp-track" aria-label="经验进度">
-                <span id="expBar"></span>
-              </div>
-              <span id="expText">0 / 30</span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>邻里小镇 v2.0</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- v2 的渲染结构和 v1 不同，这里补齐 v2 专属的类名样式 -->
+  <link rel="stylesheet" href="styles_v2.css">
+</head>
+<body>
+  <!-- 应用容器 -->
+  <div class="app-shell">
+    <!-- 顶部栏 -->
+    <header id="topbar" class="topbar"></header>
+
+    <!-- 主游戏区域 -->
+    <main class="game-layout">
+      <!-- 左侧栏 -->
+      <aside class="left-rail">
+        <div id="notice" class="notice-panel"></div>
+        <div id="miniInventory" class="mini-inventory"></div>
+      </aside>
+
+      <!-- 主舞台 -->
+      <section class="main-stage">
+        <!-- Toast 提示 -->
+        <div id="toast" class="toast"></div>
+
+        <!-- 农场视图 -->
+        <section id="farmView" class="view active-view">
+          <div class="view-header">
+            <h2>🌾 农场</h2>
+            <button id="collectAllButton" class="primary-action">收获成熟作物</button>
+          </div>
+          <div id="farmGrid" class="farm-grid"></div>
+          <div class="seed-shop">
+            <h3>种子铺</h3>
+            <div id="seedList" class="seed-list"></div>
+          </div>
+        </section>
+
+        <!-- 订单视图 -->
+        <section id="ordersView" class="view">
+          <div class="view-header">
+            <h2>📋 订单</h2>
+          </div>
+          <div id="ordersList" class="orders-list"></div>
+        </section>
+
+        <!-- 家园视图 -->
+        <section id="homeView" class="view">
+          <div class="view-header">
+            <h2>🏠 家园</h2>
+            <div class="button-row">
+              <button id="clearRoomButton" class="ghost-action">清空房间</button>
+              <button id="saveRoomButton" class="primary-action">保存布局</button>
             </div>
           </div>
-        </div>
-        <div class="wallet" aria-label="资源">
-          <span title="金币">🪙 <b id="coinCount">0</b></span>
-          <span title="钻石">💎 <b id="diamondCount">0</b></span>
-          <span title="友情点">🤝 <b id="friendPointCount">0</b></span>
-        </div>
-      </header>
-
-      <main class="game-layout">
-        <aside class="left-rail">
-          <section class="notice-panel">
-            <div class="panel-title">今日镇务</div>
-            <p id="townNotice">镇长正在整理今日安排。</p>
-          </section>
-          <section class="quick-panel">
-            <div class="panel-title">背包</div>
-            <div id="miniInventory" class="mini-inventory"></div>
-          </section>
-        </aside>
-
-        <section class="main-stage">
-          <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-          <section id="farmView" class="view active-view" aria-labelledby="farmTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">农场</p>
-                <h1>种植、收获、交订单</h1>
-              </div>
-              <button id="collectAllButton" class="primary-action" type="button">收获成熟作物</button>
-            </div>
-            <div class="farm-scene" aria-label="农田">
-              <div id="farmGrid" class="farm-grid"></div>
-              <div class="farm-side">
-                <section class="tool-card">
-                  <div class="panel-title">种子铺</div>
-                  <div id="seedList" class="stack-list"></div>
-                </section>
-                <section class="tool-card">
-                  <div class="panel-title">订单板</div>
-                  <div id="orderList" class="stack-list"></div>
-                </section>
-              </div>
-            </div>
-          </section>
-
-          <section id="homeView" class="view" aria-labelledby="homeTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">家园</p>
-                <h1>布置你的温暖小屋</h1>
-              </div>
-              <div class="button-row">
-                <button id="clearRoomButton" class="ghost-action" type="button">清空房间</button>
-                <button id="saveRoomButton" class="primary-action" type="button">保存布局</button>
-              </div>
-            </div>
-            <div class="home-workbench">
-              <div>
-                <div id="roomGrid" class="room-grid" aria-label="房间布局"></div>
-              </div>
-              <section class="tool-card">
-                <div class="panel-title">家具背包</div>
-                <div id="furnitureBag" class="stack-list compact-list"></div>
-                <div class="panel-title with-gap">家具商城</div>
-                <div id="furnitureShop" class="stack-list compact-list"></div>
-              </section>
-            </div>
-          </section>
-
-          <section id="friendsView" class="view" aria-labelledby="friendsTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">好友</p>
-                <h1>拜访邻居，互相点赞</h1>
-              </div>
-              <button id="refreshFriendsButton" class="primary-action" type="button">推荐新朋友</button>
-            </div>
-            <div id="friendList" class="people-grid"></div>
-          </section>
-
-          <section id="communityView" class="view" aria-labelledby="communityTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">社区</p>
-                <h1>一起建设小镇喷泉</h1>
-              </div>
-              <button id="communityJoinButton" class="primary-action" type="button">加入暖阳社区</button>
-            </div>
-            <div class="community-layout">
-              <section class="fountain-card">
-                <div class="fountain-visual" aria-hidden="true">
-                  <span>⛲</span>
-                </div>
-                <div>
-                  <p class="eyebrow">公共建筑</p>
-                  <h2 id="fountainStage">喷泉阶段 1</h2>
-                  <p id="communityStatus">达到 10 级可解锁社区。</p>
-                  <div class="build-track"><span id="buildBar"></span></div>
-                  <div id="buildText" class="muted-text">0 / 800</div>
-                </div>
-              </section>
-              <section class="tool-card">
-                <div class="panel-title">捐献资源</div>
-                <div id="donationList" class="stack-list"></div>
-              </section>
-              <section class="tool-card">
-                <div class="panel-title">社区成员</div>
-                <div id="memberList" class="member-list"></div>
-              </section>
-            </div>
-          </section>
-
-          <section id="shopView" class="view" aria-labelledby="shopTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">商城</p>
-                <h1>家具、礼包与月卡</h1>
-              </div>
-              <button id="claimCardButton" class="primary-action" type="button">领取月卡</button>
-            </div>
-            <div id="shopList" class="shop-grid"></div>
-          </section>
-
-          <section id="taskView" class="view" aria-labelledby="taskTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">每日任务</p>
-                <h1>完成小目标，拿奖励</h1>
-              </div>
-              <button id="resetDailyButton" class="ghost-action" type="button">刷新今日</button>
-            </div>
-            <div class="task-layout">
-              <section class="tool-card">
-                <div class="panel-title">任务列表</div>
-                <div id="dailyTaskList" class="stack-list"></div>
-              </section>
-              <section class="tool-card">
-                <div class="panel-title">活跃宝箱</div>
-                <div class="active-score">
-                  <b id="activeScore">0</b>
-                  <span>活跃度</span>
-                </div>
-                <div id="activeBoxList" class="stack-list"></div>
-              </section>
-            </div>
-          </section>
-
-          <section id="adminView" class="view" aria-labelledby="adminTab">
-            <div class="view-head">
-              <div>
-                <p class="eyebrow">后台</p>
-                <h1>运营与数据看板</h1>
-              </div>
-              <button id="grantPackButton" class="primary-action" type="button">发放测试补偿</button>
-            </div>
-            <div class="admin-grid">
-              <section class="tool-card">
-                <div class="panel-title">用户资产</div>
-                <div id="adminUserInfo" class="data-list"></div>
-              </section>
-              <section class="tool-card">
-                <div class="panel-title">数据埋点</div>
-                <div id="analyticsList" class="data-list"></div>
-              </section>
-              <section class="tool-card">
-                <div class="panel-title">配置表</div>
-                <div id="configSummary" class="data-list"></div>
-              </section>
-            </div>
-          </section>
+          <div id="roomScore" class="room-score-panel"></div>
+          <div id="roomGrid" class="room-grid"></div>
+          <div class="furniture-shop">
+            <h3>家具商店</h3>
+            <div id="furnitureList" class="furniture-list"></div>
+          </div>
         </section>
-      </main>
 
-      <nav class="bottom-nav" aria-label="主导航">
-        <button id="farmTab" class="nav-button active-nav" type="button" data-view="farmView">🌾<span>农场</span></button>
-        <button id="homeTab" class="nav-button" type="button" data-view="homeView">🏠<span>家园</span></button>
-        <button id="friendsTab" class="nav-button" type="button" data-view="friendsView">👥<span>好友</span></button>
-        <button id="communityTab" class="nav-button" type="button" data-view="communityView">⛲<span>社区</span></button>
-        <button id="shopTab" class="nav-button" type="button" data-view="shopView">🛍️<span>商城</span></button>
-        <button id="taskTab" class="nav-button" type="button" data-view="taskView">✅<span>任务</span></button>
-        <button id="adminTab" class="nav-button" type="button" data-view="adminView">📊<span>后台</span></button>
-      </nav>
-
-      <div id="roleModal" class="modal-backdrop">
-        <section class="role-card" role="dialog" aria-modal="true" aria-labelledby="roleTitle">
-          <div class="town-logo" aria-hidden="true">🏡</div>
-          <p class="eyebrow">邻里小镇</p>
-          <h2 id="roleTitle">创建你的新居民</h2>
-          <p class="muted-text">镇长已经把第一块农田和一间小屋准备好了。</p>
-          <label class="input-label" for="nicknameInput">昵称</label>
-          <input id="nicknameInput" class="text-input" maxlength="12" value="小镇居民" />
-          <label class="input-label">头像</label>
-          <div id="avatarChoices" class="avatar-choices"></div>
-          <button id="createRoleButton" class="primary-action full-width" type="button">进入小镇</button>
+        <!-- 好友视图 -->
+        <section id="friendsView" class="view">
+          <div class="view-header">
+            <h2>👥 好友</h2>
+          </div>
+          <div id="friendsList" class="friends-list"></div>
         </section>
-      </div>
+
+        <!-- 社区视图 -->
+        <section id="communityView" class="view">
+          <div class="view-header">
+            <h2>⛲ 社区</h2>
+          </div>
+          <div id="communityContent" class="community-content"></div>
+        </section>
+
+        <!-- 商城视图 -->
+        <section id="shopView" class="view">
+          <div class="view-header">
+            <h2>🛍️ 商城</h2>
+          </div>
+          <div id="shopList" class="shop-list"></div>
+        </section>
+
+        <!-- 任务视图 -->
+        <section id="tasksView" class="view">
+          <div class="view-header">
+            <h2>✅ 任务</h2>
+            <button id="resetDailyButton" class="ghost-action">重置每日</button>
+          </div>
+          <div class="tasks-container">
+            <div class="active-score-panel">
+              <h3>活跃度: <span id="activeScoreDisplay">0</span></h3>
+            </div>
+            <div id="activeBoxes" class="active-boxes"></div>
+            <h3>每日任务</h3>
+            <div id="tasksList" class="tasks-list"></div>
+          </div>
+        </section>
+
+        <!-- 成就视图 -->
+        <section id="achievementsView" class="view">
+          <div class="view-header">
+            <h2>🏆 成就</h2>
+            <p id="achievementStats" class="achievement-stats"></p>
+          </div>
+          <div id="achievementsList" class="achievements-list"></div>
+        </section>
+
+        <!-- 宠物视图 -->
+        <section id="petsView" class="view">
+          <div class="view-header">
+            <h2>🐾 宠物</h2>
+          </div>
+          <div id="petsList" class="pets-content"></div>
+        </section>
+
+        <!-- 加工坊视图 -->
+        <section id="craftingView" class="view">
+          <div class="view-header">
+            <h2>🥖 加工坊</h2>
+            <button id="claimAllCraftButton" class="primary-action">领取全部成品</button>
+          </div>
+          <h3>加工台</h3>
+          <div id="craftQueue" class="craft-queue"></div>
+          <h3>配方</h3>
+          <div id="recipeList" class="recipe-list"></div>
+        </section>
+
+        <!-- 钓鱼视图 -->
+        <section id="fishingView" class="view">
+          <div class="view-header">
+            <h2>🎣 湖畔</h2>
+          </div>
+          <div id="fishingPond" class="fishing-content"></div>
+          <h3>图鉴</h3>
+          <div id="fishCollection" class="fish-grid"></div>
+          <div id="fishingActions" class="fishing-actions"></div>
+        </section>
+
+        <!-- 转盘视图 -->
+        <section id="lotteryView" class="view">
+          <div class="view-header">
+            <h2>🎡 幸运转盘</h2>
+          </div>
+          <div id="lotteryPanel" class="lottery-content"></div>
+          <h3>奖池</h3>
+          <div id="prizeList" class="prize-grid"></div>
+        </section>
+
+        <!-- 季节活动视图 -->
+        <section id="seasonsView" class="view">
+          <div class="view-header">
+            <h2>🌸 季节活动</h2>
+          </div>
+          <div id="seasonsList" class="seasons-list"></div>
+        </section>
+
+        <!-- 后台视图 -->
+        <section id="adminView" class="view">
+          <div class="view-header">
+            <h2>📊 后台</h2>
+          </div>
+          <div id="adminContent" class="admin-content">
+            <button id="testRewardButton" class="primary-action">发放测试补偿</button>
+            <div id="statsPanel" class="stats-panel"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <!-- 底部导航 -->
+    <nav class="bottom-nav">
+      <button class="nav-button" data-view="farmView">🌾<br><small>农场</small></button>
+      <button class="nav-button" data-view="ordersView">📋<br><small>订单</small></button>
+      <button class="nav-button" data-view="homeView">🏠<br><small>家园</small></button>
+      <button class="nav-button" data-view="friendsView">👥<br><small>好友</small></button>
+      <button class="nav-button" data-view="communityView">⛲<br><small>社区</small></button>
+      <button class="nav-button" data-view="shopView">🛍️<br><small>商城</small></button>
+      <button class="nav-button" data-view="tasksView">✅<br><small>任务</small></button>
+      <button class="nav-button" data-view="achievementsView">🏆<br><small>成就</small></button>
+      <button class="nav-button" data-view="petsView">🐾<br><small>宠物</small></button>
+      <button class="nav-button" data-view="craftingView">🥖<br><small>加工坊</small></button>
+      <button class="nav-button" data-view="fishingView">🎣<br><small>湖畔</small></button>
+      <button class="nav-button" data-view="lotteryView">🎡<br><small>转盘</small></button>
+      <button class="nav-button" data-view="seasonsView">🌸<br><small>季节</small></button>
+      <button class="nav-button" data-view="adminView">📊<br><small>后台</small></button>
+    </nav>
+  </div>
+
+  <!-- 创建角色模态框 -->
+  <div id="roleModal" class="modal-backdrop">
+    <div class="role-card">
+      <h2>🏡 欢迎来到邻里小镇</h2>
+      <p>请创建你的角色</p>
+
+      <label for="nicknameInput">昵称（2-12个字符）</label>
+      <input type="text" id="nicknameInput" maxlength="12" placeholder="输入你的昵称">
+
+      <label>选择头像</label>
+      <div id="avatarChoices" class="avatar-choices"></div>
+
+      <button id="createRoleButton" class="primary-action" type="button">进入小镇</button>
     </div>
+  </div>
 
-    <script type="module" src="./src/main.js"></script>
-  </body>
+  <!-- 加载主程序（使用 type="module"） -->
+  <script type="module" src="src/main.js"></script>
+</body>
 </html>

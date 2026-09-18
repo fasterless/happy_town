@@ -139,7 +139,8 @@ function showView(viewId) {
   $(viewId)?.classList.add('active-view');
   markActiveNav(viewId);
 
-  renderAll();
+  // 切页只画新页；顶栏状态不因切页变化，不需要重画
+  renderViews(viewId);
 }
 
 /** 高亮底部导航当前项（复用 styles.css 里的 .active-nav） */
@@ -269,56 +270,127 @@ function formatTickTime(seconds) {
 }
 
 /**
- * 渲染所有界面
+ * 按需渲染层
+ *
+ * 每个视图一个渲染函数；runAction 之类只重画真正受影响的视图，
+ * 避免一次点击触发 14 个视图全量 innerHTML 重建。
  */
-function renderAll() {
+function renderChrome() {
   setHtml('topbar', Renderer.renderTopbar(state));
   setHtml('notice', Renderer.renderNotice(state));
   setHtml('miniInventory', Renderer.renderMiniInventory(state));
+}
 
+function renderFarmView() {
   const farm = Renderer.renderFarmView(state, selectedCropId);
   setHtml('farmGrid', farm.grid);
   setHtml('seedList', farm.seeds);
+}
 
+function renderOrdersView() {
   setHtml('ordersList', Renderer.renderOrdersView(state));
+}
 
+function renderHomeView() {
   const home = Renderer.renderHomeView(state, selectedFurnitureId);
   setHtml('roomGrid', home.layout);
   setHtml('furnitureList', home.furniture);
   setHtml('roomScore', home.score);
+}
 
+function renderFriendsView() {
   setHtml('friendsList', Renderer.renderFriendsView(state));
-  setHtml('communityContent', Renderer.renderCommunityView(state));
-  setHtml('shopList', Renderer.renderShopView(state));
+}
 
+function renderCommunityView() {
+  setHtml('communityContent', Renderer.renderCommunityView(state));
+}
+
+function renderShopView() {
+  setHtml('shopList', Renderer.renderShopView(state));
+}
+
+function renderTasksView() {
   const tasks = Renderer.renderTasksView(state);
   setHtml('tasksList', tasks.tasks);
   setHtml('activeBoxes', tasks.boxes);
   const scoreDisplay = $('activeScoreDisplay');
   if (scoreDisplay) scoreDisplay.textContent = tasks.activeScore;
+}
 
+function renderAchievementsView() {
   setHtml('achievementsList', Renderer.renderAchievementsView(state));
   const achievementStats = $('achievementStats');
   if (achievementStats) achievementStats.textContent = Renderer.renderAchievementStats(state);
+}
 
+function renderPetsView() {
   setHtml('petsList', Renderer.renderPetsView(state));
-  setHtml('statsPanel', Renderer.renderAdminView(state));
+}
 
+function renderCraftingView() {
   const crafting = Renderer.renderCraftingView(state);
   setHtml('craftQueue', crafting.queue);
   setHtml('recipeList', crafting.recipes);
+}
 
+function renderFishingView() {
   const fishing = Renderer.renderFishingView(state);
   setHtml('fishingPond', fishing.pond);
   setHtml('fishCollection', fishing.catches);
   setHtml('fishingActions', fishing.stats);
+}
 
+function renderLotteryView() {
   const lottery = Renderer.renderLotteryView(state);
   setHtml('lotteryPanel', lottery.wheel);
   setHtml('prizeList', lottery.prizes);
+}
 
+function renderSeasonsView() {
   setHtml('seasonsList', Renderer.renderSeasonsView(state));
+}
 
+function renderAdminView() {
+  setHtml('statsPanel', Renderer.renderAdminView(state));
+}
+
+/** 视表名 → 渲染函数 */
+const VIEW_RENDERERS = {
+  chrome: renderChrome,
+  farmView: renderFarmView,
+  ordersView: renderOrdersView,
+  homeView: renderHomeView,
+  friendsView: renderFriendsView,
+  communityView: renderCommunityView,
+  shopView: renderShopView,
+  tasksView: renderTasksView,
+  achievementsView: renderAchievementsView,
+  petsView: renderPetsView,
+  craftingView: renderCraftingView,
+  fishingView: renderFishingView,
+  lotteryView: renderLotteryView,
+  seasonsView: renderSeasonsView,
+  adminView: renderAdminView,
+};
+
+/** 当前激活的视图 id */
+function activeViewId() {
+  return document.querySelector('.view.active-view')?.id || 'farmView';
+}
+
+/** 只渲染指定的若干视图（'chrome' 表示顶栏/公告/背包） */
+function renderViews(...viewIds) {
+  viewIds.forEach((id) => {
+    const render = VIEW_RENDERERS[id];
+    if (render) render();
+  });
+  debouncedSave(state);
+}
+
+/** 首次进入 / 存档导入后用：全量渲染一次 */
+function renderAll() {
+  Object.values(VIEW_RENDERERS).forEach((render) => render());
   debouncedSave(state);
 }
 
@@ -360,7 +432,7 @@ function runAction(fn, sound = 'success') {
   }
 
   showToast(messages.join(' · '), 'success', messages.length > 1 ? 3600 : 2300);
-  renderAll();
+  renderViews('chrome', activeViewId());
   return result;
 }
 
@@ -375,7 +447,7 @@ window.selectCropHandler = (cropId) => {
   }
   selectedCropId = cropId;
   playSound('click');
-  renderAll();
+  renderViews('farmView');
 };
 
 window.plantCropHandler = (index) => runAction(() => FarmSystem.plantCrop(state, index, selectedCropId), 'plant');
@@ -395,7 +467,7 @@ window.buyFurnitureHandler = (furnitureId) => runAction(() => HomeSystem.buyFurn
 window.selectFurnitureHandler = (furnitureId) => {
   selectedFurnitureId = selectedFurnitureId === furnitureId ? null : furnitureId;
   playSound('click');
-  renderAll();
+  renderViews('homeView');
 };
 
 window.placeFurnitureHandler = (layoutIndex) => {
@@ -410,7 +482,7 @@ window.placeFurnitureHandler = (layoutIndex) => {
   // 背包里这件家具用完了就自动退出摆放模式
   if (result?.success && HomeSystem.getFurnitureStock(state, selectedFurnitureId) < 1) {
     selectedFurnitureId = null;
-    renderAll();
+    renderViews('homeView');
   }
 };
 
@@ -512,7 +584,7 @@ function giveTestRewards() {
   });
   playSound('coin');
   showToast('已发放测试补偿');
-  renderAll();
+  renderViews('chrome', 'adminView');
 }
 
 window.toggleSoundHandler = () => {
@@ -521,7 +593,7 @@ window.toggleSoundHandler = () => {
   saveState(state);
   if (enabled) playSound('click');
   showToast(enabled ? '音效已开启' : '音效已关闭');
-  renderAll();
+  renderViews('chrome');
 };
 
 window.setVolumeHandler = (value) => {

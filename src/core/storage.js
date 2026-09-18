@@ -1,6 +1,7 @@
 // 数据持久化模块
 import { STORAGE_KEY } from '../config/constants.js';
-import { createDefaultState, mergeState, normalizeState, createDailyState } from './state.js';
+import { createDefaultState, mergeState, createDailyState } from './state.js';
+import { migrateState } from './migrations.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
 
 let saveTimer = null;
@@ -19,7 +20,7 @@ export function loadState() {
     }
 
     const merged = mergeState(base, saved);
-    normalizeState(merged);
+    migrateState(merged);
     rollDailyState(merged);
     return merged;
   } catch (error) {
@@ -111,7 +112,7 @@ export function importSave(jsonString) {
     const imported = JSON.parse(jsonString);
     const base = createDefaultState();
     const merged = mergeState(base, imported);
-    normalizeState(merged);
+    migrateState(merged);
     return merged;
   } catch (error) {
     console.error("Failed to import save", error);

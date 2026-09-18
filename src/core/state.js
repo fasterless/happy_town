@@ -5,13 +5,16 @@ import { todayKey } from '../utils/time.js';
 import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
+// 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
+export const CURRENT_VERSION = 5;
+
 /**
  * 创建默认游戏状态
  * @returns {Object} 默认状态对象
  */
 export function createDefaultState() {
   return {
-    version: 4,
+    version: CURRENT_VERSION,
     user: {
       created: false,
       userId: `U${Math.floor(100000 + Math.random() * 900000)}`,
@@ -37,6 +40,8 @@ export function createDefaultState() {
     farm: {
       plots: Array.from({ length: GAME_CONFIG.farm.maxPlots }, () => null),
       plantedTypes: [],
+      expansions: [],          // 土地扩建记录（v5 预留，第二阶段启用）
+      goldStats: { totalGold: 0 }, // 金穗作物统计（v5 预留，第二阶段启用）
     },
     orders: {
       activeIds: [2006, 2001, 2001],
@@ -252,6 +257,6 @@ export function normalizeState(state) {
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";
   initNeighborEvents(state);
 
-  state.version = 4;
+  state.version = CURRENT_VERSION;
   return state;
 }
