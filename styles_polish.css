@@ -1,0 +1,209 @@
+/* ==========================================================================
+   第四阶段：体验打磨
+   - 作物成熟 / 收获 / 升级 / 金币的反馈动画与粒子
+   - 视图切换过渡
+   - 小屏（手机）适配：导航可横滑、卡片单列、按钮加大触区
+   ========================================================================== */
+
+/* ===== 动效基础设施 ===== */
+
+@keyframes pop-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes mature-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 196, 66, 0.35); }
+  50% { box-shadow: 0 0 14px 3px rgba(255, 196, 66, 0.55); }
+}
+
+@keyframes harvest-burst {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-48px); opacity: 0; }
+}
+
+@keyframes view-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes coin-spin {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+/* ===== 视图切换过渡 ===== */
+
+.view.active-view {
+  animation: view-fade 0.22s ease-out;
+}
+
+/* ===== 农场反馈 ===== */
+
+/* 成熟的地块呼吸金光 */
+.plot.mature {
+  animation: mature-glow 1.6s ease-in-out infinite;
+  border-color: rgba(214, 140, 30, 0.8);
+}
+
+/* 新成熟的格子首次替换时弹一下 */
+.plot.mature.pop {
+  animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), mature-glow 1.6s 0.35s ease-in-out infinite;
+}
+
+/* 收获粒子：JS 临时插入，两瓣向上飘散后消失 */
+.harvest-particle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 18px;
+  animation: float-up 0.8s ease-out forwards;
+  z-index: 5;
+}
+
+/* 金币飘字：卖仓 / 订单结算时从按钮位置冒出 */
+.coin-float {
+  position: absolute;
+  pointer-events: none;
+  font-weight: 700;
+  color: #b8860b;
+  text-shadow: 0 1px 0 #fff;
+  animation: float-up 1s ease-out forwards;
+  z-index: 6;
+  white-space: nowrap;
+}
+
+/* 升级时顶栏头像庆祝 */
+.player-avatar.celebrate {
+  animation: coin-spin 0.6s ease-in-out;
+}
+
+/* ===== 小屏适配 ===== */
+
+@media (max-width: 640px) {
+  /* 顶部栏堆叠 */
+  .topbar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  /* 底部导航：保持一行但允许横向滑动，按钮收紧 */
+  .bottom-nav {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(56px, 1fr);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 8px;
+    width: min(100vw - 16px, 640px);
+    gap: 2px;
+  }
+
+  .bottom-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-button {
+    min-height: 52px;
+    font-size: 20px;
+    border-radius: 10px;
+  }
+
+  .nav-button small {
+    font-size: 10px;
+  }
+
+  /* 主舞台留出导航高度 */
+  .main-stage {
+    padding-bottom: 84px;
+  }
+
+  /* 农田 2 列 + 地块加高（手指好点） */
+  .farm-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    min-height: auto;
+  }
+
+  .plot button {
+    min-height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* 卡片一律单列 */
+  .seed-list,
+  .orders-list,
+  .friends-list,
+  .achievements-list,
+  .ranch-grid,
+  .codex-grid,
+  .shop-list,
+  .furniture-list,
+  .seed-shop {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 订单卡片按钮整行排 */
+  .order-card .order-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .order-card .order-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* 输入和选择加大触区 */
+  input, select, .small-action, .ghost-action {
+    min-height: 40px;
+  }
+
+  .primary-action {
+    min-height: 44px;
+  }
+
+  /* 弹窗铺满宽度 */
+  .role-card, .modal-card {
+    width: calc(100vw - 32px);
+    margin: 0 auto;
+  }
+
+  /* 捐献行允许换行 */
+  .donate-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* 触屏设备：去掉 hover 悬浮态依赖 */
+@media (hover: none) {
+  .seed-item:hover,
+  .nav-button:hover,
+  .order-card:hover {
+    transform: none;
+  }
+
+  .plot button {
+    touch-action: manipulation;
+  }
+}
+
+/* 尊重系统「减少动态」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .view.active-view,
+  .plot.mature,
+  .plot.mature.pop,
+  .harvest-particle,
+  .coin-float,
+  .player-avatar.celebrate {
+    animation: none !important;
+  }
+}

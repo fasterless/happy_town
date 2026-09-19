@@ -41,13 +41,44 @@ const SOUND_RECIPES = {
     { freq: 311, at: 0, dur: 0.12, type: 'sawtooth', gain: 0.4 },
     { freq: 233, at: 0.1, dur: 0.18, type: 'sawtooth', gain: 0.4 },
   ],
+  // 购买：确认感的落锤两音
+  buy: [
+    { freq: 392, at: 0, dur: 0.08, type: 'triangle', gain: 0.7 },
+    { freq: 523, at: 0.07, dur: 0.12, type: 'triangle', gain: 0.6 },
+  ],
+  // 浇水：哗啦的滑音（频率从高滑到低）
+  water: [
+    { freq: 1200, at: 0, dur: 0.3, type: 'sine', gain: 0.35, slideTo: 500 },
+  ],
+  // 转盘：滚动的连续短音
+  spin: [
+    { freq: 660, at: 0, dur: 0.05, type: 'square', gain: 0.3 },
+    { freq: 660, at: 0.08, dur: 0.05, type: 'square', gain: 0.3 },
+    { freq: 660, at: 0.16, dur: 0.05, type: 'square', gain: 0.3 },
+    { freq: 660, at: 0.24, dur: 0.05, type: 'square', gain: 0.3 },
+    { freq: 880, at: 0.32, dur: 0.1, type: 'square', gain: 0.4 },
+  ],
+  // 钓鱼：先拨水花再上钩
+  splash: [
+    { freq: 900, at: 0, dur: 0.15, type: 'sine', gain: 0.5, slideTo: 300 },
+    { freq: 523, at: 0.18, dur: 0.08, type: 'triangle', gain: 0.7 },
+    { freq: 784, at: 0.26, dur: 0.12, type: 'triangle', gain: 0.6 },
+  ],
+  // 金穗：稀有的闪烁琶音
+  gold: [
+    { freq: 1047, at: 0, dur: 0.1, type: 'sine', gain: 0.7 },
+    { freq: 1319, at: 0.09, dur: 0.1, type: 'sine', gain: 0.7 },
+    { freq: 1568, at: 0.18, dur: 0.22, type: 'sine', gain: 0.7 },
+  ],
 };
 
 class AudioManager {
   constructor() {
     this.enabled = true;
+    this.musicEnabled = true;
     this.volume = 0.7;
     this.ctx = null;
+    this.bgmTimer = null;
   }
 
   /**
@@ -105,6 +136,10 @@ class AudioManager {
 
       osc.type = note.type;
       osc.frequency.value = note.freq;
+      if (note.slideTo) {
+        // 滑音（浇水/水花用）：频率在音符时长内线性滑到目标值
+        osc.frequency.linearRampToValueAtTime(note.slideTo, ctx.currentTime + note.at + note.dur);
+      }
 
       const peak = this.volume * (note.gain ?? 0.6) * 0.3;
       const noteStart = startAt + note.at;
@@ -161,6 +196,79 @@ class AudioManager {
   isEnabled() {
     return this.enabled;
   }
+
+  // ------------------------------------------------------------------
+  // 背景音乐（BGM）：WebAudio 实时合成的舒缓循环，同样不依赖音频文件。
+  // 白天（8-18点）大调琶音、夜晚（其余时间）小调低音，按现实时间切换。
+  // ------------------------------------------------------------------
+
+  startBgm() {
+    this.stopBgm();
+    if (!this.musicEnabled || this.volume <= 0) return;
+
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const hour = new Date().getHours();
+    const daytime = hour >= 8 && hour < 18;
+
+    // 白天：C 大调五声音阶琶音；夜晚：A 小调下行，音量更低
+    const scaleDay = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25];
+    const scaleNight = [220.0, 246.94, 261.63, 220.0, 196.0, 174.61];
+    const scale = daytime ? scaleDay : scaleNight;
+    const noteEvery = daytime ? 0.9 : 1.4; // 夜晚更慢
+    const loopBars = 8;
+
+    // 简易「随机但柔和」的琶音生成器：每 noteEvery 秒挑一个音，
+    // 相邻音限制在 ±2 个档位内，听起来像有人随手拨弦
+    let step = 0;
+    let last = 2;
+
+    const playNote = () => {
+      if (!this.musicEnabled) return;
+      const move = [-2, -1, -1, 0, 1, 1, 2][Math.floor(Math.random() * 7)];
+      last = Math.max(0, Math.min(scale.length - 1, last + move));
+
+      const osc = ctx.createOscillator();
+      const envelope = ctx.createGain();
+      const peak = this.volume * (daytime ? 0.05 : 0.035);
+
+      osc.type = 'sine';
+      osc.frequency.value = scale[last];
+
+      const t = ctx.currentTime;
+      envelope.gain.setValueAtTime(0.0001, t);
+      envelope.gain.exponentialRampToValueAtTime(peak, t + 0.08);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+
+      osc.connect(envelope);
+      envelope.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 1.7);
+
+      step++;
+      if (step >= loopBars * scale.length) step = 0;
+    };
+
+    playNote();
+    this.bgmTimer = setInterval(playNote, noteEvery * 1000);
+  }
+
+  stopBgm() {
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+
+  setMusicEnabled(enabled) {
+    this.musicEnabled = enabled;
+    if (enabled) {
+      this.startBgm();
+    } else {
+      this.stopBgm();
+    }
+  }
 }
 
 // 创建全局音效管理器实例
@@ -172,7 +280,26 @@ export const audioManager = new AudioManager();
  */
 export function initAudio(settings = {}) {
   audioManager.enabled = settings.soundEnabled !== false;
+  audioManager.musicEnabled = settings.musicEnabled !== false;
   audioManager.setVolume(typeof settings.volume === 'number' ? settings.volume : 0.7);
+
+  // BGM 需要用户手势后才能出声（浏览器自动播放策略），挂到首次点击
+  const startOnce = () => {
+    audioManager.startBgm();
+    document.removeEventListener('pointerdown', startOnce);
+    document.removeEventListener('keydown', startOnce);
+  };
+  document.addEventListener('pointerdown', startOnce, { once: false });
+  document.addEventListener('keydown', startOnce, { once: false });
+}
+
+export function toggleMusic() {
+  audioManager.setMusicEnabled(!audioManager.musicEnabled);
+  return audioManager.musicEnabled;
+}
+
+export function isMusicEnabled() {
+  return audioManager.musicEnabled;
 }
 
 // 便捷方法

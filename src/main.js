@@ -32,7 +32,7 @@ import * as CodexSystem from './systems/codex.js';
 import * as Renderer from './ui/renderer.js';
 import { showToast } from './ui/toast.js';
 import { createModal, confirm } from './ui/components.js';
-import { initAudio, playSound, audioManager } from './ui/audio.js';
+import { initAudio, playSound, audioManager, toggleMusic } from './ui/audio.js';
 import { startTutorial, shouldStartTutorial } from './ui/tutorial.js';
 
 // 全局状态
@@ -49,6 +49,40 @@ const $ = (id) => document.getElementById(id);
 function setHtml(id, html) {
   const el = $(id);
   if (el) el.innerHTML = html;
+}
+
+// ---------------------------------------------------------------------------
+// 打磨反馈：收获粒子 / 金币飘字（纯 DOM 覆盖层，动画结束自动清理）
+// ---------------------------------------------------------------------------
+
+/** 在目标元素上方炸出几个粒子（emoji）向上飘散 */
+function burstParticles(anchorEl, emojis = ['✨']) {
+  if (!anchorEl) return;
+  const rect = anchorEl.getBoundingClientRect();
+  emojis.forEach((emoji, i) => {
+    const dot = document.createElement('span');
+    dot.className = 'harvest-particle';
+    dot.textContent = emoji;
+    dot.style.left = `${rect.left + rect.width / 2 + (i - 1) * 14}px`;
+    dot.style.top = `${rect.top + rect.height / 3}px`;
+    dot.style.position = 'fixed';
+    document.body.appendChild(dot);
+    setTimeout(() => dot.remove(), 900);
+  });
+}
+
+/** 在目标元素旁冒一个金币飘字 */
+function floatCoinText(anchorEl, text = '') {
+  if (!anchorEl || !text) return;
+  const rect = anchorEl.getBoundingClientRect();
+  const label = document.createElement('span');
+  label.className = 'coin-float';
+  label.textContent = text;
+  label.style.left = `${rect.left + rect.width / 2 - 24}px`;
+  label.style.top = `${rect.top - 8}px`;
+  label.style.position = 'fixed';
+  document.body.appendChild(label);
+  setTimeout(() => label.remove(), 1100);
 }
 
 /**
@@ -258,6 +292,13 @@ function renderFarmTick() {
       if (!wasMature) {
         cell.outerHTML = Renderer.renderPlotCell(state, index, selectedCropId);
         matured = true;
+        // 新成熟的格子弹一下 + 撒星屑
+        const fresh = grid.querySelector(`[data-plot="${index}"]`);
+        if (fresh) {
+          fresh.classList.add('pop');
+          setTimeout(() => fresh.classList.remove('pop'), 400);
+          burstParticles(fresh, ['✨', '✨', '🌟']);
+        }
       }
       plot._wasMature = true;
       return;
@@ -482,10 +523,22 @@ window.selectCropHandler = (cropId) => {
 };
 
 window.plantCropHandler = (index) => runAction(() => FarmSystem.plantCrop(state, index, selectedCropId), 'plant');
-window.harvestCropHandler = (index) => runAction(() => FarmSystem.harvestCrop(state, index), 'harvest');
+
+window.harvestCropHandler = (index) => {
+  const cell = document.querySelector(`#farmGrid [data-plot="${index}"]`);
+  const crop = cell?.querySelector('.crop-icon')?.textContent;
+  const result = runAction(() => FarmSystem.harvestCrop(state, index), 'harvest');
+  if (result?.success) {
+    burstParticles(cell, [crop && crop !== '✨' ? crop : '🌿', '✨', '🍃']);
+  }
+};
 
 function collectAllMature() {
   runAction(() => FarmSystem.harvestAllMature(state), 'harvest');
+  // 所有成熟格子一起撒星屑
+  document.querySelectorAll('#farmGrid .plot.mature').forEach((cell) => {
+    burstParticles(cell, ['✨', '🌿']);
+  });
 }
 
 function plantAllSelected() {
@@ -494,7 +547,14 @@ function plantAllSelected() {
 
 // 扩建 / 卖仓 / 加速券
 window.buyExpansionHandler = () => runAction(() => FarmSystem.buyExpansion(state), 'levelup');
-window.sellCropHandler = (itemKey) => runAction(() => FarmSystem.sellCrop(state, itemKey), 'coin');
+window.sellCropHandler = (itemKey) => {
+  const btn = document.querySelector(`.sell-row[data-key="${itemKey}"] button`);
+  const result = runAction(() => FarmSystem.sellCrop(state, itemKey), 'coin');
+  if (result?.success && btn) {
+    const gained = /获得🪙(\d+)/.exec(result.message);
+    floatCoinText(btn, gained ? `+🪙${gained[1]}` : '+🪙');
+  }
+};
 window.sellAllCropsHandler = () => {
   const keys = Object.entries(state.inventory)
     .filter(([key, count]) => count > 0 && /^(crop|gold)_\d+$/.test(key))
@@ -509,7 +569,16 @@ window.sellAllCropsHandler = () => {
 window.speedUpPlotHandler = (index) => runAction(() => FarmSystem.speedUpPlot(state, index), 'levelup');
 
 // 订单
-window.completeOrderHandler = (index) => runAction(() => OrdersSystem.completeOrder(state, index), 'coin');
+window.completeOrderHandler = (index) => {
+  const card = document.querySelectorAll('.order-card')[index];
+  const btn = card?.querySelector('.primary-action');
+  const result = runAction(() => OrdersSystem.completeOrder(state, index), 'coin');
+  if (result?.success && btn) {
+    const gained = /获得(\d+)/.exec(result.message);
+    floatCoinText(btn, gained ? `+🪙${gained[1]}` : '+🪙');
+    burstParticles(btn, ['🪙', '🪙']);
+  }
+};
 window.refreshOrderHandler = (index) => runAction(() => OrdersSystem.refreshOrder(state, index), 'click');
 window.acceptRushHandler = () => runAction(() => OrdersSystem.acceptRushOrder(state), 'levelup');
 window.reserveOrderHandler = () => {
@@ -524,7 +593,7 @@ window.reserveOrderHandler = () => {
 };
 
 // 家园
-window.buyFurnitureHandler = (furnitureId) => runAction(() => HomeSystem.buyFurniture(state, furnitureId), 'coin');
+window.buyFurnitureHandler = (furnitureId) => runAction(() => HomeSystem.buyFurniture(state, furnitureId), 'buy');
 
 window.selectFurnitureHandler = (furnitureId) => {
   selectedFurnitureId = selectedFurnitureId === furnitureId ? null : furnitureId;
@@ -565,7 +634,7 @@ function saveRoom() {
 window.addFriendHandler = (friendId) => runAction(() => FriendsSystem.addFriend(state, friendId));
 window.visitFriendHandler = (friendId) => runAction(() => FriendsSystem.visitFriend(state, friendId));
 window.likeFriendHandler = (friendId) => runAction(() => FriendsSystem.likeFriend(state, friendId));
-window.waterFriendHandler = (friendId) => runAction(() => FriendsSystem.waterFriendPlot(state, friendId), 'plant');
+window.waterFriendHandler = (friendId) => runAction(() => FriendsSystem.waterFriendPlot(state, friendId), 'water');
 
 // 社区
 window.joinCommunityHandler = () => runAction(() => CommunitySystem.joinCommunity(state));
@@ -590,7 +659,7 @@ window.donateHandler = (itemKey) => {
 };
 
 // 商城
-window.buyGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyGoods(state, goodsId), 'coin');
+window.buyGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyGoods(state, goodsId), 'buy');
 window.claimMonthlyCardHandler = () => runAction(() => ShopSystem.claimMonthlyCard(state), 'coin');
 
 // 任务
@@ -602,7 +671,7 @@ function resetDaily() {
 }
 
 // 宠物
-window.buyPetHandler = (petId) => runAction(() => PetsSystem.buyPet(state, petId), 'success');
+window.buyPetHandler = (petId) => runAction(() => PetsSystem.buyPet(state, petId), 'buy');
 window.setActivePetHandler = (petId) => runAction(() => PetsSystem.setActivePet(state, petId), 'click');
 window.feedPetHandler = (petId) => runAction(() => PetsSystem.feedPet(state, petId), 'success');
 window.claimPetGiftHandler = () => runAction(() => PetsSystem.claimPetDailyGift(state), 'harvest');
@@ -617,12 +686,13 @@ function claimAllCraft() {
 }
 
 // 湖畔钓鱼
-window.castRodHandler = () => runAction(() => FishingSystem.castRod(state), 'success');
+window.castRodHandler = () => runAction(() => FishingSystem.castRod(state), 'splash');
 window.sellFishHandler = (fishId) => runAction(() => FishingSystem.sellFish(state, fishId), 'coin');
 window.sellFishAllHandler = () => runAction(() => FishingSystem.sellAllFish(state), 'coin');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {
+  playSound('spin');
   const result = runAction(() => LotterySystem.spinLottery(state), 'levelup');
   // 抽中大奖时多给一个特效提示
   if (result?.success && result.prize?.id === 'jackpot') {
@@ -634,7 +704,7 @@ window.spinLotteryHandler = () => {
 window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSeasonalReward(state, eventId), 'levelup');
 
 // 养殖栏
-window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'coin');
+window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');
 window.feedAnimalHandler = (animalId) => runAction(() => RanchSystem.feedAnimal(state, animalId), 'plant');
 window.collectProduceHandler = (animalId) => runAction(() => RanchSystem.collectProduce(state, animalId), 'harvest');
 
@@ -669,6 +739,13 @@ window.toggleSoundHandler = () => {
   if (enabled) playSound('click');
   showToast(enabled ? '音效已开启' : '音效已关闭');
   renderViews('chrome');
+};
+
+window.toggleMusicHandler = () => {
+  const enabled = toggleMusic();
+  state.settings.musicEnabled = enabled;
+  saveState(state);
+  showToast(enabled ? '🎵 背景音乐已开启' : '🎵 背景音乐已关闭');
 };
 
 window.setVolumeHandler = (value) => {

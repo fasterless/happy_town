@@ -996,11 +996,17 @@ export function renderAdminView(state) {
           </button>
         </div>
         <div class="data-row">
+          <span>音乐</span>
+          <button class="small-action" onclick="window.toggleMusicHandler()">
+            ${state.settings.musicEnabled !== false ? '🎵 已开启' : '🎵 已关闭'}
+          </button>
+        </div>
+        <div class="data-row">
           <span>音量</span>
           <input type="range" min="0" max="1" step="0.1" value="${volume}"
             oninput="window.setVolumeHandler(this.value)">
         </div>
-        <p class="muted-text">音效由 WebAudio 实时合成，不需要音频文件。</p>
+        <p class="muted-text">音效与音乐由 WebAudio 实时合成，白天和夜晚的旋律不同。</p>
       </div>
       <div class="data-card">
         <h3>存档管理</h3>
