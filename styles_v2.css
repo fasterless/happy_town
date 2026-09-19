@@ -1850,3 +1850,28 @@
 .codex-name {
   font-size: 0.8rem;
 }
+
+/* ===== 季节限定（第三阶段） ===== */
+
+.seed-item.seasonal {
+  border: 1px dashed rgba(198, 113, 113, 0.55);
+  background: rgba(255, 235, 235, 0.5);
+}
+
+.furniture-item.seasonal {
+  border: 1px dashed rgba(198, 113, 113, 0.55);
+}
+
+.season-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #c67171;
+  color: #fff;
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.seed-name .season-badge {
+  margin-left: 4px;
+}

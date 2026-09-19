@@ -7,6 +7,7 @@ import { emit, Events } from '../core/events.js';
 import { applyWeatherToReward } from './weather.js';
 import { applyPetToOrderReward } from './pets.js';
 import { GAME_CONFIG } from '../config/constants.js';
+import { getSeasonalOrders } from '../config/seasons.js';
 import { todayKey } from '../utils/time.js';
 
 /**
@@ -171,7 +172,10 @@ export function ensureOrders(state) {
  * @returns {number} 订单ID
  */
 export function pickOrderId(state) {
-  const availableOrders = orders.filter(o => o.unlockLevel <= state.wallet.level);
+  // 当前季节的限定订单也进轮换池（奖励比普通单高一截）
+  const seasonal = getSeasonalOrders();
+  const pool = [...orders, ...seasonal];
+  const availableOrders = pool.filter(o => o.unlockLevel <= state.wallet.level);
 
   if (availableOrders.length === 0) {
     return 2006; // 默认返回新手订单

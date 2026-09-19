@@ -9,6 +9,7 @@ import { dailyTasks, activeBoxes } from '../config/tasks.js';
 import { shopGoods } from '../config/shop.js';
 import { fountainStages } from '../config/npcs.js';
 import { getNextLevelInfo, levels } from '../config/levels.js';
+import { getSeasonalCrops, getSeasonalFurniture } from '../config/seasons.js';
 import { achievements, getAchievementProgressPercent, getAchievementStats } from '../systems/achievements.js';
 import { pets } from '../config/pets.js';
 import { getActivePetBuff, hasFedToday } from '../systems/pets.js';
@@ -173,10 +174,31 @@ export function renderFarmView(state, selectedCropId) {
     })
     .join("");
 
+  // 当前季节的限定作物，附季节徽章
+  const seasonalSeeds = getSeasonalCrops()
+    .map(crop => {
+      const unlocked = state.wallet.level >= crop.unlockLevel;
+      const selected = crop.id === selectedCropId;
+      const price = FarmSystem.getSeedPrice(state, crop);
+      const growTime = FarmSystem.getGrowTime(state, crop);
+
+      return `<div class="seed-item seasonal ${selected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}"
+        ${unlocked ? `onclick="window.selectCropHandler(${crop.id})"` : ''}>
+        <span class="seed-icon">${crop.icon}</span>
+        <span class="seed-name">${escapeHtml(crop.name)} <small class="season-badge">限定</small></span>
+        <span class="seed-meta">
+          <span>🪙${price}</span>
+          <span>⏱${formatTime(growTime)}</span>
+        </span>
+        ${!unlocked ? `<span class="seed-lock">Lv.${crop.unlockLevel}</span>` : ''}
+      </div>`;
+    })
+    .join("");
+
   const expansion = renderExpansionPanel(state);
   const sellBarn = renderSellBarn(state);
 
-  return { grid, seeds, expansion, sellBarn };
+  return { grid, seeds: seeds + seasonalSeeds, expansion, sellBarn };
 }
 
 /**
@@ -413,30 +435,33 @@ export function renderHomeView(state, selectedFurnitureId = null) {
     })
     .join("");
 
-  // 渲染家具列表
-  const furnitureList = furniture
-    .map(fur => {
-      const unlocked = state.wallet.level >= fur.unlockLevel;
-      const inBag = state.inventory[furnitureKey(fur.id)] || 0;
-      const selected = fur.id === selectedFurnitureId;
+  // 渲染家具列表（普通 + 当前季节限定）
+  const renderFurnitureCard = (fur, isSeasonal) => {
+    const unlocked = state.wallet.level >= fur.unlockLevel;
+    const inBag = state.inventory[furnitureKey(fur.id)] || 0;
+    const selected = fur.id === selectedFurnitureId;
 
-      return `<div class="furniture-item ${!unlocked ? 'locked' : ''} ${selected ? 'selected' : ''}">
-        <span class="furniture-icon">${fur.icon}</span>
-        <div class="furniture-info">
-          <h5>${escapeHtml(fur.name)}</h5>
-          <p class="muted-text">${escapeHtml(fur.category)} · ${moneyLabel(fur.priceType, fur.price)}</p>
-        </div>
-        <div class="furniture-count">背包 ${inBag}</div>
-        <div class="furniture-buttons">
-          <button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
-            ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
-          </button>
-          <button class="small-action" onclick="window.selectFurnitureHandler(${fur.id})" ${inBag < 1 ? 'disabled' : ''}>
-            ${selected ? '已选中' : '摆放'}
-          </button>
-        </div>
-      </div>`;
-    })
+    return `<div class="furniture-item ${!unlocked ? 'locked' : ''} ${selected ? 'selected' : ''} ${isSeasonal ? 'seasonal' : ''}">
+      <span class="furniture-icon">${fur.icon}</span>
+      <div class="furniture-info">
+        <h5>${escapeHtml(fur.name)} ${isSeasonal ? '<small class="season-badge">限定</small>' : ''}</h5>
+        <p class="muted-text">${escapeHtml(fur.category)} · ${moneyLabel(fur.priceType, fur.price)}</p>
+      </div>
+      <div class="furniture-count">背包 ${inBag}</div>
+      <div class="furniture-buttons">
+        <button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
+          ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
+        </button>
+        <button class="small-action" onclick="window.selectFurnitureHandler(${fur.id})" ${inBag < 1 ? 'disabled' : ''}>
+          ${selected ? '已选中' : '摆放'}
+        </button>
+      </div>
+    </div>`;
+  };
+
+  const furnitureList = furniture
+    .map(fur => renderFurnitureCard(fur, false))
+    .concat(getSeasonalFurniture().map(fur => renderFurnitureCard(fur, true)))
     .join("");
 
   // 计算装饰评分
@@ -1240,12 +1265,21 @@ export function renderSeasonsView(state) {
 
       const canClaim = event.status === "active";
 
+      const limited = event.seasonal
+        ? `<p class="muted-text">限定内容：${[
+            ...(event.seasonal.crops || []).map((c) => `${c.icon}${escapeHtml(c.name)}`),
+            ...(event.seasonal.furniture || []).map((f) => `${f.icon}${escapeHtml(f.name)}`),
+            ...(event.seasonal.orders || []).map((o) => `📋${escapeHtml(o.name)}`),
+          ].join("、")}</p>`
+        : "";
+
       return `<div class="season-card ${event.status}">
         <span class="season-icon">${event.icon}</span>
         <div class="season-info">
           <h4>${escapeHtml(event.name)} ${statusText}</h4>
           <p class="muted-text">${escapeHtml(event.description)}</p>
           <p class="muted-text">开放时间：${event.startMonth}月 - ${event.endMonth}月 · 礼物：${escapeHtml(formatRewards(event.rewards))}</p>
+          ${limited}
         </div>
         <button class="primary-action" onclick="window.claimSeasonalHandler('${event.id}')" ${!canClaim ? 'disabled' : ''}>
           ${event.status === 'claimed' ? '已领取' : '领取礼物'}

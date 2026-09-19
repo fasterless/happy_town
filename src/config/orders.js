@@ -18,6 +18,10 @@ export const orders = [
 ];
 
 // 订单查询辅助函数
+// 含季节限定订单：订单被预购、进行中（限时）时活动可能已轮换，
+// 必须仍能查到配置。
+import { getSeasonalOrders } from './seasons.js';
+
 export function getOrder(id) {
-  return orders.find((o) => o.id === id);
+  return orders.find((o) => o.id === id) || getSeasonalOrders().find((o) => o.id === id);
 }
