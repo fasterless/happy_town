@@ -100,6 +100,8 @@ export const Events = {
   // 订单相关
   ORDER_COMPLETED: 'order:completed',
   ORDER_REFRESHED: 'order:refreshed',
+  RUSH_EXPIRED: 'order:rush_expired',
+  ORDER_RESERVED_DELIVERED: 'order:reserved_delivered',
 
   // 家具相关
   FURNITURE_BOUGHT: 'furniture:bought',

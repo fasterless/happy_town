@@ -20,6 +20,7 @@ function toV4(state) {
 // 有序迁移链：索引 i 的迁移把存档从 fromVersion 升到 fromVersion + 1
 const MIGRATIONS = [
   { fromVersion: 4, migrate: toV5 },
+  { fromVersion: 5, migrate: toV6 },
 ];
 
 /**
@@ -37,6 +38,17 @@ function toV5(state) {
     state.farm.goldStats = { totalGold: 0 };
   }
   state.version = 5;
+}
+
+function toV6(state) {           // v5 → v6：订单深化（限时/连锁/预购）
+  if (!state.orders) state.orders = {};
+  if (!('rush' in state.orders)) state.orders.rush = null;
+  if (typeof state.orders.rushFinishedToday !== 'string') state.orders.rushFinishedToday = '';
+  if (typeof state.orders.chainType !== 'string') state.orders.chainType = '';
+  if (typeof state.orders.chainCount !== 'number') state.orders.chainCount = 0;
+  if (!('reservedId' in state.orders)) state.orders.reservedId = null;
+  if (typeof state.orders.reservedPaidAt !== 'string') state.orders.reservedPaidAt = '';
+  state.version = 6;
 }
 
 /**

@@ -3,7 +3,7 @@
 // 这里的函数都是纯函数：接收 state，返回 HTML 字符串（或字符串组成的对象），
 // 由 main.js 负责写入 DOM。这样渲染逻辑可以脱离浏览器单独测试。
 import { crops, getCrop } from '../config/crops.js';
-import { getOrder } from '../config/orders.js';
+import { orders, getOrder } from '../config/orders.js';
 import { furniture, getFurniture } from '../config/furniture.js';
 import { dailyTasks, activeBoxes } from '../config/tasks.js';
 import { shopGoods } from '../config/shop.js';
@@ -13,6 +13,7 @@ import { achievements, getAchievementProgressPercent, getAchievementStats } from
 import { pets } from '../config/pets.js';
 import { getActivePetBuff, hasFedToday } from '../systems/pets.js';
 import { formatTime, todayKey } from '../utils/time.js';
+import { GAME_CONFIG } from '../config/constants.js';
 import {
   formatRewards,
   moneyLabel,
@@ -279,7 +280,8 @@ export function renderPlotCell(state, index, selectedCropId) {
  * @returns {string} HTML字符串
  */
 export function renderOrdersView(state) {
-  return state.orders.activeIds
+  const chrome = renderOrdersChrome(state);
+  return chrome + state.orders.activeIds
     .map((orderId, index) => {
       const order = getOrder(orderId);
       if (!order) return "";
@@ -300,10 +302,16 @@ export function renderOrdersView(state) {
         })
         .join(" ");
 
-      return `<div class="order-card">
+      const isRush = !!state.orders.rush && state.orders.rush.id === orderId;
+      const chainLevel = state.orders.chainType === order.type
+        ? Math.min(state.orders.chainCount, GAME_CONFIG.orders.chainBonusMax) : 0;
+
+      return `<div class="order-card ${isRush ? 'rush' : ''}">
         <div class="order-header">
           <h4>${escapeHtml(order.name)}</h4>
           <span class="order-type">${escapeHtml(order.type)}</span>
+          ${isRush ? '<span class="rush-tag">⚡限时</span>' : ''}
+          ${chainLevel >= 2 ? `<span class="chain-tag">🔥连击x${chainLevel}</span>` : ''}
         </div>
         <div class="order-requires">${requiresHtml}</div>
         <div class="order-rewards">
@@ -321,6 +329,59 @@ export function renderOrdersView(state) {
       </div>`;
     })
     .join("");
+}
+
+/**
+ * 订单页顶部：限时订单面板 + 连击进度 + 预购入口
+ */
+function renderOrdersChrome(state) {
+  const cfg = GAME_CONFIG.orders;
+  const parts = [];
+
+  // 连击状态
+  if (state.orders.chainCount >= 2) {
+    parts.push(`<div class="chain-banner">
+      🔥 ${escapeHtml(state.orders.chainType)}订单连击 x${state.orders.chainCount}
+      （金币 +${Math.min(state.orders.chainCount, cfg.chainBonusMax) * 10}%）
+    </div>`);
+  }
+
+  // 限时订单面板
+  if (state.wallet.level >= cfg.rushMinLevel) {
+    const rushing = state.orders.rush && OrdersSystem.getRushRemainingSeconds(state) > 0;
+    if (rushing) {
+      const rushOrder = getOrder(state.orders.rush.id);
+      parts.push(`<div class="rush-banner active">
+        ⚡ 限时订单「${escapeHtml(rushOrder ? rushOrder.name : '')}」进行中，
+        剩余 <b id="rushCountdown">${formatTime(OrdersSystem.getRushRemainingSeconds(state))}</b>，交付奖励翻倍！
+      </div>`);
+    } else {
+      const done = OrdersSystem.hasRushedToday(state);
+      parts.push(`<div class="rush-banner">
+        ${done ? '今天的限时订单已完成，明天再来挑战' : '⚡ 每日限时订单：10 分钟内交付，奖励翻倍'}
+        ${done ? '' : '<button type="button" class="primary-action" onclick="window.acceptRushHandler()">接 单</button>'}
+      </div>`);
+    }
+  }
+
+  // 预购入口
+  if (state.orders.reservedId) {
+    const reserved = getOrder(state.orders.reservedId);
+    parts.push(`<div class="reserve-panel done">📝 已预购「${escapeHtml(reserved ? reserved.name : '')}」，明天上线自动入列</div>`);
+  } else if (state.wallet.level >= 3) {
+    const pool = orders
+      .filter((o) => o.unlockLevel <= state.wallet.level)
+      .slice(0, 8)
+      .map((o) => `<option value="${o.id}">${escapeHtml(o.name)}（${escapeHtml(o.type)}）</option>`)
+      .join("");
+    parts.push(`<div class="reserve-panel">
+      <span>📝 预购明日订单（🪙${cfg.reserveCost}）</span>
+      <select id="reserveOrderSelect">${pool}</select>
+      <button type="button" class="small-action" onclick="window.reserveOrderHandler()">预 购</button>
+    </div>`);
+  }
+
+  return parts.map((p) => `<div class="orders-chrome">${p}</div>`).join("");
 }
 
 /**

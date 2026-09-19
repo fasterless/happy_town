@@ -2,6 +2,7 @@
 import { STORAGE_KEY } from '../config/constants.js';
 import { createDefaultState, mergeState, createDailyState } from './state.js';
 import { migrateState } from './migrations.js';
+import { settleReservedOrder } from '../systems/orders.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
 
 let saveTimer = null;
@@ -56,6 +57,10 @@ export function rollDailyState(state) {
 
   state.daily = createDailyState();
   state.user.lastLoginAt = new Date().toISOString();
+
+  // 昨天预购的订单今天兑现到第一个槽位
+  settleReservedOrder(state);
+
   return state;
 }
 

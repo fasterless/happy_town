@@ -223,6 +223,21 @@ function startClock() {
 }
 
 function renderFarmTick() {
+  // 限时订单到期结算 + 订单页倒计时（不挑页面，开销极小）
+  if (state?.orders?.rush) {
+    const justExpired = OrdersSystem.settleExpiredRush(state);
+    if (justExpired) {
+      showToast('⌛ 限时订单超时了…明天再来挑战吧', 'error');
+      playSound('error');
+      renderViews('ordersView');
+    } else {
+      const countdown = $('rushCountdown');
+      if (countdown) {
+        countdown.textContent = formatTickTime(OrdersSystem.getRushRemainingSeconds(state));
+      }
+    }
+  }
+
   if (!isFarmViewActive()) return;
 
   const grid = $('farmGrid');
@@ -483,6 +498,17 @@ window.speedUpPlotHandler = (index) => runAction(() => FarmSystem.speedUpPlot(st
 // 订单
 window.completeOrderHandler = (index) => runAction(() => OrdersSystem.completeOrder(state, index), 'coin');
 window.refreshOrderHandler = (index) => runAction(() => OrdersSystem.refreshOrder(state, index), 'click');
+window.acceptRushHandler = () => runAction(() => OrdersSystem.acceptRushOrder(state), 'levelup');
+window.reserveOrderHandler = () => {
+  const select = $('reserveOrderSelect');
+  const orderId = Number(select?.value);
+  if (!orderId) {
+    showToast('请选择一个要预购的订单', 'error');
+    playSound('error');
+    return;
+  }
+  runAction(() => OrdersSystem.reserveOrder(state, orderId), 'coin');
+};
 
 // 家园
 window.buyFurnitureHandler = (furnitureId) => runAction(() => HomeSystem.buyFurniture(state, furnitureId), 'coin');

@@ -28,6 +28,15 @@ export const GAME_CONFIG = {
   orders: {
     slots: 3,
     refreshCooldown: 300,
+    // 限时订单：每天可接一次，10 分钟内交付，奖励翻倍
+    rushDurationSec: 600,
+    rushMultiplier: 2,
+    rushMinLevel: 5,
+    // 连锁订单：连续完成同 type 订单，每连一层 +10% 金币，封顶 5 层
+    chainBonusStep: 0.1,
+    chainBonusMax: 5,
+    // 预购：花 20 金币提前锁定明天第一个刷新位的订单
+    reserveCost: 20,
   },
   limits: {
     maxLevel: 20,

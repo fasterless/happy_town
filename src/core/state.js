@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 5;
+export const CURRENT_VERSION = 6;
 
 /**
  * 创建默认游戏状态
@@ -46,6 +46,12 @@ export function createDefaultState() {
     orders: {
       activeIds: [2006, 2001, 2001],
       cursor: 0,
+      rush: null,               // 限时订单 { id, expireAt }，null 表示当前没有
+      rushFinishedToday: "",    // 今天是否已接过限时单（日期键）
+      chainType: "",            // 连锁订单：当前连胜的订单类型
+      chainCount: 0,             // 连锁订单：当前连胜次数
+      reservedId: null,         // 预购的明日订单 id
+      reservedPaidAt: "",       // 预购日期键，跨天后兑现
     },
     home: {
       layout: Array.from({ length: 36 }, () => null),

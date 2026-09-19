@@ -1611,3 +1611,82 @@
   border-top: 1px dashed rgba(93, 65, 39, 0.3);
   padding-top: 10px;
 }
+
+/* ===== 订单深化：限时 / 连击 / 预购（第二阶段） ===== */
+
+.orders-chrome {
+  margin-bottom: 10px;
+}
+
+.chain-banner {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 196, 66, 0.25);
+  border: 1px solid rgba(214, 140, 30, 0.4);
+  font-weight: 600;
+}
+
+.rush-banner {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 245, 230, 0.7);
+  border: 1px dashed rgba(214, 140, 30, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rush-banner.active {
+  background: rgba(255, 196, 66, 0.3);
+  border-style: solid;
+}
+
+.rush-banner #rushCountdown {
+  font-variant-numeric: tabular-nums;
+  color: #b3552e;
+}
+
+.order-card.rush {
+  border: 2px solid rgba(214, 140, 30, 0.75);
+  box-shadow: 0 0 8px rgba(255, 196, 66, 0.35);
+}
+
+.rush-tag {
+  background: #d68c1e;
+  color: #fff;
+  border-radius: 8px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+}
+
+.chain-tag {
+  background: #c0392b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+}
+
+.reserve-panel {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(93, 65, 39, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reserve-panel.done {
+  background: rgba(140, 200, 120, 0.2);
+}
+
+.reserve-panel select {
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(93, 65, 39, 0.3);
+  background: #fff;
+}
