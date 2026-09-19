@@ -58,6 +58,10 @@ export function rollDailyState(state) {
   state.daily = createDailyState();
   state.user.lastLoginAt = new Date().toISOString();
 
+  // 累计登录天数（成就「小镇常驻民」用）
+  if (!state.analytics.login_count) state.analytics.login_count = 0;
+  state.analytics.login_count += 1;
+
   // 昨天预购的订单今天兑现到第一个槽位
   settleReservedOrder(state);
 

@@ -737,26 +737,48 @@ export function renderTasksView(state) {
  * @returns {string} HTML字符串
  */
 export function renderAchievementsView(state) {
-  return achievements
-    .map(achievement => {
-      const unlocked = state.achievements.unlocked.includes(achievement.id);
-      const progress = state.achievements.progress[achievement.id] || 0;
-      const progressPercent = getAchievementProgressPercent(state, achievement.id);
+  const unlockedIds = new Set(state.achievements.unlocked);
 
-      return `<div class="achievement-item ${unlocked ? 'unlocked' : ''}">
-        <div class="achievement-icon">${achievement.icon}</div>
-        <div class="achievement-info">
-          <h4>${escapeHtml(achievement.name)}</h4>
-          <p class="muted-text">${escapeHtml(achievement.desc)}</p>
-          ${unlocked
-            ? '<span class="achievement-badge">✅ 已完成</span>'
-            : `<div class="achievement-progress">${Math.min(progress, achievement.target)}/${achievement.target}</div>
-               ${createProgressBar(progressPercent)}`}
-        </div>
-        <div class="achievement-reward">${escapeHtml(formatRewards(achievement.rewards))}</div>
-      </div>`;
-    })
-    .join("");
+  // 按 category 分组，已完成的排到组尾
+  const groups = new Map();
+  achievements.forEach((achievement) => {
+    const cat = achievement.category || "其他";
+    if (!groups.has(cat)) groups.set(cat, []);
+    groups.get(cat).push(achievement);
+  });
+
+  const section = (cat, list) => {
+    const sorted = [...list].sort((a, b) => {
+      const au = unlockedIds.has(a.id) ? 1 : 0;
+      const bu = unlockedIds.has(b.id) ? 1 : 0;
+      return au - bu;
+    });
+    const done = list.filter((a) => unlockedIds.has(a.id)).length;
+
+    return `<div class="achievement-group">
+      <h3>${escapeHtml(cat)} <small>${done}/${list.length}</small></h3>
+      ${sorted.map((achievement) => {
+        const unlocked = unlockedIds.has(achievement.id);
+        const progress = state.achievements.progress[achievement.id] || 0;
+        const progressPercent = getAchievementProgressPercent(state, achievement.id);
+
+        return `<div class="achievement-item ${unlocked ? 'unlocked' : ''}">
+          <div class="achievement-icon">${achievement.icon}</div>
+          <div class="achievement-info">
+            <h4>${escapeHtml(achievement.name)}</h4>
+            <p class="muted-text">${escapeHtml(achievement.desc)}</p>
+            ${unlocked
+              ? '<span class="achievement-badge">✅ 已完成</span>'
+              : `<div class="achievement-progress">${Math.min(progress, achievement.target)}/${achievement.target}</div>
+                 ${createProgressBar(progressPercent)}`}
+          </div>
+          <div class="achievement-reward">${escapeHtml(formatRewards(achievement.rewards))}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  };
+
+  return [...groups.entries()].map(([cat, list]) => section(cat, list)).join("");
 }
 
 /**

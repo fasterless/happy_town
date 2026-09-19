@@ -4,160 +4,83 @@ import { emit, Events } from '../core/events.js';
 import { calculateRoomScore } from './home.js';
 
 // 成就配置
+//
+// category 决定成就页的分组；rewards 支持任意物品键（coin/diamond/friendPoint/家具/作物…）。
+// trackKey 对应 analytics 里的事件名（logEvent 的键），或 getAchievementProgress 里的特殊分支。
 export const achievements = [
-  {
-    id: "harvest_100",
-    name: "种植大师",
-    desc: "收获作物100次",
-    icon: "🌾",
-    target: 100,
-    trackKey: "harvest_crop",
-    rewards: { diamond: 50, coin: 1000 },
-  },
-  {
-    id: "order_50",
-    name: "订单达人",
-    desc: "完成50个订单",
-    icon: "📋",
-    target: 50,
-    trackKey: "order_complete",
-    rewards: { diamond: 30, coin: 500 },
-  },
-  {
-    id: "visit_30",
-    name: "社交之星",
-    desc: "拜访好友30次",
-    icon: "👥",
-    target: 30,
-    trackKey: "friend_visit",
-    rewards: { friendPoint: 100, diamond: 20 },
-  },
-  {
-    id: "furniture_all",
-    name: "装饰专家",
-    desc: "购买所有类型的家具",
-    icon: "🏠",
-    target: 8,
-    trackKey: "furniture_types",
-    rewards: { diamond: 100 },
-  },
-  {
-    id: "level_20",
-    name: "满级玩家",
-    desc: "达到Lv.20",
-    icon: "⭐",
-    target: 20,
-    trackKey: "level",
-    rewards: { diamond: 200, coin: 5000 },
-  },
-  {
-    id: "community_stage5",
-    name: "社区领袖",
-    desc: "完成喷泉第5阶段",
-    icon: "⛲",
-    target: 5,
-    trackKey: "community_stage",
-    rewards: { diamond: 150, f_3007: 1 },
-  },
-  {
-    id: "coin_10000",
-    name: "土豪",
-    desc: "拥有10000金币",
-    icon: "💰",
-    target: 10000,
-    trackKey: "coin",
-    rewards: { diamond: 50 },
-  },
-  {
-    id: "diamond_1000",
-    name: "钻石收藏家",
-    desc: "拥有1000钻石",
-    icon: "💎",
-    target: 1000,
-    trackKey: "diamond",
-    rewards: { coin: 5000 },
-  },
-  {
-    id: "order_10_daily",
-    name: "速度狂人",
-    desc: "单日完成10个订单",
-    icon: "🚀",
-    target: 10,
-    trackKey: "order_daily",
-    rewards: { diamond: 30, coin: 500 },
-  },
-  {
-    id: "room_score_s",
-    name: "完美家园",
-    desc: "房间装饰评分达到S级",
-    icon: "🏅",
-    target: 500,
-    trackKey: "room_score",
-    rewards: { diamond: 100, coin: 2000 },
-  },
-  {
-    id: "plant_all_crops",
-    name: "农场大亨",
-    desc: "种植过所有类型的作物",
-    icon: "🎃",
-    target: 10,
-    trackKey: "crop_types",
-    rewards: { diamond: 40, coin: 800 },
-  },
-  {
-    id: "login_7",
-    name: "忠实玩家",
-    desc: "连续登录7天",
-    icon: "📅",
-    target: 7,
-    trackKey: "login_streak",
-    rewards: { diamond: 70, coin: 1500 },
-  },
-  {
-    id: "fish_50",
-    name: "垂钓高手",
-    desc: "累计钓鱼50次",
-    icon: "🎣",
-    target: 50,
-    trackKey: "fishing_cast",
-    rewards: { diamond: 40, fish_5: 1 },
-  },
-  {
-    id: "craft_20",
-    name: "工坊巧匠",
-    desc: "完成20次加工",
-    icon: "🍞",
-    target: 20,
-    trackKey: "craft_finish",
-    rewards: { diamond: 40, goods_5001: 3 },
-  },
-  {
-    id: "lottery_30",
-    name: "小镇锦鲤",
-    desc: "转盘累计抽奖30次",
-    icon: "🎡",
-    target: 30,
-    trackKey: "lottery_spin",
-    rewards: { diamond: 60, lottery_ticket: 3 },
-  },
-  {
-    id: "neighbor_15",
-    name: "人缘之星",
-    desc: "收到15次邻居回礼",
-    icon: "🎁",
-    target: 15,
-    trackKey: "neighbor_gift",
-    rewards: { friendPoint: 80, diamond: 30 },
-  },
-  {
-    id: "feed_pet_14",
-    name: "铲屎官",
-    desc: "累计喂养宠物14次",
-    icon: "🐾",
-    target: 14,
-    trackKey: "pet_feed",
-    rewards: { diamond: 50, coin: 800 },
-  },
+  // ============ 🌾 农场 ============
+  { id: "harvest_50",  name: "初收喜悦",   desc: "收获作物50次",     icon: "🌱", category: "农场", target: 50,  trackKey: "harvest_crop", rewards: { coin: 300 } },
+  { id: "harvest_100", name: "种植大师",   desc: "收获作物100次",    icon: "🌾", category: "农场", target: 100, trackKey: "harvest_crop", rewards: { diamond: 50, coin: 1000 } },
+  { id: "harvest_500", name: "金色麦浪",   desc: "收获作物500次",    icon: "🌾", category: "农场", target: 500, trackKey: "harvest_crop", rewards: { diamond: 150, coin: 3000 } },
+  { id: "plant_100",   name: "播种狂人",   desc: "累计种植100次",    icon: "🌰", category: "农场", target: 100, trackKey: "plant_crop", rewards: { coin: 500 } },
+  { id: "plant_300",   name: "大地园丁",   desc: "累计种植300次",    icon: "🌿", category: "农场", target: 300, trackKey: "plant_crop", rewards: { diamond: 80, coin: 1200 } },
+  { id: "plant_all_crops", name: "农场大亨", desc: "种植过所有类型的作物", icon: "🎃", category: "农场", target: 10, trackKey: "crop_types", rewards: { diamond: 40, coin: 800 } },
+  { id: "gold_crop_1", name: "第一株金穗", desc: "收获1株金穗作物",  icon: "✨", category: "农场", target: 1,   trackKey: "gold_crop", rewards: { diamond: 20, coin: 200 } },
+  { id: "gold_crop_10", name: "点金之手", desc: "累计收获10株金穗作物", icon: "✨", category: "农场", target: 10,  trackKey: "gold_crop", rewards: { diamond: 100, speed_ticket: 3 } },
+  { id: "farm_expand", name: "开疆拓土",   desc: "扩建一次田地",     icon: "🚜", category: "农场", target: 1,   trackKey: "farm_expand", rewards: { coin: 400 } },
+  { id: "farm_expand_max", name: "小镇地主", desc: "田地扩到最大（21块）", icon: "🗺️", category: "农场", target: 3, trackKey: "farm_expand", rewards: { diamond: 200, coin: 5000 } },
+  { id: "speed_up_10", name: "和时间赛跑", desc: "使用10次加速券",    icon: "⏩", category: "农场", target: 10,  trackKey: "speed_up_plot", rewards: { diamond: 30 } },
+  { id: "sell_crop_100", name: "集市小贩", desc: "卖出100次作物",    icon: "🪙", category: "农场", target: 100, trackKey: "sell_crop", rewards: { coin: 1500 } },
+
+  // ============ 📋 订单 ============
+  { id: "order_10",  name: "接单新手",   desc: "完成10个订单",      icon: "📝", category: "订单", target: 10,  trackKey: "order_complete", rewards: { coin: 300 } },
+  { id: "order_50",  name: "订单达人",   desc: "完成50个订单",      icon: "📋", category: "订单", target: 50,  trackKey: "order_complete", rewards: { diamond: 30, coin: 500 } },
+  { id: "order_200", name: "供货大户",   desc: "完成200个订单",     icon: "🚚", category: "订单", target: 200, trackKey: "order_complete", rewards: { diamond: 120, coin: 4000 } },
+  { id: "order_10_daily", name: "速度狂人", desc: "单日完成10个订单", icon: "🚀", category: "订单", target: 10, trackKey: "order_daily", rewards: { diamond: 30, coin: 500 } },
+  { id: "rush_1",    name: "与时间竞速", desc: "完成1次限时订单",    icon: "⚡", category: "订单", target: 1,   trackKey: "rush_complete", rewards: { diamond: 20 } },
+  { id: "rush_10",   name: "极速快递",   desc: "完成10次限时订单",   icon: "⚡", category: "订单", target: 10,  trackKey: "rush_complete", rewards: { diamond: 80, speed_ticket: 5 } },
+  { id: "reserve_1", name: "早起的鸟儿", desc: "预购1次明日订单",    icon: "📅", category: "订单", target: 1,   trackKey: "order_reserve", rewards: { coin: 200 } },
+
+  // ============ 🏠 家园 ============
+  { id: "furniture_10", name: "安家落户",  desc: "购买10件家具",     icon: "🛋️", category: "家园", target: 10, trackKey: "furniture_buy", rewards: { coin: 400 } },
+  { id: "furniture_all", name: "装饰专家", desc: "购买所有类型的家具", icon: "🏠", category: "家园", target: 8,  trackKey: "furniture_types", rewards: { diamond: 100 } },
+  { id: "place_30",     name: "布局巧手",  desc: "摆放家具30次",     icon: "📐", category: "家园", target: 30, trackKey: "furniture_place", rewards: { coin: 600 } },
+  { id: "room_score_s", name: "完美家园",  desc: "房间装饰评分达到S级", icon: "🏅", category: "家园", target: 500, trackKey: "room_score", rewards: { diamond: 100, coin: 2000 } },
+
+  // ============ 👥 社交 ============
+  { id: "friend_5",  name: "广交善缘",   desc: "添加5位好友",       icon: "🤝", category: "社交", target: 5,   trackKey: "friend_add", rewards: { friendPoint: 50 } },
+  { id: "friend_all", name: "满座宾朋",  desc: "添加所有邻居为好友", icon: "🏘️", category: "社交", target: 5,   trackKey: "friend_all", rewards: { diamond: 60 } },
+  { id: "visit_30",  name: "社交之星",   desc: "拜访好友30次",      icon: "👥", category: "社交", target: 30,  trackKey: "friend_visit", rewards: { friendPoint: 100, diamond: 20 } },
+  { id: "visit_100", name: "串门专业户", desc: "拜访好友100次",     icon: "🚪", category: "社交", target: 100, trackKey: "friend_visit", rewards: { friendPoint: 300, diamond: 60 } },
+  { id: "like_20",   name: "暖心点赞",   desc: "点赞好友20次",      icon: "👍", category: "社交", target: 20,  trackKey: "home_like", rewards: { friendPoint: 60 } },
+  { id: "water_10",  name: "及时雨",     desc: "帮好友浇田10次",    icon: "💧", category: "社交", target: 10,  trackKey: "friend_water", rewards: { friendPoint: 80, diamond: 20 } },
+  { id: "neighbor_15", name: "人缘之星", desc: "收到15次邻居回礼",  icon: "🎁", category: "社交", target: 15,  trackKey: "neighbor_gift", rewards: { friendPoint: 80, diamond: 30 } },
+
+  // ============ 🐮 养殖 ============
+  { id: "ranch_first", name: "第一位房客", desc: "买下第一只动物",    icon: "🐣", category: "养殖", target: 1,   trackKey: "ranch_buy", rewards: { coin: 300 } },
+  { id: "ranch_all",   name: "牧场之家",   desc: "集齐鸡、羊、牛",    icon: "🐄", category: "养殖", target: 3,   trackKey: "ranch_all", rewards: { diamond: 100, coin: 2000 } },
+  { id: "ranch_feed_20", name: "投喂小能手", desc: "喂食动物20次",    icon: "🌾", category: "养殖", target: 20,  trackKey: "ranch_feed", rewards: { coin: 800 } },
+  { id: "ranch_collect_30", name: "收获满满", desc: "收取产出30次",  icon: "🥚", category: "养殖", target: 30,  trackKey: "ranch_collect", rewards: { diamond: 50, coin: 1500 } },
+
+  // ============ ⛲ 社区 ============
+  { id: "community_join", name: "新社员",   desc: "加入社区",        icon: "🏘️", category: "社区", target: 1,   trackKey: "community_join", rewards: { coin: 200, friendPoint: 30 } },
+  { id: "community_donate_10", name: "热心捐助", desc: "捐献10次",   icon: "🫱", category: "社区", target: 10,  trackKey: "community_donate", rewards: { friendPoint: 60 } },
+  { id: "community_stage5", name: "社区领袖", desc: "完成喷泉第5阶段", icon: "⛲", category: "社区", target: 5,   trackKey: "community_stage", rewards: { diamond: 150, f_3007: 1 } },
+
+  // ============ 🎣 湖畔 & 🥖 加工坊 & 🎡 转盘 ============
+  { id: "fish_10", name: "初试身手",   desc: "累计钓鱼10次",     icon: "🎣", category: "湖畔", target: 10,  trackKey: "fishing_cast", rewards: { coin: 200 } },
+  { id: "fish_50",  name: "垂钓高手",   desc: "累计钓鱼50次",     icon: "🎣", category: "湖畔", target: 50,  trackKey: "fishing_cast", rewards: { diamond: 40, fish_5: 1 } },
+  { id: "fish_200", name: "湖畔传说",   desc: "累计钓鱼200次",    icon: "🐋", category: "湖畔", target: 200, trackKey: "fishing_cast", rewards: { diamond: 150, coin: 3000 } },
+  { id: "fish_sell_20", name: "鱼贩子", desc: "卖出鱼获20次",     icon: "🐠", category: "湖畔", target: 20,  trackKey: "fishing_sell", rewards: { coin: 600 } },
+  { id: "craft_20", name: "工坊巧匠",   desc: "完成20次加工",     icon: "🍞", category: "加工坊", target: 20,  trackKey: "craft_finish", rewards: { diamond: 40, goods_5001: 3 } },
+  { id: "craft_100", name: "流水线主厨", desc: "完成100次加工",    icon: "🥖", category: "加工坊", target: 100, trackKey: "craft_finish", rewards: { diamond: 120, coin: 2500 } },
+  { id: "lottery_30", name: "小镇锦鲤",  desc: "转盘累计抽奖30次", icon: "🎡", category: "转盘", target: 30,  trackKey: "lottery_spin", rewards: { diamond: 60, lottery_ticket: 3 } },
+  { id: "lottery_100", name: "转盘常客",  desc: "转盘累计抽奖100次", icon: "🎰", category: "转盘", target: 100, trackKey: "lottery_spin", rewards: { diamond: 200, lottery_ticket: 10 } },
+
+  // ============ 🐾 宠物 ============
+  { id: "pet_first", name: "第一只宠物", desc: "买下第一只宠物",    icon: "🐾", category: "宠物", target: 1,   trackKey: "pet_own", rewards: { diamond: 30 } },
+  { id: "pet_all",   name: "动物园园长", desc: "集齐全部7种宠物",    icon: "🦊", category: "宠物", target: 7,   trackKey: "pet_all", rewards: { diamond: 300 } },
+  { id: "feed_pet_14", name: "铲屎官",   desc: "累计喂养宠物14次",  icon: "🐾", category: "宠物", target: 14,  trackKey: "pet_feed", rewards: { diamond: 50, coin: 800 } },
+
+  // ============ 📈 里程碑 ============
+  { id: "level_20", name: "满级玩家",   desc: "达到Lv.20",       icon: "⭐", category: "里程碑", target: 20,  trackKey: "level", rewards: { diamond: 200, coin: 5000 } },
+  { id: "coin_10000", name: "土豪",    desc: "拥有10000金币",   icon: "💰", category: "里程碑", target: 10000, trackKey: "coin", rewards: { diamond: 50 } },
+  { id: "diamond_1000", name: "钻石收藏家", desc: "拥有1000钻石", icon: "💎", category: "里程碑", target: 1000, trackKey: "diamond", rewards: { coin: 5000 } },
+  { id: "login_7",  name: "忠实玩家",   desc: "连续登录7天",     icon: "📅", category: "里程碑", target: 7,   trackKey: "login_streak", rewards: { diamond: 70, coin: 1500 } },
+  { id: "login_30", name: "小镇常驻民", desc: "累计登录30天",     icon: "🗓️", category: "里程碑", target: 30,  trackKey: "login_total", rewards: { diamond: 250, coin: 6000 } },
+  { id: "shop_5",   name: "剁手一族",   desc: "商城购物5次",     icon: "🛍️", category: "里程碑", target: 5,   trackKey: "shop_buy", rewards: { coin: 400 } },
+  { id: "task_20",  name: "任务达成者", desc: "领取20次任务奖励",  icon: "✅", category: "里程碑", target: 20,  trackKey: "task_claim", rewards: { diamond: 40 } },
+  { id: "box_10",   name: "宝箱猎人",   desc: "开启10次活跃宝箱",  icon: "🎁", category: "里程碑", target: 10,  trackKey: "box_claim", rewards: { diamond: 40 } },
 ];
 
 /**
@@ -221,17 +144,13 @@ export function unlockAchievement(state, achievementId) {
  * @returns {number} 当前进度值
  */
 function getAchievementProgress(state, achievement) {
-  switch (achievement.trackKey) {
-    case "harvest_crop":
-    case "order_complete":
-    case "friend_visit":
-    case "fishing_cast":
-    case "craft_finish":
-    case "lottery_spin":
-    case "neighbor_gift":
-    case "pet_feed":
-      return state.analytics[achievement.trackKey] || 0;
+  // 通用：绝大多数成就直接读 analytics 里累计的事件数，
+  // 不再逐个列 case，新增事件键的成就零配置接入。
+  if (achievement.trackKey in state.analytics) {
+    return state.analytics[achievement.trackKey] || 0;
+  }
 
+  switch (achievement.trackKey) {
     case "level":
       return state.wallet.level;
 
@@ -267,6 +186,26 @@ function getAchievementProgress(state, achievement) {
     case "login_streak":
       // 连续登录天数（需要额外追踪）
       return state.achievements.loginStreak || 1;
+
+    case "login_total": {
+      // 累计登录天数：从 analytics.login_count 里读（rollDailyState 每天首次登录 +1）
+      return state.analytics.login_count || 0;
+    }
+
+    case "friend_all":
+      return state.friends.filter((f) => f.isFriend).length;
+
+    case "pet_own":
+      return state.pets.owned.length;
+
+    case "pet_all":
+      return state.pets.owned.length;
+
+    case "ranch_all":
+      return state.ranch.owned.length;
+
+    case "gold_crop":
+      return state.farm.goldStats?.totalGold || 0;
 
     default:
       return 0;

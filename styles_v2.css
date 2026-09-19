@@ -1765,3 +1765,20 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* ===== 成就分组（第三阶段） ===== */
+
+.achievement-group {
+  margin-bottom: 18px;
+}
+
+.achievement-group h3 {
+  font-size: 1rem;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(93, 65, 39, 0.3);
+}
+
+.achievement-group h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
