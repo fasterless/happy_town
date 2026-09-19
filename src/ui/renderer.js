@@ -7,6 +7,7 @@ import { orders, getOrder } from '../config/orders.js';
 import { furniture, getFurniture } from '../config/furniture.js';
 import { dailyTasks, activeBoxes } from '../config/tasks.js';
 import { shopGoods } from '../config/shop.js';
+import { friendShopGoods } from '../config/friendShop.js';
 import { fountainStages } from '../config/npcs.js';
 import { getNextLevelInfo, levels } from '../config/levels.js';
 import { getSeasonalCrops, getSeasonalFurniture } from '../config/seasons.js';
@@ -39,6 +40,7 @@ import * as LotterySystem from '../systems/lottery.js';
 import * as SeasonsSystem from '../systems/seasons.js';
 import * as RanchSystem from '../systems/ranch.js';
 import * as CodexSystem from '../systems/codex.js';
+import * as MarketSystem from '../systems/market.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -197,8 +199,9 @@ export function renderFarmView(state, selectedCropId) {
 
   const expansion = renderExpansionPanel(state);
   const sellBarn = renderSellBarn(state);
+  const market = renderMarketBoard(state);
 
-  return { grid, seeds: seeds + seasonalSeeds, expansion, sellBarn };
+  return { grid, seeds: seeds + seasonalSeeds, expansion, sellBarn, market };
 }
 
 /**
@@ -224,6 +227,35 @@ function renderExpansionPanel(state) {
 /**
  * 卖仓：背包里的作物 / 金穗作物逐项列出，单个或一键全卖
  */
+/**
+ * 小镇集市行情板：今日各作物的需求热度与挂售单价
+ */
+function renderMarketBoard(state) {
+  const rows = MarketSystem.getMarketBoard(state)
+    .slice(0, 8) // 只显示行情最好的 8 种，其余在卖仓里慢慢卖
+    .map(({ crop, demand, unitPrice, ratio, owned }) => {
+      const heat = demand >= 75 ? '🔥' : demand >= 40 ? '📈' : '📉';
+      const ratioText = ratio >= 1 ? `×${ratio.toFixed(1)}` : `×${ratio.toFixed(1)}`;
+      const canSell = owned > 0;
+
+      return `<div class="market-row ${demand >= 75 ? 'hot' : ''}">
+        <span>${crop.icon} ${escapeHtml(crop.name)}</span>
+        <span class="muted-text">${heat} 热度 ${demand}</span>
+        <b class="${ratio >= 1.2 ? 'buffed' : ''}">🪙${unitPrice} <small>(${ratioText})</small></b>
+        <button type="button" class="small-action" onclick="window.sellOnMarketHandler(${crop.id})"
+          ${canSell ? '' : 'disabled'}>${canSell ? `挂售${owned}` : '没有存货'}</button>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    <div class="sell-barn market">
+      <h3>🏫 小镇集市 <small>每日行情 · 需求高的作物卖得贵，同种挂多了会压价</small></h3>
+      <div class="market-rows">${rows}</div>
+    </div>
+  `;
+}
+
 function renderSellBarn(state) {
   const rows = Object.entries(state.inventory)
     .filter(([key, count]) => count > 0 && /^(crop|gold)_\d+$/.test(key))
@@ -696,9 +728,32 @@ export function renderShopView(state) {
     })
     .join("");
 
+  // 友情商店：拜访/点赞/帮浇攒的友情点在这里换稀罕道具
+  const friendPanel = `
+    <div class="friend-shop">
+      <h3>🤝 友情商店 <small>友情点 ${state.wallet.friendPoint}</small></h3>
+      <p class="muted-text">拜访、点赞、帮好友浇田攒下的友情点，可以在这里换好东西。</p>
+      <div class="shop-grid">
+        ${friendShopGoods.map(item => {
+          const affordable = state.wallet.friendPoint >= item.price;
+          return `<div class="shop-card ${affordable ? '' : 'locked'}">
+            <span class="shop-icon">${item.icon}</span>
+            <h4>${escapeHtml(item.name)}</h4>
+            <p class="muted-text">${escapeHtml(item.desc)}</p>
+            <p class="shop-price">🤝 ${item.price}</p>
+            <button class="primary-action" onclick="window.buyFriendGoodsHandler(${item.id})" ${affordable ? '' : 'disabled'}>
+              ${affordable ? '兑换' : '友情点不足'}
+            </button>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+  `;
+
   return `
     ${monthlyPanel}
     <div class="shop-grid">${goods}</div>
+    ${friendPanel}
     <p class="muted-text">￥价商品为演示用途，不会真实扣款。</p>
   `;
 }

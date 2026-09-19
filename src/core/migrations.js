@@ -24,6 +24,7 @@ const MIGRATIONS = [
   { fromVersion: 6, migrate: toV7 },
   { fromVersion: 7, migrate: toV8 },
   { fromVersion: 8, migrate: toV9 },
+  { fromVersion: 9, migrate: toV10 },
 ];
 
 /**
@@ -89,6 +90,16 @@ function toV9(state) {           // v8 → v9：图鉴系统
     if (!Array.isArray(state.codex[key])) state.codex[key] = [];
   });
   state.version = 9;
+}
+
+function toV10(state) {          // v9 → v10：小镇集市
+  if (!state.market) {
+    state.market = { date: '', demand: {}, listedToday: {} };
+  }
+  if (typeof state.market.date !== 'string') state.market.date = '';
+  if (!state.market.demand || typeof state.market.demand !== 'object') state.market.demand = {};
+  if (!state.market.listedToday || typeof state.market.listedToday !== 'object') state.market.listedToday = {};
+  state.version = 10;
 }
 
 /**

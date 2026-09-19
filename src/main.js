@@ -27,6 +27,7 @@ import * as LotterySystem from './systems/lottery.js';
 import * as SeasonsSystem from './systems/seasons.js';
 import * as RanchSystem from './systems/ranch.js';
 import * as CodexSystem from './systems/codex.js';
+import * as MarketSystem from './systems/market.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -347,6 +348,7 @@ function renderFarmView() {
   setHtml('farmGrid', farm.grid);
   setHtml('seedList', farm.seeds);
   setHtml('sellBarnList', farm.sellBarn);
+  setHtml('marketBoard', farm.market);
 }
 
 function renderOrdersView() {
@@ -568,6 +570,16 @@ window.sellAllCropsHandler = () => {
 };
 window.speedUpPlotHandler = (index) => runAction(() => FarmSystem.speedUpPlot(state, index), 'levelup');
 
+// 小镇集市
+window.sellOnMarketHandler = (cropId) => {
+  const row = document.querySelector(`.market-row button[onclick="window.sellOnMarketHandler(${cropId})"]`);
+  const result = runAction(() => MarketSystem.sellOnMarket(state, cropId), 'coin');
+  if (result?.success && row) {
+    const gained = /共得🪙(\d+)/.exec(result.message);
+    floatCoinText(row, gained ? `+🪙${gained[1]}` : '+🪙');
+  }
+};
+
 // 订单
 window.completeOrderHandler = (index) => {
   const card = document.querySelectorAll('.order-card')[index];
@@ -660,6 +672,7 @@ window.donateHandler = (itemKey) => {
 
 // 商城
 window.buyGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyGoods(state, goodsId), 'buy');
+window.buyFriendGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyFriendGoods(state, goodsId), 'buy');
 window.claimMonthlyCardHandler = () => runAction(() => ShopSystem.claimMonthlyCard(state), 'coin');
 
 // 任务

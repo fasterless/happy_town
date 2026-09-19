@@ -133,6 +133,9 @@ export const Events = {
   // 图鉴相关
   CODEX_NEW_ENTRY: 'codex:new_entry',
 
+  // 集市相关
+  MARKET_SOLD: 'market:sold',
+
   // 系统相关
   STATE_UPDATED: 'state:updated',
   TOAST_SHOW: 'toast:show',

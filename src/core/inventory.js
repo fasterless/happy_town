@@ -90,6 +90,7 @@ export function addRewards(state, rewards) {
 export function canAfford(state, priceType, price) {
   if (priceType === "coin") return state.wallet.coin >= price;
   if (priceType === "diamond") return state.wallet.diamond >= price;
+  if (priceType === "friendPoint") return state.wallet.friendPoint >= price;
   if (priceType === "rmb") return true; // 模拟充值，始终返回true
   return false;
 }
@@ -106,6 +107,8 @@ export function spendPrice(state, priceType, price) {
     state.wallet.coin -= price;
   } else if (priceType === "diamond") {
     state.wallet.diamond -= price;
+  } else if (priceType === "friendPoint") {
+    state.wallet.friendPoint -= price;
   }
   // rmb 类型不扣除（模拟充值）
   return state;

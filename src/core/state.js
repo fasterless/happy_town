@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 9;
+export const CURRENT_VERSION = 10;
 
 /**
  * 创建默认游戏状态
@@ -111,6 +111,13 @@ export function createDefaultState() {
     // 季节活动：本次活动已领标记
     seasons: {
       claimedEventId: "",
+    },
+    // 小镇集市：NPC 买家对每种作物的需求热度（价格倍率的种子）
+    // demand.<cropId> 是 0-100 的热度，越高挂单价越好，每天轮换
+    market: {
+      date: "",            // 热度所在的日期键，跨天轮换
+      demand: {},          // cropId -> 热度 0-100
+      listedToday: {},     // 今天已挂售的作物数量（吃供给压价）
     },
     // 图鉴：收录过的条目（收获过的作物、拥有过的家具、钓到过的鱼）
     // "拥有过"意味着卖出/消耗后图鉴仍保留收录记录

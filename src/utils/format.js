@@ -80,6 +80,7 @@ export function formatRewards(rewards, configs = defaultConfigs) {
 export function moneyLabel(priceType, price) {
   if (priceType === "coin") return `${price}金币`;
   if (priceType === "diamond") return `${price}钻石`;
+  if (priceType === "friendPoint") return `${price}友情点`;
   if (priceType === "rmb") return `¥${price}`;
   return String(price);
 }

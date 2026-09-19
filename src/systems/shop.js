@@ -1,5 +1,7 @@
 // 商城系统模块
 import { shopGoods } from '../config/shop.js';
+import { getFriendShopGoods } from '../config/friendShop.js';
+import { crops } from '../config/crops.js';
 import { canAfford, spendPrice, addRewards } from '../core/inventory.js';
 import { logEvent } from '../utils/analytics.js';
 import { todayKey } from '../utils/time.js';
@@ -100,4 +102,49 @@ export function canClaimMonthlyCard(state) {
   if (!state.shop.monthlyCard) return false;
   if (isMonthlyCardExpired(state)) return false;
   return state.shop.monthlyClaimedDate !== todayKey();
+}
+
+/**
+ * 用友情点购买友情商店商品
+ * @param {Object} state
+ * @param {number} goodsId
+ * @returns {Object} { success, message, state }
+ */
+export function buyFriendGoods(state, goodsId) {
+  const goods = getFriendShopGoods(goodsId);
+  if (!goods) {
+    return { success: false, message: "商品不存在" };
+  }
+  if (!canAfford(state, "friendPoint", goods.price)) {
+    return { success: false, message: `需要${goods.price}友情点，去拜访好友攒一攒吧` };
+  }
+
+  spendPrice(state, "friendPoint", goods.price);
+
+  let rewards = goods.rewards;
+  let rewardText = "";
+
+  if (goods.dynamic === "seedBag") {
+    // 神秘种子袋：从当前等级解锁的作物里随机挑 3 种，各给 2 包种子
+    const unlocked = crops.filter((c) => state.wallet.level >= c.unlockLevel);
+    const picks = [];
+    while (picks.length < Math.min(3, unlocked.length)) {
+      const crop = unlocked[Math.floor(Math.random() * unlocked.length)];
+      if (!picks.some((p) => p.id === crop.id)) picks.push(crop);
+    }
+    rewards = {};
+    picks.forEach((crop) => {
+      rewards[`crop_${crop.id}`] = (rewards[`crop_${crop.id}`] || 0) + 2;
+    });
+    rewardText = "（" + picks.map((c) => `${c.icon}${c.name}×2`).join("、") + "）";
+  }
+
+  addRewards(state, rewards);
+  logEvent(state, "friend_shop_buy");
+
+  return {
+    success: true,
+    message: `用${goods.price}友情点换到了「${goods.name}」${rewardText}`,
+    state,
+  };
 }
