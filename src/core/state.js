@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 /**
  * 创建默认游戏状态
@@ -58,12 +58,24 @@ export function createDefaultState() {
       savedAt: null,
     },
     friends: JSON.parse(JSON.stringify(defaultFriends)),
+    // 好友玩法：帮浇次数（按日）、拜访连击（按日重置）
+    social: {
+      waterDate: "",          // 帮浇次数所在的日期键
+      waterUsed: 0,           // 今天已用掉的帮浇次数
+      wateredBy: [],          // 今天哪些邻居来帮我浇过（防重复彩蛋提示）
+      visitStreak: 0,          // 连续拜访天数
+      lastVisitDate: "",      // 最近一次拜访的日期键
+    },
     community: {
       joined: false,
       name: "暖阳社区",
       role: "成员",
       stage: 1,
       progress: 0,
+      weekly: {
+        week: "",             // 当前周键（weekKey），跨周清零
+        contribution: 0,      // 本周我的捐献贡献
+      },
       members: [
         { name: "林镇长", role: "社长", contribution: 520 },
         { name: "麦香面包师", role: "副社长", contribution: 280 },

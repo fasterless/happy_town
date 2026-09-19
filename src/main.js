@@ -552,6 +552,7 @@ function saveRoom() {
 window.addFriendHandler = (friendId) => runAction(() => FriendsSystem.addFriend(state, friendId));
 window.visitFriendHandler = (friendId) => runAction(() => FriendsSystem.visitFriend(state, friendId));
 window.likeFriendHandler = (friendId) => runAction(() => FriendsSystem.likeFriend(state, friendId));
+window.waterFriendHandler = (friendId) => runAction(() => FriendsSystem.waterFriendPlot(state, friendId), 'plant');
 
 // 社区
 window.joinCommunityHandler = () => runAction(() => CommunitySystem.joinCommunity(state));

@@ -110,6 +110,8 @@ export const Events = {
   // 好友相关
   FRIEND_ADDED: 'friend:added',
   FRIEND_VISITED: 'friend:visited',
+  FRIEND_WATERED: 'friend:watered',
+  WEEKLY_RANK_SETTLED: 'community:weekly_settled',
 
   // 社区相关
   COMMUNITY_JOINED: 'community:joined',

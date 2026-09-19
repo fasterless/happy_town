@@ -1690,3 +1690,32 @@
   border: 1px solid rgba(93, 65, 39, 0.3);
   background: #fff;
 }
+
+/* ===== 好友帮浇 / 拜访连击 / 每周贡献榜（第二阶段） ===== */
+
+.social-banner {
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(120, 180, 240, 0.18);
+  border: 1px solid rgba(80, 140, 210, 0.35);
+  font-weight: 600;
+}
+
+.weekly-board {
+  padding: 12px 16px;
+  border: 1px solid rgba(93, 65, 39, 0.2);
+  border-radius: var(--radius, 12px);
+  background: rgba(255, 250, 235, 0.6);
+}
+
+.weekly-board h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.weekly-board .member-row.me {
+  background: rgba(255, 196, 66, 0.25);
+  border-radius: 8px;
+  font-weight: 600;
+}

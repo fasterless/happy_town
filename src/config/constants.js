@@ -25,6 +25,14 @@ export const GAME_CONFIG = {
   home: {
     gridSize: { rows: 6, cols: 6 },
   },
+  social: {
+    // 好友帮浇：每天 3 次，每次给好友一块未熟地块拨快 5 分钟
+    waterPerDay: 3,
+    waterBoostSec: 300,
+    waterMinLevel: 5,
+    // 拜访连击：连续多天拜访任意好友，每天多给 1 友情点，封顶 5
+    visitStreakBonusMax: 5,
+  },
   orders: {
     slots: 3,
     refreshCooldown: 300,

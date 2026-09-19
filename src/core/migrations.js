@@ -21,6 +21,7 @@ function toV4(state) {
 const MIGRATIONS = [
   { fromVersion: 4, migrate: toV5 },
   { fromVersion: 5, migrate: toV6 },
+  { fromVersion: 6, migrate: toV7 },
 ];
 
 /**
@@ -49,6 +50,23 @@ function toV6(state) {           // v5 → v6：订单深化（限时/连锁/预
   if (!('reservedId' in state.orders)) state.orders.reservedId = null;
   if (typeof state.orders.reservedPaidAt !== 'string') state.orders.reservedPaidAt = '';
   state.version = 6;
+}
+
+function toV7(state) {           // v6 → v7：好友帮浇 / 拜访连击 / 每周社区贡献榜
+  if (!state.social) {
+    state.social = {
+      waterDate: "",
+      waterUsed: 0,
+      wateredBy: [],
+      visitStreak: 0,
+      lastVisitDate: "",
+    };
+  }
+  if (!state.community) state.community = {};
+  if (!state.community.weekly) {
+    state.community.weekly = { week: "", contribution: 0 };
+  }
+  state.version = 7;
 }
 
 /**

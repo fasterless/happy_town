@@ -3,6 +3,7 @@ import { fountainStages } from '../config/npcs.js';
 import { addItem, spendItem, hasEnough, addRewards } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
+import { weekKey } from '../utils/time.js';
 
 /**
  * 加入社区
@@ -84,6 +85,10 @@ export function donateToCommunity(state, itemKey, amount) {
     member.contribution += contribution;
   }
 
+  // 记入本周贡献榜（跨周自动清零）
+  rollWeekly(state);
+  state.community.weekly.contribution += contribution;
+
   logEvent(state, "community_donate");
   trackDaily(state, "donate", 1);
   emit(Events.COMMUNITY_DONATED, { itemKey, amount, contribution });
@@ -152,4 +157,70 @@ export function getStageProgress(state) {
  */
 export function isAllStagesComplete(state) {
   return state.community.stage > fountainStages.length;
+}
+
+/**
+ * 每周贡献榜：跨周时结算上一周并清零。
+ * NPC 成员的周贡献用伪随机值模拟（他们是"别的玩家"）。
+ * @param {Object} state
+ * @returns {boolean} 本次调用是否发生了跨周结算
+ */
+export function rollWeekly(state) {
+  const week = weekKey();
+  if (state.community.weekly.week === week) return false;
+
+  const settled = state.community.weekly.week !== "";
+  state.community.weekly = { week, contribution: 0 };
+  if (settled) {
+    logEvent(state, "weekly_rank_settle");
+    emit(Events.WEEKLY_RANK_SETTLED, { week });
+  }
+  return true;
+}
+
+/**
+ * 生成每周排行榜数据（我的真实贡献 + NPC 成员的模拟贡献）
+ * @param {Object} state
+ * @returns {Array} [{ name, contribution, isMe, rank }] 按贡献降序
+ */
+export function getWeeklyLeaderboard(state) {
+  rollWeekly(state);
+  const myName = state.user.nickname;
+
+  const rows = state.community.members.map((m) => ({
+    name: m.name,
+    contribution: simulateWeekly(m, state.community.weekly.week),
+    isMe: false,
+  }));
+
+  // 玩家本人单独一行，名字不在 NPC 成员表里也能上榜
+  const mine = rows.find((r) => r.name === myName);
+  if (mine) {
+    mine.contribution = state.community.weekly.contribution;
+    mine.isMe = true;
+  } else {
+    rows.push({
+      name: myName || "我",
+      contribution: state.community.weekly.contribution,
+      isMe: true,
+    });
+  }
+
+  rows.sort((a, b) => b.contribution - a.contribution || (a.isMe ? -1 : 1));
+  rows.forEach((r, i) => { r.rank = i + 1; });
+  return rows;
+}
+
+/**
+ * 同一成员同一周的模拟贡献保持稳定（用名字和周键做种子），
+ * 避免每次渲染排行榜数字乱跳。
+ */
+function simulateWeekly(member, week) {
+  const seed = `${member.name}|${week}`;
+  let hash = 0;
+  for (const ch of seed) {
+    hash = (hash * 31 + ch.charCodeAt(0)) | 0;
+  }
+  const base = Math.abs(hash) % 120;
+  return base;
 }

@@ -61,3 +61,20 @@ export function formatTimestamp(timestamp) {
   const date = new Date(timestamp);
   return date.toLocaleString('zh-CN');
 }
+
+/**
+ * 获取本地周一为一周起点的周键（YYYY-Www）
+ * 用于每周排行榜之类的按周重置玩法。
+ * @param {Date} [date]
+ * @returns {string}
+ */
+export function weekKey(date = new Date()) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  // 周一=0 ... 周日=6，先回到本周周一
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-W${m}${dd}`;
+}

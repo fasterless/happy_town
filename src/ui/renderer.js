@@ -468,8 +468,12 @@ export function renderFriendsView(state) {
   const myFriends = FriendsSystem.getMyFriends(state);
   const recommended = FriendsSystem.getRecommendedFriends(state);
 
+  const waterLeft = FriendsSystem.getWaterChancesLeft(state);
+  const streak = state.social.visitStreak || 0;
+
   const card = (friend, isFriend) => {
     const liked = FriendsSystem.hasLikedToday(state, friend.id);
+    const watered = FriendsSystem.hasWateredToday(state, friend.id);
 
     const actions = isFriend
       ? `<button class="small-action" onclick="window.visitFriendHandler('${friend.id}')" ${!unlocked ? 'disabled' : ''}>
@@ -477,7 +481,11 @@ export function renderFriendsView(state) {
          </button>
          <button class="small-action" onclick="window.likeFriendHandler('${friend.id}')" ${liked ? 'disabled' : ''}>
           ${liked ? '已点赞' : '点赞'}
-         </button>`
+         </button>
+         ${unlocked ? `<button class="small-action" onclick="window.waterFriendHandler('${friend.id}')"
+            ${watered || waterLeft < 1 ? 'disabled' : ''}>
+            ${watered ? '已浇过' : '💧帮浇'}
+           </button>` : ''}`
       : `<button class="small-action" onclick="window.addFriendHandler('${friend.id}')">加好友</button>`;
 
     return `<div class="person-card">
@@ -490,6 +498,15 @@ export function renderFriendsView(state) {
   };
 
   const sections = [];
+
+  sections.push(`
+    <div class="social-banner">
+      ${unlocked
+        ? `💧 今日帮浇次数：${waterLeft}/${GAME_CONFIG.social.waterPerDay}
+           ${streak >= 2 ? ` · 🔥 连续拜访 ${streak} 天（每日 +${Math.min(streak - 1, GAME_CONFIG.social.visitStreakBonusMax)} 友情点）` : ''}`
+        : '💧 Lv.5 解锁拜访与帮浇'}
+    </div>
+  `);
 
   sections.push(`
     <div class="friends-section">
@@ -587,6 +604,20 @@ export function renderCommunityView(state) {
     )
     .join("");
 
+  const weekly = CommunitySystem.getWeeklyLeaderboard(state);
+  const myWeekly = weekly.find((r) => r.isMe);
+  const weeklyPanel = `
+    <div class="weekly-board">
+      <h3>🏅 本周贡献榜</h3>
+      ${weekly.map((r) => `
+        <div class="member-row ${r.isMe ? 'me' : ''}">
+          <span>${r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : `${r.rank}.`} ${escapeHtml(r.name)}${r.isMe ? '（我）' : ''}</span>
+          <b>${r.contribution}</b>
+        </div>`).join("")}
+      <p class="muted-text">每周一刷新。我的本周贡献：${myWeekly ? myWeekly.contribution : 0}</p>
+    </div>
+  `;
+
   return `
     <div class="community-layout">
       ${stagePanel}
@@ -595,6 +626,7 @@ export function renderCommunityView(state) {
         ${members}
         <p class="muted-text">我的总贡献：${state.wallet.communityContribution}</p>
       </div>
+      ${weeklyPanel}
     </div>
   `;
 }

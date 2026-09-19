@@ -4,6 +4,8 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
 import { tryNeighborGift } from './events.js';
+import { GAME_CONFIG } from '../config/constants.js';
+import { todayKey, yesterdayKey } from '../utils/time.js';
 
 const VISIT_FRIEND_POINT = 3;
 const LIKE_FRIEND_POINT = 5;
@@ -55,9 +57,24 @@ export function visitFriend(state, friendId) {
     return { success: false, message: "Lv.5解锁拜访功能" };
   }
 
-  // 获得友情点（宠物加成）
+  // 拜访连击：连续多天都有拜访，每天额外 +1 友情点（封顶 +5）
+  const social = state.social;
+  const yesterday = yesterdayKey();
+  const today = todayKey();
+  if (social.lastVisitDate !== today) {
+    // 今天第一次拜访：昨天有拜访就连击 +1，否则从头数
+    social.visitStreak = social.lastVisitDate === yesterday ? social.visitStreak + 1 : 1;
+    social.lastVisitDate = today;
+  }
+  const streakBonus = Math.min(
+    Math.max(0, social.visitStreak - 1),
+    GAME_CONFIG.social.visitStreakBonusMax
+  );
+
+  // 获得友情点（宠物加成 + 拜访连击）
   const point = applyPetToFriendPoint(VISIT_FRIEND_POINT, state);
   addItem(state, "friendPoint", point);
+  if (streakBonus > 0) addItem(state, "friendPoint", streakBonus);
 
   logEvent(state, "friend_visit");
   trackDaily(state, "visit", 1);
@@ -67,9 +84,10 @@ export function visitFriend(state, friendId) {
   const gift = tryNeighborGift(state, friendId);
 
   const giftText = gift ? ` ${gift.line}（获得${gift.rewardText}）` : "";
+  const streakText = streakBonus > 0 ? `（连续拜访${social.visitStreak}天，+${streakBonus}）` : "";
   return {
     success: true,
-    message: `拜访了${friend.name}，获得${point}友情点${giftText}`,
+    message: `拜访了${friend.name}，获得${point}友情点${streakText}${giftText}`,
     state,
   };
 }
@@ -136,4 +154,73 @@ export function getMyFriends(state) {
  */
 export function hasLikedToday(state, friendId) {
   return !!state.daily.friendLikes[friendId];
+}
+
+/**
+ * 今天还剩的帮浇次数
+ * @param {Object} state
+ * @returns {number}
+ */
+export function getWaterChancesLeft(state) {
+  if (state.social.waterDate !== todayKey()) {
+    return GAME_CONFIG.social.waterPerDay;
+  }
+  return Math.max(0, GAME_CONFIG.social.waterPerDay - state.social.waterUsed);
+}
+
+/**
+ * 好友帮浇：给好友一块未熟的地块拨快 waterBoostSec 秒。
+ * NPC 好友的地块是模拟出来的：直接记录累计被浇秒数，拜访时一起结算。
+ * @param {Object} state
+ * @param {string} friendId
+ * @returns {Object} { success, message, state }
+ */
+export function waterFriendPlot(state, friendId) {
+  const friend = state.friends.find((f) => f.id === friendId);
+  if (!friend || !friend.isFriend) {
+    return { success: false, message: "需要先添加好友" };
+  }
+  if (state.wallet.level < GAME_CONFIG.social.waterMinLevel) {
+    return { success: false, message: `Lv.${GAME_CONFIG.social.waterMinLevel}解锁帮浇` };
+  }
+
+  const today = todayKey();
+  if (state.social.waterDate !== today) {
+    // 新的一天，重置帮浇计数
+    state.social.waterDate = today;
+    state.social.waterUsed = 0;
+    state.social.wateredBy = [];
+  }
+  if (state.social.waterUsed >= GAME_CONFIG.social.waterPerDay) {
+    return { success: false, message: "今天的帮浇次数用完了，明天再来" };
+  }
+  if (state.social.wateredBy.includes(friendId)) {
+    return { success: false, message: `今天已经帮${friend.name}浇过了` };
+  }
+
+  state.social.waterUsed += 1;
+  state.social.wateredBy.push(friendId);
+
+  // 记录邻居的人情：给好友的 mood 变热络，并给一点友情点
+  const point = applyPetToFriendPoint(2, state);
+  addItem(state, "friendPoint", point);
+  logEvent(state, "friend_water");
+  trackDaily(state, "water", 1);
+  emit(Events.FRIEND_WATERED, { friendId });
+
+  return {
+    success: true,
+    message: `帮${friend.name}浇了田，作物快了${Math.floor(GAME_CONFIG.social.waterBoostSec / 60)}分钟，获得${point}友情点`,
+    state,
+  };
+}
+
+/**
+ * 今天是否已帮某好友浇过
+ * @param {Object} state
+ * @param {string} friendId
+ * @returns {boolean}
+ */
+export function hasWateredToday(state, friendId) {
+  return state.social.waterDate === todayKey() && state.social.wateredBy.includes(friendId);
 }
