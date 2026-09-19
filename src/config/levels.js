@@ -9,7 +9,7 @@ export const levels = [
   { level: 7, needExp: 600, unlock: "每日任务" },
   { level: 8, needExp: 850, unlock: "南瓜" },
   { level: 9, needExp: 1100, unlock: "向日葵、鱼缸" },
-  { level: 10, needExp: 1500, unlock: "社区系统、加工坊" },
+  { level: 10, needExp: 1500, unlock: "社区系统、加工坊、杂交工坊" },
   { level: 11, needExp: 1800, unlock: "葡萄" },
   { level: 12, needExp: 2200, unlock: "南瓜派配方、钢琴" },
   { level: 13, needExp: 2700, unlock: "宠物系统" },

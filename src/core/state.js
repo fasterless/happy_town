@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 10;
+export const CURRENT_VERSION = 11;
 
 /**
  * 创建默认游戏状态
@@ -118,6 +118,10 @@ export function createDefaultState() {
       date: "",            // 热度所在的日期键，跨天轮换
       demand: {},          // cropId -> 热度 0-100
       listedToday: {},     // 今天已挂售的作物数量（吃供给压价）
+    },
+    // 杂交工坊：已解锁的杂交配方 id（hybrid_<id> 库存键的作物）
+    hybrid: {
+      discovered: [],
     },
     // 图鉴：收录过的条目（收获过的作物、拥有过的家具、钓到过的鱼）
     // "拥有过"意味着卖出/消耗后图鉴仍保留收录记录

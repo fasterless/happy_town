@@ -2,10 +2,11 @@
 import { crops } from '../config/crops.js';
 import { furniture } from '../config/furniture.js';
 import { craftingRecipes } from '../config/crafting.js';
+import { hybridRecipes } from '../config/hybrid.js';
 import { fishes } from '../systems/fishing.js';
 
 // 默认配置表，供 getItemName / getItemIcon 在未显式传入 configs 时使用
-const defaultConfigs = { crops, furniture, craftingRecipes, fishes };
+const defaultConfigs = { crops, furniture, craftingRecipes, hybridRecipes, fishes };
 
 // 基础物品的显示名与图标
 const BASIC_LABELS = {
@@ -133,6 +134,12 @@ export function getItemName(key, configs = defaultConfigs) {
     return crop ? crop.name : key;
   }
 
+  if (key.startsWith("seed_") && configs.hybridRecipes) {
+    const recipeId = Number(key.replace("seed_", ""));
+    const recipe = configs.hybridRecipes.find(r => r.id === recipeId);
+    return recipe ? `${recipe.name}种子` : key;
+  }
+
   if (key.startsWith("f_") && configs.furniture) {
     const furId = Number(key.replace("f_", ""));
     const fur = configs.furniture.find(f => f.id === furId);
@@ -173,6 +180,12 @@ export function getItemIcon(key, configs = defaultConfigs) {
     const cropId = Number(key.replace("crop_", ""));
     const crop = configs.crops.find(c => c.id === cropId);
     return crop ? crop.icon : "📦";
+  }
+
+  if (key.startsWith("seed_") && configs.hybridRecipes) {
+    const recipeId = Number(key.replace("seed_", ""));
+    const recipe = configs.hybridRecipes.find(r => r.id === recipeId);
+    return recipe ? recipe.icon : "🌱";
   }
 
   if (key.startsWith("f_") && configs.furniture) {

@@ -11,6 +11,7 @@ import { friendShopGoods } from '../config/friendShop.js';
 import { fountainStages } from '../config/npcs.js';
 import { getNextLevelInfo, levels } from '../config/levels.js';
 import { getSeasonalCrops, getSeasonalFurniture } from '../config/seasons.js';
+import { hybridRecipes } from '../config/hybrid.js';
 import { achievements, getAchievementProgressPercent, getAchievementStats } from '../systems/achievements.js';
 import { pets } from '../config/pets.js';
 import { getActivePetBuff, hasFedToday } from '../systems/pets.js';
@@ -41,6 +42,7 @@ import * as SeasonsSystem from '../systems/seasons.js';
 import * as RanchSystem from '../systems/ranch.js';
 import * as CodexSystem from '../systems/codex.js';
 import * as MarketSystem from '../systems/market.js';
+import * as HybridSystem from '../systems/hybrid.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -197,11 +199,32 @@ export function renderFarmView(state, selectedCropId) {
     })
     .join("");
 
+  // 杂交作物：种子在杂交工坊合成（seed_<id>），种植时优先消耗背包种子
+  const hybridSeeds = hybridRecipes
+    .map(crop => {
+      const unlocked = state.wallet.level >= crop.unlockLevel;
+      const selected = crop.id === selectedCropId;
+      const ownedSeeds = getCount(state, `seed_${crop.id}`);
+      const growTime = FarmSystem.getGrowTime(state, crop);
+
+      return `<div class="seed-item hybrid ${selected ? 'selected' : ''} ${!unlocked ? 'locked' : ''}"
+        ${unlocked ? `onclick="window.selectCropHandler(${crop.id})"` : ''}>
+        <span class="seed-icon">${crop.icon}</span>
+        <span class="seed-name">${escapeHtml(crop.name)} <small class="season-badge">杂交</small></span>
+        <span class="seed-meta">
+          <span title="背包里的杂交种子">🌱×${ownedSeeds}</span>
+          <span>⏱${formatTime(growTime)}</span>
+        </span>
+        ${!unlocked ? `<span class="seed-lock">Lv.${crop.unlockLevel}</span>` : ''}
+      </div>`;
+    })
+    .join("");
+
   const expansion = renderExpansionPanel(state);
   const sellBarn = renderSellBarn(state);
   const market = renderMarketBoard(state);
 
-  return { grid, seeds: seeds + seasonalSeeds, expansion, sellBarn, market };
+  return { grid, seeds: seeds + seasonalSeeds + hybridSeeds, expansion, sellBarn, market };
 }
 
 /**
@@ -302,11 +325,15 @@ export function renderPlotCell(state, index, selectedCropId) {
   if (!plot) {
     const crop = getCrop(selectedCropId);
     const price = crop ? FarmSystem.getSeedPrice(state, crop) : 0;
+    // 杂交作物有种子时优先显示种子数（种植时也是先扣种子）
+    const seedKey = crop ? `seed_${crop.id}` : null;
+    const ownedSeeds = seedKey ? getCount(state, seedKey) : 0;
+    const costLabel = ownedSeeds > 0 ? `🌱×${ownedSeeds}` : `🪙${price}`;
     return `<div class="plot empty" data-plot="${index}">
       <div class="crop-icon">🕳️</div>
       <div class="crop-status">空地</div>
       <button type="button" onclick="window.plantCropHandler(${index})">
-        种 ${crop ? crop.icon : ""} 🪙${price}
+        种 ${crop ? crop.icon : ""} ${costLabel}
       </button>
     </div>`;
   }
@@ -970,10 +997,12 @@ export function renderCodexView(state) {
     </div>`;
   };
 
-  const cropEntries = crops.map((c) => ({
-    icon: c.icon, name: c.name,
-    owned: state.codex.crops.includes(c.id),
-  }));
+  const cropEntries = crops
+    .concat(hybridRecipes)
+    .map((c) => ({
+      icon: c.icon, name: c.name,
+      owned: state.codex.crops.includes(c.id),
+    }));
   const furnitureEntries = furniture.map((f) => ({
     icon: f.icon, name: f.name,
     owned: state.codex.furniture.includes(f.id),
@@ -1205,6 +1234,58 @@ export function renderCraftingView(state) {
     .join("");
 
   return { queue: queuePanel, recipes };
+}
+
+/**
+ * 渲染杂交工坊视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderHybridView(state) {
+  if (!HybridSystem.isHybridUnlocked(state)) {
+    return '<p class="lock-banner">🔒 需要 Lv.10 解锁杂交工坊</p>';
+  }
+
+  const stats = HybridSystem.getHybridStats(state);
+  const header = `
+    <p class="muted-text">两种亲本作物 + 研究费 = 2 粒杂交种子。种子种进田里和普通作物一样
+      收获、卖钱、交订单；没种子时也可以用补种价直接金币补种。首次合成会点亮图谱。</p>
+    <p class="muted-text">🧬 图谱进度 ${stats.discovered}/${stats.total}</p>
+  `;
+
+  const cards = hybridRecipes.map(recipe => {
+    const unlocked = state.wallet.level >= recipe.unlockLevel;
+    const discovered = HybridSystem.isDiscovered(state, recipe.id);
+    const canDo = HybridSystem.canCrossbreed(state, recipe.id);
+
+    const requiresHtml = recipe.requires.map(req => {
+      const has = getCount(state, req.item);
+      return `<span class="req-chip ${has >= req.count ? 'enough' : 'not-enough'}">
+        ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${has}/${req.count}
+      </span>`;
+    }).join(" ");
+
+    return `<div class="recipe-item hybrid ${!unlocked ? 'locked' : ''}">
+      <span class="recipe-icon">${discovered ? recipe.icon : '❓'}</span>
+      <div class="recipe-info">
+        <h4>${unlocked ? escapeHtml(recipe.name) : '???'}
+          ${discovered ? '<small class="season-badge">已点亮</small>' : ''}</h4>
+        <div class="order-requires">${requiresHtml}
+          <span class="req-chip ${state.wallet.coin >= recipe.coin ? 'enough' : 'not-enough'}">🪙 研究费 ${recipe.coin}</span>
+        </div>
+        <p class="muted-text">⏱ ${formatTime(recipe.growTime)} · 产出×${recipe.harvestCount} · 售价🪙${recipe.sellPrice} · 补种价🪙${recipe.seedPrice}</p>
+      </div>
+      <div class="recipe-actions">
+        ${unlocked
+          ? `<button class="small-action" onclick="window.crossbreedHandler(${recipe.id})" ${!canDo ? 'disabled' : ''}>
+              ${canDo ? '杂交' : '缺料'}
+            </button>`
+          : `<span class="seed-lock">Lv.${recipe.unlockLevel}</span>`}
+      </div>
+    </div>`;
+  }).join("");
+
+  return header + cards;
 }
 
 /**

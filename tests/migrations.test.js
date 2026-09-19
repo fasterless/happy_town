@@ -79,4 +79,18 @@ describe('存档版本迁移', () => {
     expect(first.wallet.coin).toBe(coin);
     expect(first.version).toBe(CURRENT_VERSION);
   });
+
+  it('v10 老存档迁移后补上 hybrid.discovered', () => {
+    const saved = createDefaultState();
+    saved.version = 10;
+    delete saved.hybrid; // v10 时期还没有杂交工坊
+    saved.user.created = true;
+
+    const merged = mergeState(createDefaultState(), saved);
+    migrateState(merged);
+
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(Array.isArray(merged.hybrid.discovered)).toBe(true);
+    expect(merged.hybrid.discovered).toHaveLength(0);
+  });
 });

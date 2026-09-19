@@ -136,6 +136,9 @@ export const Events = {
   // 集市相关
   MARKET_SOLD: 'market:sold',
 
+  // 杂交相关
+  HYBRID_DONE: 'hybrid:done',
+
   // 系统相关
   STATE_UPDATED: 'state:updated',
   TOAST_SHOW: 'toast:show',

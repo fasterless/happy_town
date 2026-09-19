@@ -67,6 +67,11 @@ export const achievements = [
   { id: "lottery_30", name: "小镇锦鲤",  desc: "转盘累计抽奖30次", icon: "🎡", category: "转盘", target: 30,  trackKey: "lottery_spin", rewards: { diamond: 60, lottery_ticket: 3 } },
   { id: "lottery_100", name: "转盘常客",  desc: "转盘累计抽奖100次", icon: "🎰", category: "转盘", target: 100, trackKey: "lottery_spin", rewards: { diamond: 200, lottery_ticket: 10 } },
 
+  // ============ 🧬 杂交工坊 ============
+  { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
+  { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },
+  { id: "hybrid_harvest_10", name: "新芽收藏家", desc: "收获10次杂交作物", icon: "🌱", category: "杂交", target: 10, trackKey: "hybrid_harvest", rewards: { diamond: 60, speed_ticket: 2 } },
+
   // ============ 🐾 宠物 ============
   { id: "pet_first", name: "第一只宠物", desc: "买下第一只宠物",    icon: "🐾", category: "宠物", target: 1,   trackKey: "pet_own", rewards: { diamond: 30 } },
   { id: "pet_all",   name: "动物园园长", desc: "集齐全部7种宠物",    icon: "🦊", category: "宠物", target: 7,   trackKey: "pet_all", rewards: { diamond: 300 } },
@@ -206,6 +211,9 @@ function getAchievementProgress(state, achievement) {
 
     case "gold_crop":
       return state.farm.goldStats?.totalGold || 0;
+
+    case "hybrid_all":
+      return (state.hybrid?.discovered || []).length;
 
     default:
       return 0;

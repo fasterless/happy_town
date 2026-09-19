@@ -6,6 +6,7 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyWeatherToGrowTime } from './weather.js';
 import { recordCropHarvest } from './codex.js';
+import { hybridRecipes } from '../config/hybrid.js';
 import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
@@ -21,6 +22,13 @@ export const GOLD_SELL_MULTIPLIER = 3;
  */
 export function getSeedPrice(state, crop) {
   return applyPetToSeedPrice(crop.seedPrice, state);
+}
+
+/**
+ * 是否杂交作物（1200 段 id 段）
+ */
+export function isHybridCrop(cropId) {
+  return hybridRecipes.some((r) => r.id === cropId);
 }
 
 /**
@@ -169,14 +177,23 @@ export function plantCrop(state, plotIndex, cropId) {
     return { success: false, message: "地块已种植作物" };
   }
 
-  // 检查金币（宠物折扣后的价格）
+  // 杂交作物：优先消耗背包里的杂交种子（seed_<id>），
+  // 没种子才走金币补种（价格比杂交高，给囤种子一个价值）
   const price = getSeedPrice(state, crop);
-  if (!hasEnough(state, "coin", price)) {
-    return { success: false, message: "金币不足" };
+  const seedKey = `seed_${crop.id}`;
+  const hasSeed = isHybridCrop(crop.id) && hasEnough(state, seedKey, 1);
+
+  if (!hasSeed && !hasEnough(state, "coin", price)) {
+    return { success: false, message: isHybridCrop(crop.id)
+      ? "没有杂交种子，金币也不够补种"
+      : "金币不足" };
   }
 
-  // 扣除金币
-  spendItem(state, "coin", price);
+  if (hasSeed) {
+    spendItem(state, seedKey, 1);
+  } else {
+    spendItem(state, "coin", price);
+  }
 
   // 种植，并固化本次的生长时长
   state.farm.plots[plotIndex] = {
@@ -210,6 +227,9 @@ export function plantCrop(state, plotIndex, cropId) {
 function harvestPlotInto(state, crop, exp) {
   addItem(state, `crop_${crop.id}`, crop.harvestCount);
   recordCropHarvest(state, crop.id);
+  if (isHybridCrop(crop.id)) {
+    logEvent(state, "hybrid_harvest");
+  }
   let message = `收获了${crop.harvestCount}个${crop.icon}${crop.name}`;
   let goldCount = 0;
 
@@ -325,11 +345,14 @@ export function plantAll(state, cropId) {
 
   let count = 0;
   const price = getSeedPrice(state, crop);
+  const hybrid = isHybridCrop(crop.id);
+  // 杂交作物：种子或金币任一够就能继续种（plantCrop 内部优先扣种子）
+  const canAffordOne = () => (hybrid && hasEnough(state, `seed_${crop.id}`, 1)) || hasEnough(state, "coin", price);
 
   for (let index = 0; index < state.farm.plots.length; index++) {
     if (!isPlotUnlocked(state, index)) continue;
     if (state.farm.plots[index] !== null) continue;
-    if (!hasEnough(state, "coin", price)) break; // 金币不够就停，不报错
+    if (!canAffordOne()) break; // 种子和金币都不够就停，不报错
 
     const result = plantCrop(state, index, cropId);
     if (result.success) count++;
@@ -339,7 +362,9 @@ export function plantAll(state, cropId) {
     return {
       success: false,
       count: 0,
-      message: hasEnough(state, "coin", price) ? "没有可种的空地" : `金币不足，种一株${crop.name}需要🪙${price}`,
+      message: canAffordOne() ? "没有可种的空地" : hybrid
+        ? `种子和金币都不够，种一株${crop.name}需要🌱种子或🪙${price}`
+        : `金币不足，种一株${crop.name}需要🪙${price}`,
       state,
     };
   }

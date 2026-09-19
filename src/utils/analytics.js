@@ -64,6 +64,10 @@ function getEventDisplayName(eventName) {
     seasonal_claim: "季节活动领奖",
     neighbor_gift: "邻居回礼",
     pet_feed: "喂养宠物",
+    hybrid_crossbreed: "杂交合成",
+    hybrid_discover: "发现新图谱",
+    hybrid_harvest: "收获杂交作物",
+    market_sell: "集市挂售",
   };
 
   return names[eventName] || eventName;

@@ -6,7 +6,7 @@ import { loadState, saveState, debouncedSave, clearStorage, exportSave, importSa
 import { addRewards } from './core/inventory.js';
 
 // 导入配置
-import { crops } from './config/crops.js';
+import { crops, getCrop } from './config/crops.js';
 import { levels } from './config/levels.js';
 import { avatars } from './config/constants.js';
 
@@ -28,6 +28,7 @@ import * as SeasonsSystem from './systems/seasons.js';
 import * as RanchSystem from './systems/ranch.js';
 import * as CodexSystem from './systems/codex.js';
 import * as MarketSystem from './systems/market.js';
+import * as HybridSystem from './systems/hybrid.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -398,6 +399,10 @@ function renderCraftingView() {
   setHtml('recipeList', crafting.recipes);
 }
 
+function renderHybridView() {
+  setHtml('hybridContent', Renderer.renderHybridView(state));
+}
+
 function renderFishingView() {
   const fishing = Renderer.renderFishingView(state);
   setHtml('fishingPond', fishing.pond);
@@ -440,6 +445,7 @@ const VIEW_RENDERERS = {
   achievementsView: renderAchievementsView,
   petsView: renderPetsView,
   craftingView: renderCraftingView,
+  hybridView: renderHybridView,
   fishingView: renderFishingView,
   lotteryView: renderLotteryView,
   seasonsView: renderSeasonsView,
@@ -512,7 +518,7 @@ function runAction(fn, sound = 'success') {
 
 // 农场
 window.selectCropHandler = (cropId) => {
-  const crop = crops.find((c) => c.id === cropId);
+  const crop = getCrop(cropId); // 含季节限定与杂交作物
   if (!crop) return;
   if (state.wallet.level < crop.unlockLevel) {
     showToast(`需要Lv.${crop.unlockLevel}解锁${crop.name}`, 'error');
@@ -693,6 +699,13 @@ window.claimPetGiftHandler = () => runAction(() => PetsSystem.claimPetDailyGift(
 window.startCraftingHandler = (recipeId) => runAction(() => CraftingSystem.startCrafting(state, recipeId), 'plant');
 window.claimCraftingHandler = (queueIndex) => runAction(() => CraftingSystem.claimCrafting(state, queueIndex), 'harvest');
 window.cancelCraftingHandler = (queueIndex) => runAction(() => CraftingSystem.cancelCrafting(state, queueIndex), 'click');
+
+// 杂交工坊
+window.crossbreedHandler = (recipeId) => {
+  const result = runAction(() => HybridSystem.crossbreed(state, recipeId), 'levelup');
+  // 首次合成点亮图谱，农场种子铺里的持有数也要跟着刷新
+  if (result?.success) renderViews('farmView');
+};
 
 function claimAllCraft() {
   runAction(() => CraftingSystem.claimAllCrafting(state), 'harvest');

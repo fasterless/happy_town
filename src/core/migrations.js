@@ -25,6 +25,7 @@ const MIGRATIONS = [
   { fromVersion: 7, migrate: toV8 },
   { fromVersion: 8, migrate: toV9 },
   { fromVersion: 9, migrate: toV10 },
+  { fromVersion: 10, migrate: toV11 },
 ];
 
 /**
@@ -100,6 +101,13 @@ function toV10(state) {          // v9 → v10：小镇集市
   if (!state.market.demand || typeof state.market.demand !== 'object') state.market.demand = {};
   if (!state.market.listedToday || typeof state.market.listedToday !== 'object') state.market.listedToday = {};
   state.version = 10;
+}
+
+function toV11(state) {          // v10 → v11：杂交工坊
+  if (!state.hybrid || !Array.isArray(state.hybrid.discovered)) {
+    state.hybrid = { discovered: [] };
+  }
+  state.version = 11;
 }
 
 /**

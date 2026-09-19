@@ -4,6 +4,7 @@
 // 关键点：图鉴记录的是"曾经拥有"，卖出/消耗之后条目仍然保留。
 // 各分类按收录进度发档位奖励（全收录另有钻石大奖）。
 import { crops } from '../config/crops.js';
+import { hybridRecipes } from '../config/hybrid.js';
 import { furniture } from '../config/furniture.js';
 import { fishes } from './fishing.js';
 import { addRewards } from '../core/inventory.js';
@@ -109,7 +110,8 @@ export function getCodexProgress(state) {
   const collected = state.codex.crops.length
     + state.codex.furniture.length
     + state.codex.fishes.length;
-  const total = crops.length + furniture.length + fishes.length;
+  // 杂交作物也计入作物图鉴总量（收录入口同样是收获）
+  const total = crops.length + hybridRecipes.length + furniture.length + fishes.length;
   return { collected, total, ratio: total ? collected / total : 0 };
 }
 

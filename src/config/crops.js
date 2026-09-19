@@ -20,7 +20,10 @@ export const crops = [
 // 所以查询不限「当前活动」，所有季节的限定作物都能查到。
 // 种子铺只展示当前活动开放的（见 getSeasonalCrops 的调用方）。
 import { getAllSeasonalCrops } from './seasons.js';
+import { hybridRecipes } from './hybrid.js';
 
 export function getCrop(id) {
-  return crops.find((c) => c.id === id) || getAllSeasonalCrops().find((c) => c.id === id);
+  return crops.find((c) => c.id === id)
+    || getAllSeasonalCrops().find((c) => c.id === id)
+    || hybridRecipes.find((c) => c.id === id);
 }

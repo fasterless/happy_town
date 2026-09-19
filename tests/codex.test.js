@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { createDefaultState } from '../src/core/state.js';
 import { crops } from '../src/config/crops.js';
+import { hybridRecipes } from '../src/config/hybrid.js';
 import { furniture } from '../src/config/furniture.js';
 import { fishes } from '../src/systems/fishing.js';
 import {
@@ -45,7 +46,7 @@ describe('图鉴收录', () => {
 
     const progress = getCodexProgress(state);
     expect(progress.collected).toBe(3 + 4 + 2);
-    expect(progress.total).toBe(crops.length + furniture.length + fishes.length);
+    expect(progress.total).toBe(crops.length + hybridRecipes.length + furniture.length + fishes.length);
     expect(progress.ratio).toBeCloseTo(9 / progress.total);
   });
 });
@@ -82,7 +83,7 @@ describe('档位奖励', () => {
     expect(claimCodexTier(state, 't25').success).toBe(false);
 
     // 收满 25%
-    const total = crops.length + furniture.length + fishes.length;
+    const total = crops.length + hybridRecipes.length + furniture.length + fishes.length;
     const need = Math.ceil(total * 0.25);
     let added = 0;
     for (const c of crops) { if (added < need) { recordCropHarvest(state, c.id); added++; } }
