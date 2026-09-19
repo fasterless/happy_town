@@ -90,6 +90,11 @@ export const Events = {
   USER_CREATED: 'user:created',
   USER_LEVEL_UP: 'user:level_up',
 
+  // 养殖相关
+  ANIMAL_BOUGHT: 'ranch:animal_bought',
+  ANIMAL_FED: 'ranch:animal_fed',
+  ANIMAL_PRODUCED: 'ranch:animal_produced',
+
   // 农场相关
   CROP_PLANTED: 'crop:planted',
   CROP_HARVESTED: 'crop:harvested',

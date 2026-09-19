@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 8;
 
 /**
  * 创建默认游戏状态
@@ -91,6 +91,12 @@ export function createDefaultState() {
     // 加工坊：正在进行的加工批次
     crafting: {
       queue: [],
+    },
+    // 养殖栏：owned 是已购买的动物 id 列表，
+    // animals.<id> = { fedAt, lastCollectAt } 记录喂食和收取指针
+    ranch: {
+      owned: [],
+      animals: {},
     },
     // 湖畔钓鱼：每日免费次数使用记录
     fishing: {
@@ -217,6 +223,14 @@ export function normalizeState(state) {
 
   if (!state.farm.goldStats) {
     state.farm.goldStats = { totalGold: 0 };
+  }
+
+  // 养殖栏：v8 新增，已最新版本的存档也在这里兜底形状
+  if (!state.ranch || !Array.isArray(state.ranch.owned)) {
+    state.ranch = { owned: [], animals: {} };
+  }
+  if (!state.ranch.animals || typeof state.ranch.animals !== 'object') {
+    state.ranch.animals = {};
   }
 
   if (!Array.isArray(state.home.layout) || state.home.layout.length !== 36) {

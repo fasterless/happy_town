@@ -57,6 +57,24 @@ export const craftingRecipes = [
     requires: [{ item: "crop_1009", count: 2 }, { item: "crop_1008", count: 1 }],
     result: { key: "goods_5006", count: 1 },
   },
+  {
+    id: 5007,
+    name: "手工奶酪",
+    icon: "🧀",
+    unlockLevel: 6,
+    time: 720,
+    requires: [{ item: "milk", count: 1 }, { item: "crop_1001", count: 2 }],
+    result: { key: "goods_5007", count: 1 },
+  },
+  {
+    id: 5008,
+    name: "羊毛毯",
+    icon: "🛏️",
+    unlockLevel: 8,
+    time: 1080,
+    requires: [{ item: "wool", count: 2 }, { item: "cloth", count: 1 }],
+    result: { key: "goods_5008", count: 1 },
+  },
 ];
 
 // 配方查询辅助函数

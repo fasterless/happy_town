@@ -1719,3 +1719,49 @@
   border-radius: 8px;
   font-weight: 600;
 }
+
+/* ===== 养殖栏（第二阶段） ===== */
+
+.ranch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 4px 0 16px;
+}
+
+.animal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border: 1px solid rgba(93, 65, 39, 0.2);
+  border-radius: var(--radius, 12px);
+  background: rgba(255, 250, 235, 0.6);
+  text-align: center;
+}
+
+.animal-card.locked {
+  opacity: 0.85;
+}
+
+.animal-card.owned.hungry {
+  border-style: dashed;
+  border-color: rgba(179, 85, 46, 0.5);
+}
+
+.animal-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.animal-card h4 {
+  margin: 0;
+}
+
+.animal-card .item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

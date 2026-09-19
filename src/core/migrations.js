@@ -22,6 +22,7 @@ const MIGRATIONS = [
   { fromVersion: 4, migrate: toV5 },
   { fromVersion: 5, migrate: toV6 },
   { fromVersion: 6, migrate: toV7 },
+  { fromVersion: 7, migrate: toV8 },
 ];
 
 /**
@@ -67,6 +68,16 @@ function toV7(state) {           // v6 → v7：好友帮浇 / 拜访连击 / �
     state.community.weekly = { week: "", contribution: 0 };
   }
   state.version = 7;
+}
+
+function toV8(state) {           // v7 → v8：养殖栏
+  if (!state.ranch || !Array.isArray(state.ranch.owned)) {
+    state.ranch = { owned: [] };
+  }
+  if (!state.ranch.animals || typeof state.ranch.animals !== 'object') {
+    state.ranch.animals = {};
+  }
+  state.version = 8;
 }
 
 /**

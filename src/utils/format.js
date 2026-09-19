@@ -19,6 +19,9 @@ const BASIC_LABELS = {
   cloth: "布料",
   speed_ticket: "加速券",
   lottery_ticket: "抽奖券",
+  egg: "鸡蛋",
+  wool: "羊毛",
+  milk: "牛奶",
 };
 
 const BASIC_ICONS = {
@@ -32,6 +35,9 @@ const BASIC_ICONS = {
   cloth: "🧵",
   speed_ticket: "⏩",
   lottery_ticket: "🎟️",
+  egg: "🥚",
+  wool: "🧶",
+  milk: "🥛",
 };
 
 /**

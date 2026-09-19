@@ -36,6 +36,7 @@ import * as CraftingSystem from '../systems/crafting.js';
 import * as FishingSystem from '../systems/fishing.js';
 import * as LotterySystem from '../systems/lottery.js';
 import * as SeasonsSystem from '../systems/seasons.js';
+import * as RanchSystem from '../systems/ranch.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -908,6 +909,54 @@ export function renderAdminView(state) {
       </div>
     </div>
   `;
+}
+
+/**
+ * 渲染养殖栏视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderRanchView(state) {
+  if (!RanchSystem.isRanchUnlocked(state)) {
+    return `<p class="lock-banner">🔒 Lv.${GAME_CONFIG.ranch.minLevel} 解锁养殖栏</p>`;
+  }
+
+  const cfg = GAME_CONFIG.ranch;
+  const rows = cfg.animals.map((animal) => {
+    if (!state.ranch.owned.includes(animal.id)) {
+      const priceLabel = animal.priceType === 'coin' ? `🪙${animal.price}` : `💎${animal.price}`;
+      const affordable = state.wallet[animal.priceType] >= animal.price;
+      return `<div class="animal-card locked">
+        <span class="animal-icon">${animal.icon}</span>
+        <h4>${escapeHtml(animal.name)}</h4>
+        <p class="muted-text">每${Math.floor(animal.produce.intervalSec / 3600)}小时产出${getItemIcon(animal.produce.item)}×${animal.produce.count}</p>
+        <p class="muted-text">饲料：${getItemIcon(animal.feed.item)}${escapeHtml(getItemName(animal.feed.item))}×${animal.feed.count}</p>
+        <button class="small-action" onclick="window.buyAnimalHandler('${animal.id}')"
+          ${affordable ? '' : 'disabled'}>${priceLabel} 购买</button>
+      </div>`;
+    }
+
+    const fed = RanchSystem.isAnimalFed(state, animal.id);
+    const pending = RanchSystem.getPendingProduce(state, animal.id);
+
+    return `<div class="animal-card owned ${fed ? 'fed' : 'hungry'}">
+      <span class="animal-icon">${animal.icon}</span>
+      <h4>${escapeHtml(animal.name)}</h4>
+      <p>${fed ? '😊 吃饱了' : '🍽️ 饿了，产出暂停中'}</p>
+      <p>攒了 ${getItemIcon(animal.produce.item)} ×${pending}
+        ${pending > 0 ? '<b class="buffed">可收取</b>' : ''}</p>
+      <div class="item-actions">
+        <button class="small-action" onclick="window.feedAnimalHandler('${animal.id}')" ${fed ? 'disabled' : ''}>
+          ${fed ? '饱着呢' : `喂 ${getItemIcon(animal.feed.item)}×${animal.feed.count}`}
+        </button>
+        <button class="primary-action" onclick="window.collectProduceHandler('${animal.id}')" ${pending < 1 ? 'disabled' : ''}>
+          收取
+        </button>
+      </div>
+    </div>`;
+  });
+
+  return `<div class="ranch-grid">${rows.join("")}</div>`;
 }
 
 /**

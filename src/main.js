@@ -25,6 +25,7 @@ import * as CraftingSystem from './systems/crafting.js';
 import * as FishingSystem from './systems/fishing.js';
 import * as LotterySystem from './systems/lottery.js';
 import * as SeasonsSystem from './systems/seasons.js';
+import * as RanchSystem from './systems/ranch.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -107,6 +108,7 @@ function attachEvents() {
   $('resetDailyButton')?.addEventListener('click', resetDaily);
   $('testRewardButton')?.addEventListener('click', giveTestRewards);
   $('claimAllCraftButton')?.addEventListener('click', claimAllCraft);
+  $('collectAllRanchButton')?.addEventListener('click', collectAllRanch);
   $('createRoleButton')?.addEventListener('click', createRole);
   $('nicknameInput')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') createRole();
@@ -369,6 +371,10 @@ function renderSeasonsView() {
   setHtml('seasonsList', Renderer.renderSeasonsView(state));
 }
 
+function renderRanchView() {
+  setHtml('ranchList', Renderer.renderRanchView(state));
+}
+
 function renderAdminView() {
   setHtml('statsPanel', Renderer.renderAdminView(state));
 }
@@ -389,6 +395,7 @@ const VIEW_RENDERERS = {
   fishingView: renderFishingView,
   lotteryView: renderLotteryView,
   seasonsView: renderSeasonsView,
+  ranchView: renderRanchView,
   adminView: renderAdminView,
 };
 
@@ -619,6 +626,15 @@ window.spinLotteryHandler = () => {
 
 // 季节活动
 window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSeasonalReward(state, eventId), 'levelup');
+
+// 养殖栏
+window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'coin');
+window.feedAnimalHandler = (animalId) => runAction(() => RanchSystem.feedAnimal(state, animalId), 'plant');
+window.collectProduceHandler = (animalId) => runAction(() => RanchSystem.collectProduce(state, animalId), 'harvest');
+
+function collectAllRanch() {
+  runAction(() => RanchSystem.collectAllProduce(state), 'harvest');
+}
 
 // ---------------------------------------------------------------------------
 // 后台 / 设置

@@ -25,6 +25,39 @@ export const GAME_CONFIG = {
   home: {
     gridSize: { rows: 6, cols: 6 },
   },
+  ranch: {
+    minLevel: 6,            // 养殖栏 Lv.6 解锁（玉米档，口粮好买）
+    feedWindowSec: 43200,    // 喂一次管 12 小时
+    animals: [
+      {
+        id: 'chicken',
+        name: '母鸡',
+        icon: '🐔',
+        price: 300,
+        priceType: 'coin',
+        feed: { item: 'crop_1001', count: 2 },       // 小麦×2
+        produce: { item: 'egg', count: 1, intervalSec: 3600 },   // 每小时 1 个蛋
+      },
+      {
+        id: 'sheep',
+        name: '绵羊',
+        icon: '🐑',
+        price: 1500,
+        priceType: 'coin',
+        feed: { item: 'crop_1006', count: 3 },       // 稻米×3
+        produce: { item: 'wool', count: 1, intervalSec: 7200 }, // 每 2 小时 1 羊毛
+      },
+      {
+        id: 'cow',
+        name: '奶牛',
+        icon: '🐮',
+        price: 60,
+        priceType: 'diamond',
+        feed: { item: 'crop_1004', count: 2 },       // 玉米×2
+        produce: { item: 'milk', count: 1, intervalSec: 10800 }, // 每 3 小时 1 牛奶
+      },
+    ],
+  },
   social: {
     // 好友帮浇：每天 3 次，每次给好友一块未熟地块拨快 5 分钟
     waterPerDay: 3,
