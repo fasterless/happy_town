@@ -93,6 +93,9 @@ export const Events = {
   // 农场相关
   CROP_PLANTED: 'crop:planted',
   CROP_HARVESTED: 'crop:harvested',
+  FARM_EXPANDED: 'farm:expanded',
+  GOLD_CROP_HARVESTED: 'crop:gold_harvested',
+  CROP_SPED_UP: 'crop:sped_up',
 
   // 订单相关
   ORDER_COMPLETED: 'order:completed',

@@ -1545,3 +1545,69 @@
   background: #f1e3c8;
   color: #4c4034;
 }
+
+/* ===== 农场扩建 / 卖仓 / 加速券（第二阶段） ===== */
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.expansion-panel {
+  padding: 10px 14px;
+  margin-bottom: 4px;
+}
+
+.expansion-offer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px dashed rgba(93, 65, 39, 0.35);
+  border-radius: var(--radius, 12px);
+  background: rgba(255, 250, 235, 0.6);
+}
+
+.expansion-offer .expansion-cost {
+  font-weight: 600;
+}
+
+.expansion-offer .expansion-cost.locked {
+  color: #b3552e;
+}
+
+.sell-barn {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid rgba(93, 65, 39, 0.2);
+  border-radius: var(--radius, 12px);
+  background: rgba(255, 250, 235, 0.5);
+}
+
+.sell-barn h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.sell-barn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sell-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.sell-row.sell-all {
+  border-top: 1px dashed rgba(93, 65, 39, 0.3);
+  padding-top: 10px;
+}

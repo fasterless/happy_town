@@ -31,12 +31,20 @@
         <section id="farmView" class="view active-view">
           <div class="view-header">
             <h2>🌾 农场</h2>
-            <button id="collectAllButton" class="primary-action">收获成熟作物</button>
+            <div class="header-actions">
+              <button id="plantAllButton" class="ghost-action">一键种植</button>
+              <button id="collectAllButton" class="primary-action">收获成熟作物</button>
+            </div>
           </div>
+          <div id="expansionPanel" class="expansion-panel"></div>
           <div id="farmGrid" class="farm-grid"></div>
           <div class="seed-shop">
             <h3>种子铺</h3>
             <div id="seedList" class="seed-list"></div>
+          </div>
+          <div class="sell-barn">
+            <h3>🌾 卖仓</h3>
+            <div id="sellBarnList" class="sell-barn-list"></div>
           </div>
         </section>
 

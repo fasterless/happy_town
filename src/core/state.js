@@ -38,7 +38,7 @@ export function createDefaultState() {
       [furnitureKey(3001)]: 1,
     },
     farm: {
-      plots: Array.from({ length: GAME_CONFIG.farm.maxPlots }, () => null),
+      plots: Array.from({ length: GAME_CONFIG.farm.basePlots }, () => null),
       plantedTypes: [],
       expansions: [],          // 土地扩建记录（v5 预留，第二阶段启用）
       goldStats: { totalGold: 0 }, // 金穗作物统计（v5 预留，第二阶段启用）
@@ -173,17 +173,32 @@ export function mergeState(base, saved) {
  * @returns {Object} 规范化后的状态
  */
 export function normalizeState(state) {
-  const plotCount = GAME_CONFIG.farm.maxPlots;
+  // 地块数量：基础 12 块之上，买过几档扩建就扩到几块（上限 maxPlots）
+  if (!Array.isArray(state.farm.expansions)) {
+    state.farm.expansions = [];
+  }
+  const boughtPlots = state.farm.expansions
+    .map((tier) => GAME_CONFIG.farm.expansions.find((e) => e.plots === tier)?.plots || 0)
+    .filter((plots) => plots > 0);
+  const plotCount = Math.min(
+    GAME_CONFIG.farm.maxPlots,
+    Math.max(GAME_CONFIG.farm.basePlots, boughtPlots.length ? Math.max(...boughtPlots) : 0)
+  );
   if (!Array.isArray(state.farm.plots)) {
     state.farm.plots = Array.from({ length: plotCount }, () => null);
   } else if (state.farm.plots.length < plotCount) {
-    // 旧存档只有 6 块地，扩到 12 块时保留已种作物
+    // 扩建或迁移时补齐新地块，保留已种作物
     state.farm.plots = [
       ...state.farm.plots,
       ...Array.from({ length: plotCount - state.farm.plots.length }, () => null),
     ];
   } else if (state.farm.plots.length > plotCount) {
+    // 超出的地块一律没种东西才截断，防丢玩家作物
     state.farm.plots = state.farm.plots.slice(0, plotCount);
+  }
+
+  if (!state.farm.goldStats) {
+    state.farm.goldStats = { totalGold: 0 };
   }
 
   if (!Array.isArray(state.home.layout) || state.home.layout.length !== 36) {

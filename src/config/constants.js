@@ -13,7 +13,14 @@ export const PLOT_UNLOCK_LEVELS = [1, 1, 1, 1, 1, 1, 3, 5, 8, 12, 15, 18];
 export const GAME_CONFIG = {
   farm: {
     defaultPlots: 6,
-    maxPlots: 12,
+    // 基础 12 块之上还能扩建三档：15 / 18 / 21 块（对应 5x3 / 6x3 / 7x3 阵型）
+    maxPlots: 21,
+    basePlots: 12,
+    expansions: [
+      { plots: 15, coin: 2000, diamond: 20 },
+      { plots: 18, coin: 8000, diamond: 50 },
+      { plots: 21, coin: 20000, diamond: 100 },
+    ],
   },
   home: {
     gridSize: { rows: 6, cols: 6 },

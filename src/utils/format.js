@@ -114,6 +114,12 @@ export function formatNumber(num) {
 export function getItemName(key, configs = defaultConfigs) {
   if (BASIC_LABELS[key]) return BASIC_LABELS[key];
 
+  if (key.startsWith("gold_") && configs.crops) {
+    const cropId = Number(key.replace("gold_", ""));
+    const crop = configs.crops.find(c => c.id === cropId);
+    return crop ? `金穗${crop.name}` : key;
+  }
+
   if (key.startsWith("crop_") && configs.crops) {
     const cropId = Number(key.replace("crop_", ""));
     const crop = configs.crops.find(c => c.id === cropId);
@@ -149,6 +155,12 @@ export function getItemName(key, configs = defaultConfigs) {
  */
 export function getItemIcon(key, configs = defaultConfigs) {
   if (BASIC_ICONS[key]) return BASIC_ICONS[key];
+
+  if (key.startsWith("gold_") && configs.crops) {
+    const cropId = Number(key.replace("gold_", ""));
+    const crop = configs.crops.find(c => c.id === cropId);
+    return crop ? `✨${crop.icon}` : "✨";
+  }
 
   if (key.startsWith("crop_") && configs.crops) {
     const cropId = Number(key.replace("crop_", ""));

@@ -101,6 +101,7 @@ function attachEvents() {
 
   // 通用操作按钮
   $('collectAllButton')?.addEventListener('click', collectAllMature);
+  $('plantAllButton')?.addEventListener('click', plantAllSelected);
   $('clearRoomButton')?.addEventListener('click', clearRoom);
   $('saveRoomButton')?.addEventListener('click', saveRoom);
   $('resetDailyButton')?.addEventListener('click', resetDaily);
@@ -283,8 +284,10 @@ function renderChrome() {
 
 function renderFarmView() {
   const farm = Renderer.renderFarmView(state, selectedCropId);
+  setHtml('expansionPanel', farm.expansion);
   setHtml('farmGrid', farm.grid);
   setHtml('seedList', farm.seeds);
+  setHtml('sellBarnList', farm.sellBarn);
 }
 
 function renderOrdersView() {
@@ -456,6 +459,26 @@ window.harvestCropHandler = (index) => runAction(() => FarmSystem.harvestCrop(st
 function collectAllMature() {
   runAction(() => FarmSystem.harvestAllMature(state), 'harvest');
 }
+
+function plantAllSelected() {
+  runAction(() => FarmSystem.plantAll(state, selectedCropId), 'plant');
+}
+
+// 扩建 / 卖仓 / 加速券
+window.buyExpansionHandler = () => runAction(() => FarmSystem.buyExpansion(state), 'levelup');
+window.sellCropHandler = (itemKey) => runAction(() => FarmSystem.sellCrop(state, itemKey), 'coin');
+window.sellAllCropsHandler = () => {
+  const keys = Object.entries(state.inventory)
+    .filter(([key, count]) => count > 0 && /^(crop|gold)_\d+$/.test(key))
+    .map(([key]) => key);
+  if (!keys.length) {
+    showToast('背包里没有可出售的作物', 'error');
+    playSound('error');
+    return;
+  }
+  runAction(() => keys.reduce((acc, key) => FarmSystem.sellCrop(state, key), null), 'coin');
+};
+window.speedUpPlotHandler = (index) => runAction(() => FarmSystem.speedUpPlot(state, index), 'levelup');
 
 // 订单
 window.completeOrderHandler = (index) => runAction(() => OrdersSystem.completeOrder(state, index), 'coin');

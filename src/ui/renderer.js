@@ -19,6 +19,7 @@ import {
   furnitureKey,
   getItemName,
   getItemIcon,
+  formatNumber,
   escapeHtml,
 } from '../utils/format.js';
 import { getTaskProgress, isTaskComplete, getAnalytics } from '../utils/analytics.js';
@@ -169,7 +170,60 @@ export function renderFarmView(state, selectedCropId) {
     })
     .join("");
 
-  return { grid, seeds };
+  const expansion = renderExpansionPanel(state);
+  const sellBarn = renderSellBarn(state);
+
+  return { grid, seeds, expansion, sellBarn };
+}
+
+/**
+ * 土地扩建面板：显示下一档价格与购买按钮
+ */
+function renderExpansionPanel(state) {
+  const owned = FarmSystem.getPurchasedPlotCount(state);
+  const next = FarmSystem.getNextExpansion(state);
+
+  if (!next) {
+    return `<p class="muted-text">田地已扩到最大（${owned} 块），小镇里再也腾不出更多地啦。</p>`;
+  }
+
+  const affordable = state.wallet.coin >= next.coin && state.wallet.diamond >= next.diamond;
+  return `<div class="expansion-offer">
+    <span>现有 ${owned} 块田 → 扩建到 <b>${next.plots}</b> 块</span>
+    <span class="expansion-cost ${affordable ? '' : 'locked'}">🪙${formatNumber(next.coin)} + 💎${next.diamond}</span>
+    <button type="button" class="${affordable ? 'primary-action' : 'ghost-action'}"
+      onclick="window.buyExpansionHandler()">扩 建</button>
+  </div>`;
+}
+
+/**
+ * 卖仓：背包里的作物 / 金穗作物逐项列出，单个或一键全卖
+ */
+function renderSellBarn(state) {
+  const rows = Object.entries(state.inventory)
+    .filter(([key, count]) => count > 0 && /^(crop|gold)_\d+$/.test(key))
+    .map(([key, count]) => {
+      const unit = FarmSystem.getCropSellPrice(key);
+      return { key, count, unit };
+    })
+    .sort((a, b) => b.unit * b.count - a.unit * a.count);
+
+  if (!rows.length) {
+    return `<p class="muted-text">卖仓空空的，收获的作物可以在这里换成金币。</p>`;
+  }
+
+  const total = rows.reduce((sum, r) => sum + r.unit * r.count, 0);
+
+  return `${rows.map(({ key, count, unit }) => `
+    <div class="sell-row" data-key="${key}">
+      <span>${getItemIcon(key)} ${escapeHtml(getItemName(key))} ×${count}</span>
+      <span class="muted-text">🪙${formatNumber(unit * count)}</span>
+      <button type="button" class="small-action" onclick="window.sellCropHandler('${key}')">卖出</button>
+    </div>`).join("")}
+    <div class="sell-row sell-all">
+      <b>全部作物估值 🪙${formatNumber(total)}</b>
+      <button type="button" class="primary-action" onclick="window.sellAllCropsHandler()">一键全卖</button>
+    </div>`;
 }
 
 /**
@@ -213,7 +267,9 @@ export function renderPlotCell(state, index, selectedCropId) {
     <div class="crop-name">${crop ? escapeHtml(crop.name) : "未知作物"}</div>
     <div class="crop-status">${isMature ? "✨可收获" : formatTime(remaining)}</div>
     ${isMature ? "" : createProgressBar(percent)}
-    ${isMature ? `<button type="button" onclick="window.harvestCropHandler(${index})">收获</button>` : ""}
+    ${isMature
+      ? `<button type="button" onclick="window.harvestCropHandler(${index})">收获</button>`
+      : `<button type="button" class="small-action" onclick="window.speedUpPlotHandler(${index})">⏩加速</button>`}
   </div>`;
 }
 
