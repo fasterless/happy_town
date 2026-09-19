@@ -37,6 +37,7 @@ import * as FishingSystem from '../systems/fishing.js';
 import * as LotterySystem from '../systems/lottery.js';
 import * as SeasonsSystem from '../systems/seasons.js';
 import * as RanchSystem from '../systems/ranch.js';
+import * as CodexSystem from '../systems/codex.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -856,6 +857,64 @@ export function renderPetsView(state) {
     .join("");
 
   return `${activePanel}<div class="pet-grid">${list}</div>`;
+}
+
+/**
+ * 渲染图鉴视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderCodexView(state) {
+  const progress = CodexSystem.getCodexProgress(state);
+  const percent = Math.floor(progress.ratio * 100);
+
+  const tiers = CodexSystem.CODEX_TIERS.map((tier) => {
+    const claimable = CodexSystem.canClaimCodexTier(state, tier.id);
+    return `<button type="button" class="${claimable ? 'primary-action' : 'ghost-action'}"
+      onclick="window.claimCodexTierHandler('${tier.id}')" ${claimable ? '' : 'disabled'}>
+      ${Math.round(tier.ratio * 100)}%：${escapeHtml(formatRewards(tier.rewards))}${claimable ? ' 可领取' : ''}
+    </button>`;
+  }).join("");
+
+  const section = (title, entries) => {
+    const collected = entries.filter((e) => e.owned).length;
+    return `<div class="codex-section">
+      <h3>${title} <small>${collected}/${entries.length}</small></h3>
+      <div class="codex-grid">
+        ${entries.map((e) => `
+          <div class="codex-card ${e.owned ? 'owned' : 'unknown'}" title="${escapeHtml(e.name)}">
+            <span class="codex-icon">${e.owned ? e.icon : '❓'}</span>
+            <span class="codex-name">${e.owned ? escapeHtml(e.name) : '未收录'}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  };
+
+  const cropEntries = crops.map((c) => ({
+    icon: c.icon, name: c.name,
+    owned: state.codex.crops.includes(c.id),
+  }));
+  const furnitureEntries = furniture.map((f) => ({
+    icon: f.icon, name: f.name,
+    owned: state.codex.furniture.includes(f.id),
+  }));
+  const fishEntries = FishingSystem.fishes.map((f) => ({
+    icon: f.icon, name: f.name,
+    owned: state.codex.fishes.includes(f.id),
+  }));
+
+  return `
+    <div class="codex-summary">
+      <h3>📚 小镇图鉴</h3>
+      <p>收录过（收获/拥有/钓到）的条目会永久保留，卖出也不会消失。</p>
+      ${createProgressBar(percent)}
+      <p class="muted-text">总收录 ${progress.collected}/${progress.total}（${percent}%）</p>
+      <div class="button-row">${tiers}</div>
+    </div>
+    ${section("🌾 作物图鉴", cropEntries)}
+    ${section("🪑 家具图鉴", furnitureEntries)}
+    ${section("🐟 鱼类图鉴", fishEntries)}
+  `;
 }
 
 /**

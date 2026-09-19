@@ -23,6 +23,7 @@ const MIGRATIONS = [
   { fromVersion: 5, migrate: toV6 },
   { fromVersion: 6, migrate: toV7 },
   { fromVersion: 7, migrate: toV8 },
+  { fromVersion: 8, migrate: toV9 },
 ];
 
 /**
@@ -78,6 +79,16 @@ function toV8(state) {           // v7 → v8：养殖栏
     state.ranch.animals = {};
   }
   state.version = 8;
+}
+
+function toV9(state) {           // v8 → v9：图鉴系统
+  if (!state.codex) {
+    state.codex = { crops: [], furniture: [], fishes: [], claimedTiers: [] };
+  }
+  ['crops', 'furniture', 'fishes', 'claimedTiers'].forEach((key) => {
+    if (!Array.isArray(state.codex[key])) state.codex[key] = [];
+  });
+  state.version = 9;
 }
 
 /**

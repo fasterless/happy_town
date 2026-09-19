@@ -4,6 +4,7 @@ import { canAfford, spendPrice, addItem, spendItem, getCount } from '../core/inv
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { furnitureKey } from '../utils/format.js';
+import { recordFurniture } from './codex.js';
 
 /**
  * 购买家具
@@ -34,6 +35,7 @@ export function buyFurniture(state, furnitureId) {
   // 添加到背包
   const key = furnitureKey(furnitureId);
   addItem(state, key, 1);
+  recordFurniture(state, furnitureId);
 
   // 记录事件
   logEvent(state, "furniture_buy");

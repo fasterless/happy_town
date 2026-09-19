@@ -5,6 +5,7 @@ import { addItem, spendItem, hasEnough, getCount } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyWeatherToGrowTime } from './weather.js';
+import { recordCropHarvest } from './codex.js';
 import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
@@ -208,6 +209,7 @@ export function plantCrop(state, plotIndex, cropId) {
  */
 function harvestPlotInto(state, crop, exp) {
   addItem(state, `crop_${crop.id}`, crop.harvestCount);
+  recordCropHarvest(state, crop.id);
   let message = `收获了${crop.harvestCount}个${crop.icon}${crop.name}`;
   let goldCount = 0;
 

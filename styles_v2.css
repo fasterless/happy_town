@@ -1782,3 +1782,71 @@
   font-weight: 400;
   color: rgba(93, 65, 39, 0.6);
 }
+
+/* ===== 图鉴（第三阶段） ===== */
+
+.codex-summary {
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(93, 65, 39, 0.2);
+  border-radius: var(--radius, 12px);
+  background: rgba(255, 250, 235, 0.6);
+}
+
+.codex-summary .button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.codex-section {
+  margin-bottom: 16px;
+}
+
+.codex-section h3 {
+  font-size: 1rem;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(93, 65, 39, 0.3);
+}
+
+.codex-section h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.codex-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(93, 65, 39, 0.15);
+  background: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.codex-card.owned {
+  border-color: rgba(214, 140, 30, 0.5);
+  background: rgba(255, 245, 220, 0.8);
+}
+
+.codex-card.unknown {
+  opacity: 0.55;
+}
+
+.codex-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.codex-name {
+  font-size: 0.8rem;
+}

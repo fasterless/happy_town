@@ -6,6 +6,7 @@ import { addItem, spendItem, hasEnough, getCount } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { todayKey } from '../utils/time.js';
 import { applyPetToFishingLuck } from './pets.js';
+import { recordFish } from './codex.js';
 
 // 每日免费钓鱼次数
 const FREE_CASTS_PER_DAY = 5;
@@ -108,6 +109,7 @@ export function castRod(state) {
   const luck = applyPetToFishingLuck(1, state);
   const fish = weightedPick(fishes, luck);
   addItem(state, `fish_${fish.id}`, 1);
+  recordFish(state, fish.id);
 
   logEvent(state, "fishing_cast");
   trackDaily(state, "fishing", 1);

@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 8;
+export const CURRENT_VERSION = 9;
 
 /**
  * 创建默认游戏状态
@@ -111,6 +111,14 @@ export function createDefaultState() {
     // 季节活动：本次活动已领标记
     seasons: {
       claimedEventId: "",
+    },
+    // 图鉴：收录过的条目（收获过的作物、拥有过的家具、钓到过的鱼）
+    // "拥有过"意味着卖出/消耗后图鉴仍保留收录记录
+    codex: {
+      crops: [],       // 收获过的作物 id
+      furniture: [],   // 拥有过的家具 id
+      fishes: [],      // 钓到过的鱼 id
+      claimedTiers: [], // 已领取的图鉴收集档奖励
     },
     // 邻居回礼：每天每位邻居的领取标记
     npcEvents: {

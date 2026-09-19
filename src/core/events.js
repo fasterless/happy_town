@@ -130,6 +130,9 @@ export const Events = {
   // 成就相关
   ACHIEVEMENT_UNLOCKED: 'achievement:unlocked',
 
+  // 图鉴相关
+  CODEX_NEW_ENTRY: 'codex:new_entry',
+
   // 系统相关
   STATE_UPDATED: 'state:updated',
   TOAST_SHOW: 'toast:show',

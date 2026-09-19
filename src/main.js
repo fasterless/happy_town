@@ -26,6 +26,7 @@ import * as FishingSystem from './systems/fishing.js';
 import * as LotterySystem from './systems/lottery.js';
 import * as SeasonsSystem from './systems/seasons.js';
 import * as RanchSystem from './systems/ranch.js';
+import * as CodexSystem from './systems/codex.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -375,6 +376,10 @@ function renderRanchView() {
   setHtml('ranchList', Renderer.renderRanchView(state));
 }
 
+function renderCodexView() {
+  setHtml('codexContent', Renderer.renderCodexView(state));
+}
+
 function renderAdminView() {
   setHtml('statsPanel', Renderer.renderAdminView(state));
 }
@@ -396,6 +401,7 @@ const VIEW_RENDERERS = {
   lotteryView: renderLotteryView,
   seasonsView: renderSeasonsView,
   ranchView: renderRanchView,
+  codexView: renderCodexView,
   adminView: renderAdminView,
 };
 
@@ -631,6 +637,9 @@ window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSe
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'coin');
 window.feedAnimalHandler = (animalId) => runAction(() => RanchSystem.feedAnimal(state, animalId), 'plant');
 window.collectProduceHandler = (animalId) => runAction(() => RanchSystem.collectProduce(state, animalId), 'harvest');
+
+// 图鉴
+window.claimCodexTierHandler = (tierId) => runAction(() => CodexSystem.claimCodexTier(state, tierId), 'levelup');
 
 function collectAllRanch() {
   runAction(() => RanchSystem.collectAllProduce(state), 'harvest');

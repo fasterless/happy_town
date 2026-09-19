@@ -3,6 +3,7 @@ import { STORAGE_KEY } from '../config/constants.js';
 import { createDefaultState, mergeState, createDailyState } from './state.js';
 import { migrateState } from './migrations.js';
 import { settleReservedOrder } from '../systems/orders.js';
+import { backfillCodex } from '../systems/codex.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
 
 let saveTimer = null;
@@ -23,6 +24,7 @@ export function loadState() {
     const merged = mergeState(base, saved);
     migrateState(merged);
     rollDailyState(merged);
+    backfillCodex(merged); // 老玩家的库存回填进图鉴
     return merged;
   } catch (error) {
     console.warn("Failed to load state", error);
