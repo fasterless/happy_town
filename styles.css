@@ -725,6 +725,9 @@ h2 {
   border-radius: var(--radius);
   background: #fff7e7;
   font-size: 24px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
 .avatar-choice.selected {

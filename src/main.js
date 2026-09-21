@@ -100,6 +100,8 @@ function init() {
 
   if (!state.user.created) {
     showRoleModal();
+    // 创建角色前也要绑好弹窗内的事件（进入小镇 / 回车提交），否则按钮点不动
+    attachRoleEvents();
   } else {
     hideRoleModal();
     startGame();
@@ -146,10 +148,7 @@ function attachEvents() {
   $('testRewardButton')?.addEventListener('click', giveTestRewards);
   $('claimAllCraftButton')?.addEventListener('click', claimAllCraft);
   $('collectAllRanchButton')?.addEventListener('click', collectAllRanch);
-  $('createRoleButton')?.addEventListener('click', createRole);
-  $('nicknameInput')?.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') createRole();
-  });
+  attachRoleEvents();
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -166,6 +165,19 @@ function attachEvents() {
   });
 
   markActiveNav('farmView');
+}
+
+/** 绑定创建角色弹窗内的事件（重复调用时用防重复绑定包装） */
+function attachRoleEvents() {
+  const button = $('createRoleButton');
+  const input = $('nicknameInput');
+  if (!button || button.dataset.bound === 'true') return;
+
+  button.dataset.bound = 'true';
+  button.addEventListener('click', createRole);
+  input?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') createRole();
+  });
 }
 
 /**
