@@ -43,6 +43,7 @@ import * as RanchSystem from '../systems/ranch.js';
 import * as CodexSystem from '../systems/codex.js';
 import * as MarketSystem from '../systems/market.js';
 import * as HybridSystem from '../systems/hybrid.js';
+import { isCloudEnabled as cloudOn, getLastSyncText } from '../core/sync.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -1102,6 +1103,23 @@ export function renderAdminView(state) {
         <div class="button-row">
           <button class="danger-action" onclick="window.resetGameHandler()">清空进度</button>
         </div>
+      </div>
+      <div class="data-card">
+        <h3>云同步</h3>
+        <div class="data-row">
+          <span>状态</span>
+          <b>${cloudOn ? '☁️ 已开启' : '未开启'}</b>
+        </div>
+        <div class="data-row">
+          <span>上次备份</span>
+          <b>${cloudOn ? escapeHtml(getLastSyncText()) : '—'}</b>
+        </div>
+        <div class="button-row">
+          <button class="small-action" onclick="window.cloudConfigHandler()">${cloudOn ? '修改云端地址' : '开启云同步'}</button>
+          ${cloudOn ? '<button class="small-action" onclick="window.cloudSyncNowHandler()">立即备份</button>' : ''}
+        </div>
+        ${cloudOn ? '<div class="button-row"><button class="small-action" onclick="window.cloudMigrationHandler()">设备迁移</button></div>' : ''}
+        <p class="muted-text">存档免费备份到 Cloudflare（与站点一起部署），换浏览器、清缓存也不丢进度。本地存档始终保留。</p>
       </div>
     </div>
   `;

@@ -5,6 +5,7 @@ import { migrateState } from './migrations.js';
 import { settleReservedOrder } from '../systems/orders.js';
 import { backfillCodex } from '../systems/codex.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
+import { syncToCloud } from './sync.js';
 
 let saveTimer = null;
 
@@ -80,6 +81,7 @@ export function saveState(state) {
   } catch (error) {
     console.error("Failed to save state", error);
   }
+  syncToCloud(state);
 }
 
 /**
@@ -95,6 +97,8 @@ export function debouncedSave(state) {
     saveState(state);
     saveTimer = null;
   }, 300);
+  // 防抖保存只写本地 + 节流云同步（syncToCloud 内部有 60 秒节流，这里不用再防抖）
+  syncToCloud(state);
 }
 
 /**

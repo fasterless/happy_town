@@ -4,6 +4,15 @@
 // 所有 HTML 生成都在 ui/renderer.js，所有规则都在 systems/*，本文件不含游戏逻辑。
 import { loadState, saveState, debouncedSave, clearStorage, exportSave, importSave } from './core/storage.js';
 import { addRewards } from './core/inventory.js';
+import {
+  fetchCloudState,
+  forceSyncNow,
+  getWorkerUrl,
+  setWorkerUrl,
+  isCloudEnabled,
+  getMigrationCode,
+  adoptMigrationCode,
+} from './core/sync.js';
 
 // 导入配置
 import { crops, getCrop } from './config/crops.js';
@@ -94,6 +103,20 @@ function init() {
   console.log('🎮 邻里小镇 v2.0 - 模块化版本');
 
   state = loadState();
+
+  // 云端有更新（比如在另一台设备玩过）就取云端存档，之后照常启动
+  if (isCloudEnabled() && state.user.created) {
+    fetchCloudState().then(({ cloudState, usedCloud, reason }) => {
+      if (usedCloud && cloudState) {
+        state = importSave(JSON.stringify(cloudState)) || state;
+        showToast('☁️ 已从云端恢复最新进度', 'success');
+        renderAll();
+        saveState(state);
+      } else if (reason === 'device-conflict') {
+        showToast('此用户ID已绑定其他设备，请到设置里输入迁移码接管', 'warning', 5000);
+      }
+    });
+  }
 
   WeatherSystem.updateDailyWeather(state);
   initAudio(state.settings);
@@ -857,6 +880,76 @@ window.resetGameHandler = () => {
     clearStorage();
     clearInterval(clockTimer);
     window.location.reload();
+  });
+};
+
+// ---------------------------------------------------------------------------
+// 云同步（Cloudflare Worker + KV）
+// ---------------------------------------------------------------------------
+
+window.cloudConfigHandler = () => {
+  createModal({
+    title: '云端同步设置',
+    content: `
+      <p class="muted-text">站点部署在 Cloudflare Pages 时会<b>自动启用</b>云同步（接口和站点同源）。
+      下面的地址仅在特殊情况下需要填写（例如站点和存档接口不在同一个域名）。</p>
+      <p class="muted-text">留空 = 使用自动检测的地址；想彻底关闭云同步，请到 Cloudflare 控制台删除该 Pages 项目的
+      KV 绑定。本地存档不受任何影响。</p>
+      <input id="cloudUrlInput" class="nickname-input" type="url"
+        placeholder="（自动）https://你的站点.pages.dev/api"
+        value="${getWorkerUrl().replace(/&/g, '&').replace(/</g, '<').replace(/"/g, '"')}">
+    `,
+    confirmText: '保存',
+    onConfirm: () => {
+      const url = $('cloudUrlInput')?.value.trim() || '';
+      if (url && !/^https:\/\/.+/.test(url)) {
+        showToast('地址需要以 https:// 开头', 'error');
+        playSound('error');
+        return;
+      }
+      setWorkerUrl(url.replace(/\/+$/, ''));
+      showToast('云端同步设置已保存', 'success');
+      renderViews('adminView');
+    },
+  });
+};
+
+window.cloudSyncNowHandler = async () => {
+  if (!isCloudEnabled()) {
+    showToast('请先在「云同步设置」里填入 Worker 地址', 'warning');
+    return;
+  }
+  const result = await forceSyncNow(state);
+  showToast(result.message, result.ok ? 'success' : 'error');
+  playSound(result.ok ? 'success' : 'error');
+  renderViews('adminView');
+};
+
+window.cloudMigrationHandler = () => {
+  const enabled = isCloudEnabled();
+  createModal({
+    title: '设备迁移',
+    content: enabled
+      ? `
+        <p class="muted-text">换设备时：在新设备上玩到创建角色这一步，然后把下面的迁移码输入到新设备的此弹窗里。</p>
+        <textarea id="migrationCodeText" class="save-textarea" rows="3" readonly>${getMigrationCode()}</textarea>
+        <p class="muted-text">在<b>新设备</b>上输入迁移码接管云端存档：</p>
+        <input id="migrationCodeInput" class="nickname-input" placeholder="粘贴 48 位迁移码">
+      `
+      : '<p class="muted-text">先在「云同步设置」里开启云同步，才能使用设备迁移。</p>',
+    confirmText: enabled ? '接管' : '关闭',
+    onConfirm: () => {
+      if (!enabled) return;
+      const code = $('migrationCodeInput')?.value.trim();
+      if (!code) {
+        showToast('请粘贴旧设备的迁移码', 'warning');
+        return;
+      }
+      const result = adoptMigrationCode(code);
+      showToast(result.message, result.ok ? 'success' : 'error');
+      playSound(result.ok ? 'success' : 'error');
+      if (result.ok) setTimeout(() => window.location.reload(), 1200);
+    },
   });
 };
 
