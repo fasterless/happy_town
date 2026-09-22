@@ -139,6 +139,22 @@ export const Events = {
   // 杂交相关
   HYBRID_DONE: 'hybrid:done',
 
+  // 委托榜相关
+  COMMISSION_COMPLETED: 'commission:completed',
+  COMMISSION_REROLLED: 'commission:rerolled',
+
+  // 料理相关
+  DISH_COOKED: 'dish:cooked',
+  DISH_SERVED: 'dish:served',
+
+  // 许愿池相关
+  WISH_MADE: 'wish:made',
+  WISH_SETTLED: 'wish:settled',
+
+  // 邻居求助板相关
+  HELP_FULFILLED: 'help:fulfilled',
+  HELP_REROLLED: 'help:rerolled',
+
   // 系统相关
   STATE_UPDATED: 'state:updated',
   TOAST_SHOW: 'toast:show',

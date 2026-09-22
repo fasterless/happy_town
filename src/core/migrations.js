@@ -26,6 +26,7 @@ const MIGRATIONS = [
   { fromVersion: 8, migrate: toV9 },
   { fromVersion: 9, migrate: toV10 },
   { fromVersion: 10, migrate: toV11 },
+  { fromVersion: 11, migrate: toV12 },
 ];
 
 /**
@@ -108,6 +109,29 @@ function toV11(state) {          // v10 → v11：杂交工坊
     state.hybrid = { discovered: [] };
   }
   state.version = 11;
+}
+
+function toV12(state) {          // v11 → v12：委托榜 / 料理铺 / 许愿池
+  if (!state.commissions || !Array.isArray(state.commissions.jobIds)) {
+    state.commissions = { date: "", jobIds: [], doneIds: [] };
+  }
+  if (!Array.isArray(state.commissions.doneIds)) state.commissions.doneIds = [];
+  if (!state.buff || typeof state.buff !== 'object') {
+    state.buff = { active: null };
+  }
+  if (!state.wish || typeof state.wish !== 'object') {
+    state.wish = {
+      date: "", pickedIds: [], rerolled: 0, wishedDate: "", pendingId: null,
+      heat: 0, lastSettleDate: "", lastLuck: 0, lastTier: "", totalSettled: 0,
+    };
+  }
+  if (!Array.isArray(state.wish.pickedIds)) state.wish.pickedIds = [];
+  if (typeof state.wish.heat !== 'number') state.wish.heat = 0;
+  if (!state.help || typeof state.help !== 'object') {
+    state.help = { date: '', requests: [], doneIds: {}, favors: {} };
+  }
+  if (!Array.isArray(state.help.requests)) state.help.requests = [];
+  state.version = 12;
 }
 
 /**

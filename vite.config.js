@@ -10,17 +10,16 @@ export default defineConfig({
     minify: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'game-core': [
-            './src/core/state.js',
-            './src/core/inventory.js',
-            './src/core/storage.js',
-          ],
-          'game-systems': [
-            './src/systems/farm.js',
-            './src/systems/orders.js',
-            './src/systems/home.js',
-          ],
+        // core 与 systems 相互依赖（storage.js 结算 orders/wishes/codex，
+        // 这些系统又回头用 inventory），拆成两个 chunk 会产生循环引用警告。
+        // 按目录分块并把这对相互依赖的层放进同一个 chunk。
+        manualChunks(id) {
+          if (!id.includes('/src/')) return undefined;
+          if (id.includes('/src/config/')) return 'game-config';
+          if (id.includes('/src/core/') || id.includes('/src/systems/')) {
+            return 'game-engine';
+          }
+          return undefined;
         },
       },
     },

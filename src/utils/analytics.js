@@ -68,6 +68,18 @@ function getEventDisplayName(eventName) {
     hybrid_discover: "发现新图谱",
     hybrid_harvest: "收获杂交作物",
     market_sell: "集市挂售",
+    codex_new_dish: "新料理收录",
+    commission_complete: "完成委托",
+    commission_reroll: "刷新委托榜",
+    dish_cook: "做料理",
+    dish_serve: "上菜",
+    wish_make: "许愿",
+    wish_settle: "愿望结算",
+    wish_reroll: "刷新心愿",
+    wish_high: "许愿大吉",
+    help_fulfill: "帮助邻居",
+    help_reroll: "刷新求助板",
+    favor_full: "人情满格",
   };
 
   return names[eventName] || eventName;

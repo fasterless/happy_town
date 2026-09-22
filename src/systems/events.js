@@ -2,10 +2,14 @@
 //
 // 拜访好友时随机触发邻居的回礼彩蛋（每天每位邻居最多一次），
 // 让「拜访」这个动作在拿满每日任务进度之后仍有惊喜。
+//
+// 回礼概率 35%；如果今天在求助板上帮过这位邻居到「人情满格」，
+// 必定触发（见 systems/helpBoard.js 的 isFavorFull）。
 import { addItem } from '../core/inventory.js';
 import { todayKey } from '../utils/time.js';
 import { getItemName, getItemIcon } from '../utils/format.js';
 import { logEvent } from '../utils/analytics.js';
+import { isFavorFull } from './helpBoard.js';
 
 // 触发概率
 const TRIGGER_CHANCE = 0.35;
@@ -50,7 +54,8 @@ export function tryNeighborGift(state, friendId) {
   const gift = neighborGifts.find((g) => g.npc === friendId);
   if (!gift) return null;
   if (hasClaimedToday(state, friendId)) return null;
-  if (Math.random() > TRIGGER_CHANCE) return null;
+  // 人情满格时必定触发（求助板的回报），否则按概率
+  if (!isFavorFull(state, friendId) && Math.random() > TRIGGER_CHANCE) return null;
 
   const reward = pickReward(gift.rewards);
   addItem(state, reward.key, reward.count);

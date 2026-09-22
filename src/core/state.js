@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 11;
+export const CURRENT_VERSION = 12;
 
 /**
  * 创建默认游戏状态
@@ -123,6 +123,36 @@ export function createDefaultState() {
     hybrid: {
       discovered: [],
     },
+    // 小镇委托榜：今日委托 id 与当天已完成的委托
+    commissions: {
+      date: "",            // 委托榜所在的日期键，跨天重抽
+      jobIds: [],          // 今日委托 id 列表
+      doneIds: [],         // 今天已交过的委托 id
+    },
+    // 料理铺：当前生效的增益（同一时刻只有一个，后吃的覆盖先吃的）
+    buff: {
+      active: null,        // { dishId, type, value, expireAt }
+    },
+    // 邻居求助板：今日求助、当天已帮过的邻居、各位邻居的人情计数
+    help: {
+      date: "",            // 求助榜所在的日期键，跨天重抽
+      requests: [],        // [{ friendId, item, name, icon, count, point }]
+      doneIds: {},         // friendId -> 今天是否已帮过他（日期键）
+      favors: {},          // friendId -> { date, count } 当日人情计数
+    },
+    // 许愿池：今天许的愿等明天结算，heat 是连续许愿天数
+    wish: {
+      date: "",            // 可选心愿所在的日期键
+      pickedIds: [],       // 今天可选的三个心愿 id
+      rerolled: 0,         // 今天刷新过几次
+      wishedDate: "",      // 许愿的日期键（用于判断是否已许 / 是否跨日）
+      pendingId: null,     // 等着结算的心愿 id
+      heat: 0,             // 心愿热度（连续许愿天数，断签归零）
+      lastSettleDate: "",  // 上次结算的日期键（幂等保护）
+      lastLuck: 0,         // 上一次的运势，界面展示用
+      lastTier: "",        // 上一次的奖励档位
+      totalSettled: 0,     // 累计结算次数
+    },
     // 图鉴：收录过的条目（收获过的作物、拥有过的家具、钓到过的鱼）
     // "拥有过"意味着卖出/消耗后图鉴仍保留收录记录
     codex: {
@@ -207,6 +237,10 @@ export function mergeState(base, saved) {
     weather: { ...base.weather, ...(saved.weather || {}) },
     settings: { ...base.settings, ...(saved.settings || {}) },
     analytics: { ...base.analytics, ...(saved.analytics || {}) },
+    commissions: { ...base.commissions, ...(saved.commissions || {}) },
+    buff: { ...base.buff, ...(saved.buff || {}) },
+    wish: { ...base.wish, ...(saved.wish || {}) },
+    help: { ...base.help, ...(saved.help || {}) },
   };
 }
 
@@ -321,6 +355,43 @@ export function normalizeState(state) {
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";
+
+  // 委托榜 / 料理增益 / 许愿池（v12）
+  if (!state.commissions || typeof state.commissions !== "object") {
+    state.commissions = { date: "", jobIds: [], doneIds: [] };
+  }
+  if (!Array.isArray(state.commissions.jobIds)) state.commissions.jobIds = [];
+  if (!Array.isArray(state.commissions.doneIds)) state.commissions.doneIds = [];
+  if (typeof state.commissions.date !== "string") state.commissions.date = "";
+
+  if (!state.buff || typeof state.buff !== "object") {
+    state.buff = { active: null };
+  }
+  // 过期（或损坏）的增益直接清掉
+  if (state.buff.active && (!state.buff.active.expireAt || state.buff.active.expireAt <= Date.now())) {
+    state.buff.active = null;
+  }
+
+  if (!state.wish || typeof state.wish !== "object") {
+    state.wish = {
+      date: "", pickedIds: [], rerolled: 0, wishedDate: "", pendingId: null,
+      heat: 0, lastSettleDate: "", lastLuck: 0, lastTier: "", totalSettled: 0,
+    };
+  }
+  if (!Array.isArray(state.wish.pickedIds)) state.wish.pickedIds = [];
+  if (typeof state.wish.heat !== "number") state.wish.heat = 0;
+  if (typeof state.wish.wishedDate !== "string") state.wish.wishedDate = "";
+  if (typeof state.wish.lastSettleDate !== "string") state.wish.lastSettleDate = "";
+  if (typeof state.wish.totalSettled !== "number") state.wish.totalSettled = 0;
+
+  // 邻居求助板（v12）
+  if (!state.help || typeof state.help !== "object") {
+    state.help = { date: "", requests: [], doneIds: {}, favors: {} };
+  }
+  if (!Array.isArray(state.help.requests)) state.help.requests = [];
+  if (!state.help.doneIds || typeof state.help.doneIds !== "object") state.help.doneIds = {};
+  if (!state.help.favors || typeof state.help.favors !== "object") state.help.favors = {};
+
   initNeighborEvents(state);
 
   state.version = CURRENT_VERSION;

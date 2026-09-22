@@ -8,6 +8,7 @@ import { applyWeatherToGrowTime } from './weather.js';
 import { recordCropHarvest } from './codex.js';
 import { hybridRecipes } from '../config/hybrid.js';
 import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
+import { getBuffMultiplier } from './dishes.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
 const GOLD_CHANCE = 0.05;
@@ -130,7 +131,10 @@ export function buyExpansion(state) {
  * @returns {number} 生长秒数
  */
 export function getGrowTime(state, crop) {
-  return applyPetToGrowTime(applyWeatherToGrowTime(crop.growTime, state), state);
+  let time = applyPetToGrowTime(applyWeatherToGrowTime(crop.growTime, state), state);
+  // 料理增益（如田园沙拉）也参与生长时长
+  time = time / getBuffMultiplier(state, 'growthSpeed');
+  return Math.max(1, Math.floor(time));
 }
 
 /**
@@ -218,23 +222,24 @@ export function plantCrop(state, plotIndex, cropId) {
 }
 
 /**
- * 收获一份作物入背包（金穗变异在此统一处理）
+ * 收获一份作物入背包（金穗变异与料理加成在此统一处理）
  * @param {Object} state
  * @param {Object} crop - 作物配置
- * @param {number} exp - 本次收获给的经验
- * @returns {Object} { message, exp, goldCount }
+ * @returns {Object} { message, exp, goldCount, harvested }
  */
-function harvestPlotInto(state, crop, exp) {
-  addItem(state, `crop_${crop.id}`, crop.harvestCount);
+function harvestPlotInto(state, crop) {
+  // 料理「丰收盛宴」：同样一次收获多拿几成
+  const harvested = Math.max(1, Math.round(crop.harvestCount * getBuffMultiplier(state, "harvestBonus")));
+  addItem(state, `crop_${crop.id}`, harvested);
   recordCropHarvest(state, crop.id);
   if (isHybridCrop(crop.id)) {
     logEvent(state, "hybrid_harvest");
   }
-  let message = `收获了${crop.harvestCount}个${crop.icon}${crop.name}`;
+  let message = `收获了${harvested}个${crop.icon}${crop.name}`;
   let goldCount = 0;
 
-  // 金穗变异：5% 概率额外掉一个 3 倍售价的金穗版本
-  if (Math.random() < GOLD_CHANCE) {
+  // 金穗变异：5% 概率额外掉一个 3 倍售价的金穗版本（料理可把概率翻几倍）
+  if (Math.random() < GOLD_CHANCE * getBuffMultiplier(state, "goldChance")) {
     addItem(state, `gold_${crop.id}`, 1);
     goldCount = 1;
     if (!state.farm.goldStats) state.farm.goldStats = { totalGold: 0 };
@@ -243,11 +248,13 @@ function harvestPlotInto(state, crop, exp) {
     emit(Events.GOLD_CROP_HARVESTED, { cropId: crop.id });
   }
 
+  // 料理「学问蘑菇汤」：经验也吃加成
+  const exp = Math.max(1, Math.round(1 * getBuffMultiplier(state, "expBonus")));
   addItem(state, "exp", exp);
   logEvent(state, "harvest_crop");
   trackDaily(state, "harvest", 1);
 
-  return { message, exp, goldCount };
+  return { message, exp, goldCount, harvested };
 }
 
 /**
@@ -272,7 +279,7 @@ export function harvestCrop(state, plotIndex) {
   }
 
   // 收获作物（含金穗变异）
-  const result = harvestPlotInto(state, crop, 1);
+  const result = harvestPlotInto(state, crop);
 
   // 清空地块
   state.farm.plots[plotIndex] = null;
@@ -301,10 +308,10 @@ export function harvestAllMature(state) {
     if (plot && isPlotMature(plot)) {
       const crop = getCrop(plot.cropId);
       if (crop) {
-        const result = harvestPlotInto(state, crop, 1);
-        harvested[crop.name] = (harvested[crop.name] || 0) + crop.harvestCount;
+        const result = harvestPlotInto(state, crop);
+        harvested[crop.name] = (harvested[crop.name] || 0) + result.harvested;
         count++;
-        totalExp++;
+        totalExp += result.exp;
         if (result.goldCount) goldCount += result.goldCount;
 
         state.farm.plots[index] = null;
@@ -401,9 +408,11 @@ export function sellCrop(state, itemKey, count) {
   }
 
   const amount = Math.min(owned, Math.max(1, Math.floor(count ?? owned)));
-  const unitPrice = match[1] === "gold"
-    ? crop.sellPrice * GOLD_SELL_MULTIPLIER
-    : crop.sellPrice;
+  // 料理「蜂蜜松饼」：卖出作物单价 +20%
+  const unitPrice = Math.round(
+    (match[1] === "gold" ? crop.sellPrice * GOLD_SELL_MULTIPLIER : crop.sellPrice)
+    * getBuffMultiplier(state, "sellBonus")
+  );
 
   addItem(state, "coin", unitPrice * amount);
   spendItem(state, itemKey, amount);

@@ -2,7 +2,7 @@
 //
 // 这里只负责三件事：状态生命周期、DOM 写入、把用户操作转发给对应系统模块。
 // 所有 HTML 生成都在 ui/renderer.js，所有规则都在 systems/*，本文件不含游戏逻辑。
-import { loadState, saveState, debouncedSave, clearStorage, exportSave, importSave } from './core/storage.js';
+import { loadState, saveState, debouncedSave, clearStorage, exportSave, importSave, lastWishResult } from './core/storage.js';
 import { addRewards } from './core/inventory.js';
 import {
   fetchCloudState,
@@ -38,6 +38,10 @@ import * as RanchSystem from './systems/ranch.js';
 import * as CodexSystem from './systems/codex.js';
 import * as MarketSystem from './systems/market.js';
 import * as HybridSystem from './systems/hybrid.js';
+import * as DishSystem from './systems/dishes.js';
+import * as CommissionSystem from './systems/commissions.js';
+import * as WishSystem from './systems/wishes.js';
+import * as HelpSystem from './systems/helpBoard.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -138,6 +142,13 @@ function startGame() {
   attachEvents();
   renderAll();
   startClock();
+
+  // 昨天在许愿池许的愿，今天上线就播报结算结果
+  if (lastWishResult) {
+    const { wish, luckLabel, rewardText } = lastWishResult;
+    showToast(`⛲ 「${wish.name}」结算：${luckLabel}，获得${rewardText}`, 'success', 5000);
+    playSound(luckLabel === '超大吉' ? 'levelup' : 'success');
+  }
 
   // 新手引导完成后要把标记写回存档
   document.addEventListener('tutorialCompleted', () => {
@@ -297,6 +308,14 @@ function startClock() {
 }
 
 function renderFarmTick() {
+  // 料理增益倒计时：只在料理页刷新剩余秒数
+  const buffCountdown = $('buffCountdown');
+  if (buffCountdown) {
+    const remain = DishSystem.getBuffRemainingSeconds(state);
+    buffCountdown.textContent = formatTickTime(remain);
+    if (remain === 0) renderViews('dishesView', 'chrome');
+  }
+
   // 限时订单到期结算 + 订单页倒计时（不挑页面，开销极小）
   if (state?.orders?.rush) {
     const justExpired = OrdersSystem.settleExpiredRush(state);
@@ -463,6 +482,18 @@ function renderCodexView() {
   setHtml('codexContent', Renderer.renderCodexView(state));
 }
 
+function renderDishesView() {
+  setHtml('dishesContent', Renderer.renderDishesView(state));
+}
+
+function renderCommissionView() {
+  setHtml('commissionContent', Renderer.renderCommissionView(state));
+}
+
+function renderWishView() {
+  setHtml('wishContent', Renderer.renderWishView(state));
+}
+
 function renderAdminView() {
   setHtml('statsPanel', Renderer.renderAdminView(state));
 }
@@ -486,6 +517,9 @@ const VIEW_RENDERERS = {
   seasonsView: renderSeasonsView,
   ranchView: renderRanchView,
   codexView: renderCodexView,
+  dishesView: renderDishesView,
+  commissionView: renderCommissionView,
+  wishView: renderWishView,
   adminView: renderAdminView,
 };
 
@@ -689,6 +723,10 @@ window.visitFriendHandler = (friendId) => runAction(() => FriendsSystem.visitFri
 window.likeFriendHandler = (friendId) => runAction(() => FriendsSystem.likeFriend(state, friendId));
 window.waterFriendHandler = (friendId) => runAction(() => FriendsSystem.waterFriendPlot(state, friendId), 'water');
 
+// 邻居求助板
+window.fulfillHelpHandler = (index) => runAction(() => HelpSystem.fulfillRequest(state, index), 'buy');
+window.rerollHelpHandler = () => runAction(() => HelpSystem.rerollRequests(state), 'click');
+
 // 社区
 window.joinCommunityHandler = () => runAction(() => CommunitySystem.joinCommunity(state));
 
@@ -771,6 +809,18 @@ window.collectProduceHandler = (animalId) => runAction(() => RanchSystem.collect
 
 // 图鉴
 window.claimCodexTierHandler = (tierId) => runAction(() => CodexSystem.claimCodexTier(state, tierId), 'levelup');
+
+// 料理铺
+window.cookDishHandler = (dishId) => runAction(() => DishSystem.cookDish(state, dishId), 'buy');
+window.serveDishHandler = (dishId) => runAction(() => DishSystem.serveDish(state, dishId), 'levelup');
+
+// 小镇委托榜
+window.completeCommissionHandler = (jobId) => runAction(() => CommissionSystem.completeCommission(state, jobId), 'coin');
+window.rerollCommissionHandler = () => runAction(() => CommissionSystem.rerollCommissions(state), 'click');
+
+// 许愿池
+window.makeWishHandler = (wishId) => runAction(() => WishSystem.makeWish(state, wishId), 'levelup');
+window.rerollWishHandler = () => runAction(() => WishSystem.rerollWishes(state), 'click');
 
 function collectAllRanch() {
   runAction(() => RanchSystem.collectAllProduce(state), 'harvest');

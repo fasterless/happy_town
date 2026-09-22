@@ -43,6 +43,14 @@ import * as RanchSystem from '../systems/ranch.js';
 import * as CodexSystem from '../systems/codex.js';
 import * as MarketSystem from '../systems/market.js';
 import * as HybridSystem from '../systems/hybrid.js';
+import * as DishSystem from '../systems/dishes.js';
+import * as CommissionSystem from '../systems/commissions.js';
+import * as WishSystem from '../systems/wishes.js';
+import * as HelpSystem from '../systems/helpBoard.js';
+import { dishes, getDish } from '../config/dishes.js';
+import { commissionJobs } from '../config/commissions.js';
+import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
+import { HELP_REROLL_COST, FAVOR_FOR_BONUS } from '../config/helpBoard.js';
 import { isCloudEnabled as cloudOn, getLastSyncText } from '../core/sync.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
@@ -114,12 +122,20 @@ export function renderNotice(state) {
     ? ` | 🐾 ${escapeHtml(pets.find(p => p.id === state.pets.active)?.name || "")}`
     : "";
 
+  // 料理增益：顶部公告条也要显示，否则玩家不知道加成有没有开
+  const dishBuff = DishSystem.getActiveBuff(state);
+  const dishCfg = dishBuff ? getDish(dishBuff.dishId) : null;
+  const dishPart = dishCfg
+    ? ` | ${dishCfg.icon}${escapeHtml(dishCfg.name)}
+       <small>${formatTime(DishSystem.getBuffRemainingSeconds(state))}</small>`
+    : "";
+
   return `
     <p>${text}</p>
     <p class="notice-weather">
       今日天气：${weather.icon}${weather.name}
       ${effects.length ? `<span class="notice-effect">${effects.join(" ")}</span>` : ""}
-      ${petPart}
+      ${petPart}${dishPart}
     </p>
   `;
 }
@@ -586,6 +602,42 @@ export function renderFriendsView(state) {
 
   const sections = [];
 
+  // 邻居求助板：好友页顶部的第三条社交线
+  const helpBoard = HelpSystem.getHelpBoard(state);
+  const helpDoneCount = helpBoard.filter((row) => row.done).length;
+  const helpPanel = unlocked
+    ? `
+      <div class="help-board">
+        <div class="commission-bar">
+          <h3>🧺 邻居求助板 <small>今日进度 ${helpDoneCount}/${helpBoard.length}</small></h3>
+          <button type="button" class="ghost-action" onclick="window.rerollHelpHandler()">
+            换一批（🪙${HELP_REROLL_COST}）
+          </button>
+        </div>
+        ${helpBoard.length ? `
+          <div class="help-rows">
+            ${helpBoard.map(({ index, request, friend, owned, done, canDo, favor }) => `
+              <div class="help-row ${done ? 'done' : ''}">
+                <span class="help-avatar">${escapeHtml(friend ? friend.avatar : '👤')}</span>
+                <div class="help-info">
+                  <h4>${escapeHtml(friend ? friend.name : '邻居')}想要${escapeHtml(request.name)}</h4>
+                  <p class="muted-text">
+                    ${request.icon} ${request.count} 个 · 报酬 🤝${request.point}
+                    ${favor > 0 ? ` · 今日人情 ${favor}/${FAVOR_FOR_BONUS}` : ''}
+                  </p>
+                </div>
+                <button type="button" class="small-action" onclick="window.fulfillHelpHandler(${index})"
+                  ${!canDo ? 'disabled' : ''}>
+                  ${done ? '已帮过' : owned >= request.count ? '送过去' : `还差${request.count - owned}`}
+                </button>
+              </div>`).join("")}
+          </div>
+          <p class="muted-text">同一位邻居一天帮满 ${FAVOR_FOR_BONUS} 次就是「自己人」，之后拜访必定给你回礼。</p>
+        ` : '<p class="muted-text">现在没有邻居张榜求助。</p>'}
+      </div>
+    `
+    : '';
+
   sections.push(`
     <div class="social-banner">
       ${unlocked
@@ -594,6 +646,8 @@ export function renderFriendsView(state) {
         : '💧 Lv.5 解锁拜访与帮浇'}
     </div>
   `);
+
+  if (helpPanel) sections.push(helpPanel);
 
   sections.push(`
     <div class="friends-section">
@@ -1012,11 +1066,15 @@ export function renderCodexView(state) {
     icon: f.icon, name: f.name,
     owned: state.codex.fishes.includes(f.id),
   }));
+  const dishEntries = DishSystem.getDishCodexEntries(state).map((d) => ({
+    icon: d.icon, name: d.name,
+    owned: d.cooked,
+  }));
 
   return `
     <div class="codex-summary">
       <h3>📚 小镇图鉴</h3>
-      <p>收录过（收获/拥有/钓到）的条目会永久保留，卖出也不会消失。</p>
+      <p>收录过（收获/拥有/钓到/做过）的条目会永久保留，卖出也不会消失。</p>
       ${createProgressBar(percent)}
       <p class="muted-text">总收录 ${progress.collected}/${progress.total}（${percent}%）</p>
       <div class="button-row">${tiers}</div>
@@ -1024,6 +1082,7 @@ export function renderCodexView(state) {
     ${section("🌾 作物图鉴", cropEntries)}
     ${section("🪑 家具图鉴", furnitureEntries)}
     ${section("🐟 鱼类图鉴", fishEntries)}
+    ${section("🍳 料理图鉴", dishEntries)}
   `;
 }
 
@@ -1447,5 +1506,207 @@ export function renderSeasonsView(state) {
       </div>`;
     })
     .join("");
+}
+
+/**
+ * 渲染料理铺视图
+ * @param {Object} state
+ * @returns {string} HTML字符串
+ */
+export function renderDishesView(state) {
+  if (!DishSystem.isDishesUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${dishes[0].unlockLevel} 解锁料理铺</p>`;
+  }
+
+  const active = DishSystem.getActiveBuff(state);
+  const remain = DishSystem.getBuffRemainingSeconds(state);
+  const activeDish = active ? getDish(active.dishId) : null;
+
+  const buffPanel = activeDish
+    ? `<div class="buff-panel active">
+        <span class="buff-icon">${activeDish.icon}</span>
+        <div class="buff-info">
+          <h4>${escapeHtml(activeDish.name)}生效中</h4>
+          <p class="muted-text">${escapeHtml(activeDish.desc)}</p>
+          <p>剩余 <b id="buffCountdown">${formatTime(remain)}</b></p>
+        </div>
+       </div>`
+    : `<div class="buff-panel">
+        <span class="buff-icon">🍽️</span>
+        <div class="buff-info">
+          <h4>当前没有生效的料理</h4>
+          <p class="muted-text">做一道菜放进背包，在想冲订单/收获/加工前上菜，加成只持续一段时间。
+            同一时刻只有一道料理生效，后上菜的会顶掉前面的。</p>
+        </div>
+       </div>`;
+
+  // 背包里现有的菜：一键上菜
+  const bagDishes = dishes.filter((d) => getCount(state, `dish_${d.id}`) > 0);
+  const bagPanel = bagDishes.length
+    ? `<div class="dish-bag">
+        <h3>背包里的料理</h3>
+        <div class="dish-bag-rows">
+          ${bagDishes.map((d) => `
+            <div class="dish-bag-row">
+              <span>${d.icon} ${escapeHtml(d.name)} ×${getCount(state, `dish_${d.id}`)}</span>
+              <button type="button" class="primary-action" onclick="window.serveDishHandler(${d.id})">上菜</button>
+            </div>`).join("")}
+        </div>
+       </div>`
+    : '<p class="muted-text">背包里还没有料理，先做一道吧。</p>';
+
+  const list = DishSystem.getDishList(state)
+    .map(({ dish, unlocked, affordable, owned }) => {
+      const requiresHtml = dish.requires.map((req) => {
+        const has = getCount(state, req.item);
+        return `<span class="req-chip ${has >= req.count ? 'enough' : 'not-enough'}">
+          ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${has}/${req.count}
+        </span>`;
+      }).join(" ");
+
+      return `<div class="recipe-item ${!unlocked ? 'locked' : ''}">
+        <span class="recipe-icon">${dish.icon}</span>
+        <div class="recipe-info">
+          <h4>${escapeHtml(dish.name)} ${owned ? `<small class="season-badge">背包 ${owned}</small>` : ''}</h4>
+          <div class="order-requires">${requiresHtml}</div>
+          <p class="muted-text">${escapeHtml(dish.desc)}</p>
+        </div>
+        <div class="recipe-actions">
+          ${unlocked
+            ? `<button class="small-action" onclick="window.cookDishHandler(${dish.id})" ${affordable < 1 ? 'disabled' : ''}>
+                ${affordable > 0 ? '做一份' : '缺料'}
+               </button>`
+            : `<span class="seed-lock">Lv.${dish.unlockLevel}</span>`}
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  return `${buffPanel}${bagPanel}
+    <h3>菜谱</h3>
+    <div class="recipe-list">${list}</div>`;
+}
+
+/**
+ * 渲染小镇委托榜视图
+ * @param {Object} state
+ * @returns {string} HTML字符串
+ */
+export function renderCommissionView(state) {
+  if (!CommissionSystem.isCommissionUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${commissionJobs[0].unlockLevel} 解锁小镇委托榜</p>`;
+  }
+
+  const board = CommissionSystem.getCommissionBoard(state);
+  const doneCount = board.filter((row) => row.done).length;
+
+  const header = `
+    <div class="commission-header">
+      <p class="muted-text">镇长每天张榜求购，报酬比普通订单高一截，但每种一天只能交一次。
+        需求常涉及加工成品和钓获，是给成熟农场主的每日目标。</p>
+      <div class="commission-bar">
+        <span>今日进度 ${doneCount}/${board.length}</span>
+        <button type="button" class="ghost-action" onclick="window.rerollCommissionHandler()">
+          换一批（🪙${CommissionSystem.REROLL_COST}）
+        </button>
+      </div>
+    </div>
+  `;
+
+  const cards = board.map(({ job, done, canDo, coin, exp, requires }) => {
+    const requiresHtml = requires.map((req) => {
+      const enough = req.owned >= req.count;
+      return `<span class="req-chip ${enough ? 'enough' : 'not-enough'}">
+        ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${req.owned}/${req.count}
+      </span>`;
+    }).join(" ");
+
+    return `<div class="order-card commission ${done ? 'done' : ''}">
+      <div class="order-header">
+        <h4>${job.icon} ${escapeHtml(job.name)}</h4>
+        <span class="order-type">委托</span>
+        ${done ? '<span class="order-type">已交付</span>' : ''}
+      </div>
+      <div class="order-requires">${requiresHtml}</div>
+      <div class="order-rewards">
+        报酬：<span class="buffed">🪙${coin}</span> ⭐${exp}
+        <small class="muted-text">（天气/宠物/料理加成另算）</small>
+      </div>
+      <div class="order-actions">
+        <button class="primary-action" onclick="window.completeCommissionHandler(${job.id})"
+          ${!canDo ? 'disabled' : ''}>${done ? '今日已完成' : '交付'}</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return header + `<div class="orders-list">${cards}</div>`;
+}
+
+/**
+ * 渲染许愿池视图
+ * @param {Object} state
+ * @returns {string} HTML字符串
+ */
+export function renderWishView(state) {
+  if (!WishSystem.isWishUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${WishSystem.WISH_MIN_LEVEL} 解锁许愿池</p>`;
+  }
+
+  const heat = WishSystem.getWishHeat(state);
+  const wished = WishSystem.hasWishedToday(state);
+  const last = state.wish;
+
+  const heatPanel = `
+    <div class="wish-heat">
+      <h3>心愿热度 ${heat}/${MAX_LUCK}</h3>
+      ${createProgressBar((heat / MAX_LUCK) * 100)}
+      <p class="muted-text">连续许愿会攒热度，热度越高运势越好，满 ${MAX_LUCK} 天必得「超大吉」。
+        中断一天热度归零，所以记得每天来合一次掌。</p>
+    </div>
+  `;
+
+  const lastPanel = last.totalSettled
+    ? `<div class="wish-last">
+        <span class="wish-luck">${escapeHtml(WishSystem.getLuckLabel(last.lastLuck))}</span>
+        <span class="muted-text">上次结算的运势</span>
+        <span class="muted-text">累计结算 ${last.totalSettled} 次</span>
+       </div>`
+    : '';
+
+  const statusPanel = wished
+    ? `<div class="wish-status wished">
+        ⛲ 今天已经许过愿了，明天上线自动揭晓运势。
+        ${heat >= MAX_LUCK ? '热度已满，明天必得超大吉！' : ''}
+       </div>`
+    : '';
+
+  const options = WishSystem.getTodayWishes(state)
+    .map((wish) => {
+      const affordable = state.wallet.coin >= wish.cost.coin;
+      return `<div class="wish-card">
+        <span class="wish-icon">${wish.icon}</span>
+        <h4>${escapeHtml(wish.name)}</h4>
+        <p class="muted-text">🪙${wish.cost.coin}</p>
+        <p class="muted-text">小吉：${escapeHtml(formatRewards(wish.rewards.low))}</p>
+        <p class="muted-text">中吉：${escapeHtml(formatRewards(wish.rewards.mid))}</p>
+        <p class="muted-text buffed">超大吉：${escapeHtml(formatRewards(wish.rewards.high))}</p>
+        <button class="primary-action" onclick="window.makeWishHandler(${wish.id})"
+          ${!affordable || wished ? 'disabled' : ''}>
+          ${wished ? '今天已许愿' : affordable ? '许下这个愿' : '金币不足'}
+        </button>
+      </div>`;
+    })
+    .join("");
+
+  const rerollBtn = wished
+    ? ''
+    : `<button type="button" class="ghost-action" onclick="window.rerollWishHandler()">
+         换一批心愿（🪙${WISH_REROLL_COST}）
+       </button>`;
+
+  return `${heatPanel}${lastPanel}${statusPanel}
+    <h3>今天的心愿</h3>
+    <div class="wish-grid">${options}</div>
+    <div class="button-row">${rerollBtn}</div>`;
 }
 

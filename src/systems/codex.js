@@ -7,6 +7,7 @@ import { crops } from '../config/crops.js';
 import { hybridRecipes } from '../config/hybrid.js';
 import { furniture } from '../config/furniture.js';
 import { fishes } from './fishing.js';
+import { dishes } from '../config/dishes.js';
 import { addRewards } from '../core/inventory.js';
 import { logEvent } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
@@ -70,6 +71,23 @@ export function recordFish(state, fishId) {
 }
 
 /**
+ * 做出一道料理时收录图鉴
+ * 料理会消耗掉，所以收录状态由 dish_types 位图推导（见 systems/dishes.js），
+ * 这里只负责发埋点和事件，条目本身不落 state.codex。
+ * @param {Object} state
+ * @param {number} dishId
+ */
+export function recordDish(state, dishId) {
+  if (!dishes.some((d) => d.id === dishId)) return;
+  const index = dishes.findIndex((d) => d.id === dishId);
+  const mask = Number(state.analytics.dish_types) || 0;
+  if (mask & (1 << index)) return;
+  state.analytics.dish_types = mask | (1 << index);
+  logEvent(state, "codex_new_dish");
+  emit(Events.CODEX_NEW_ENTRY, { category: "dishes", id: dishId });
+}
+
+/**
  * 老存档回填：按当前库存一次性把「其实早该收录」的条目补进图鉴。
  * loadState 时调用，让老玩家打开图鉴就有内容。
  * @param {Object} state
@@ -102,16 +120,41 @@ export function backfillCodex(state) {
 }
 
 /**
+ * 统计一个整数的二进制里有多少个 1（料理种类位图用）
+ * 这里不能 import systems/dishes.js：dishes 反向依赖本模块的 recordDish。
+ */
+function popcount(value) {
+  let n = Number(value) || 0;
+  let count = 0;
+  while (n) {
+    n &= n - 1;
+    count++;
+  }
+  return count;
+}
+
+/**
+ * 已收录的料理种类数（料理会消耗，收录状态由 dish_types 位图推导）
+ */
+function collectedDishes(state) {
+  return Math.min(popcount(state.analytics?.dish_types), dishes.length);
+}
+
+/**
  * 总收录进度（跨分类合计）
+ *
+ * 注意：collected 必须和 total 对齐 —— 每加一类图鉴，两边都要算上，
+ * 否则最高档（100%）永远领不到。
  * @param {Object} state
  * @returns {{ collected: number, total: number, ratio: number }}
  */
 export function getCodexProgress(state) {
   const collected = state.codex.crops.length
     + state.codex.furniture.length
-    + state.codex.fishes.length;
-  // 杂交作物也计入作物图鉴总量（收录入口同样是收获）
-  const total = crops.length + hybridRecipes.length + furniture.length + fishes.length;
+    + state.codex.fishes.length
+    + collectedDishes(state);
+  // 杂交作物与料理也计入总量（收录入口同样是收获/制作）
+  const total = crops.length + hybridRecipes.length + furniture.length + fishes.length + dishes.length;
   return { collected, total, ratio: total ? collected / total : 0 };
 }
 

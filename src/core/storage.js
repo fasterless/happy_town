@@ -4,10 +4,14 @@ import { createDefaultState, mergeState, createDailyState } from './state.js';
 import { migrateState } from './migrations.js';
 import { settleReservedOrder } from '../systems/orders.js';
 import { backfillCodex } from '../systems/codex.js';
+import { settleWish } from '../systems/wishes.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
 import { syncToCloud } from './sync.js';
 
 let saveTimer = null;
+
+// 最近一次跨日结算出来的许愿结果，init() 里读它播报给玩家
+export let lastWishResult = null;
 
 /**
  * 从 localStorage 加载游戏状态
@@ -67,6 +71,9 @@ export function rollDailyState(state) {
 
   // 昨天预购的订单今天兑现到第一个槽位
   settleReservedOrder(state);
+
+  // 昨天在许愿池许的愿今天结算（断签则热度归零）
+  lastWishResult = settleWish(state);
 
   return state;
 }

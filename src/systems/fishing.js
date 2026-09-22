@@ -7,6 +7,7 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { todayKey } from '../utils/time.js';
 import { applyPetToFishingLuck } from './pets.js';
 import { recordFish } from './codex.js';
+import { getBuffMultiplier } from './dishes.js';
 
 // 每日免费钓鱼次数
 const FREE_CASTS_PER_DAY = 5;
@@ -105,8 +106,8 @@ export function castRod(state) {
     spendItem(state, "coin", BAIT_PRICE);
   }
 
-  // 掷鱼（小狐狸在场时稀有鱼权重提升）
-  const luck = applyPetToFishingLuck(1, state);
+  // 掷鱼（小狐狸在场 + 吃过海鲜浓汤时，稀有鱼权重都会提升）
+  const luck = applyPetToFishingLuck(1, state) * getBuffMultiplier(state, 'fishingLuck');
   const fish = weightedPick(fishes, luck);
   addItem(state, `fish_${fish.id}`, 1);
   recordFish(state, fish.id);

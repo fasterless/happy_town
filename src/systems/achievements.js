@@ -45,6 +45,9 @@ export const achievements = [
   { id: "like_20",   name: "暖心点赞",   desc: "点赞好友20次",      icon: "👍", category: "社交", target: 20,  trackKey: "home_like", rewards: { friendPoint: 60 } },
   { id: "water_10",  name: "及时雨",     desc: "帮好友浇田10次",    icon: "💧", category: "社交", target: 10,  trackKey: "friend_water", rewards: { friendPoint: 80, diamond: 20 } },
   { id: "neighbor_15", name: "人缘之星", desc: "收到15次邻居回礼",  icon: "🎁", category: "社交", target: 15,  trackKey: "neighbor_gift", rewards: { friendPoint: 80, diamond: 30 } },
+  { id: "help_20", name: "热心肠",      desc: "回应邻居求助20次",  icon: "🧺", category: "社交", target: 20,  trackKey: "help_fulfill", rewards: { friendPoint: 150, diamond: 40 } },
+  { id: "help_all_day", name: "全员搞定", desc: "一天内回应全部求助", icon: "📬", category: "社交", target: 3,  trackKey: "help_daily", rewards: { diamond: 60, coin: 1000 } },
+  { id: "favor_10", name: "自己人",     desc: "单日让 1 位邻居人情满格", icon: "🤝", category: "社交", target: 1, trackKey: "favor_full", rewards: { friendPoint: 120, diamond: 30 } },
 
   // ============ 🐮 养殖 ============
   { id: "ranch_first", name: "第一位房客", desc: "买下第一只动物",    icon: "🐣", category: "养殖", target: 1,   trackKey: "ranch_buy", rewards: { coin: 300 } },
@@ -71,6 +74,18 @@ export const achievements = [
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
   { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },
   { id: "hybrid_harvest_10", name: "新芽收藏家", desc: "收获10次杂交作物", icon: "🌱", category: "杂交", target: 10, trackKey: "hybrid_harvest", rewards: { diamond: 60, speed_ticket: 2 } },
+
+  // ============ 📜 委托榜 & 🍳 料理铺 & ⛲ 许愿池 ============
+  { id: "commission_10", name: "委托常客", desc: "完成10个小镇委托",  icon: "📜", category: "委托", target: 10,  trackKey: "commission_complete", rewards: { coin: 600, diamond: 20 } },
+  { id: "commission_50", name: "小镇红人", desc: "完成50个小镇委托",  icon: "🤝", category: "委托", target: 50,  trackKey: "commission_complete", rewards: { diamond: 100, coin: 3000 } },
+  { id: "commission_all", name: "有求必应", desc: "一天内交完全部委托", icon: "🏆", category: "委托", target: 4,  trackKey: "commission_daily", rewards: { diamond: 80, coin: 1500 } },
+  { id: "dish_cook_10", name: "小试牛刀", desc: "做出10道料理",      icon: "🍳", category: "料理", target: 10,  trackKey: "dish_cook", rewards: { coin: 500 } },
+  { id: "dish_serve_20", name: "上菜高手", desc: "上菜20次",         icon: "🍽️", category: "料理", target: 20,  trackKey: "dish_serve", rewards: { diamond: 60, coin: 1200 } },
+  { id: "dish_all", name: "料理大师",   desc: "做出过全部 9 道料理", icon: "👨‍🍳", category: "料理", target: 9,   trackKey: "dish_types", rewards: { diamond: 150, coin: 3000 } },
+  { id: "wish_7", name: "心诚则灵",   desc: "累计许愿7次",         icon: "⛲", category: "许愿池", target: 7,  trackKey: "wish_make", rewards: { coin: 700, diamond: 15 } },
+  { id: "wish_30", name: "池边常客",   desc: "累计许愿30次",        icon: "✨", category: "许愿池", target: 30, trackKey: "wish_make", rewards: { diamond: 80, coin: 2000 } },
+  { id: "wish_high", name: "大吉大利", desc: "许愿结算出 1 次「超大吉」", icon: "🎋", category: "许愿池", target: 1, trackKey: "wish_high", rewards: { diamond: 50, lottery_ticket: 2 } },
+  { id: "wish_streak_max", name: "十全十美", desc: "心愿热度攒满 10 天", icon: "🌟", category: "许愿池", target: 10, trackKey: "wish_heat", rewards: { diamond: 200, coin: 5000 } },
 
   // ============ 🐾 宠物 ============
   { id: "pet_first", name: "第一只宠物", desc: "买下第一只宠物",    icon: "🐾", category: "宠物", target: 1,   trackKey: "pet_own", rewards: { diamond: 30 } },
@@ -143,6 +158,19 @@ export function unlockAchievement(state, achievementId) {
 }
 
 /**
+ * 统计一个整数的二进制里有多少个 1（料理种类位图用）
+ */
+function popcount(value) {
+  let n = Number(value) || 0;
+  let count = 0;
+  while (n) {
+    n &= n - 1;
+    count++;
+  }
+  return count;
+}
+
+/**
  * 获取成就当前进度
  * @param {Object} state - 游戏状态
  * @param {Object} achievement - 成就对象
@@ -170,6 +198,25 @@ function getAchievementProgress(state, achievement) {
 
     case "order_daily":
       return state.daily.progress.order || 0;
+
+    case "commission_daily":
+      return state.daily.progress.commission || 0;
+
+    case "help_daily":
+      return state.daily.progress.help || 0;
+
+    case "favor_full":
+      return state.analytics.favor_full || 0;
+
+    case "dish_types":
+      // 做过的料理种类：用位图记（料理会消耗，不能只数背包）
+      return popcount(state.analytics.dish_types || 0);
+
+    case "wish_heat":
+      return state.wish.heat || 0;
+
+    case "wish_high":
+      return state.analytics.wish_high || 0;
 
     case "room_score":
       return calculateRoomScore(state).score;

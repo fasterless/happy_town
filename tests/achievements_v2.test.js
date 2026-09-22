@@ -95,3 +95,52 @@ describe('成就可以通过事件解锁', () => {
     expect(unlocked.some((a) => a.id === 'ranch_first')).toBe(false);
   });
 });
+
+describe('第六轮新成就（料理铺 / 委托榜 / 许愿池 / 求助板）', () => {
+  it('委托累计走 commission_complete，当日满额走 daily 进度', () => {
+    const state = freshState();
+    state.analytics.commission_complete = 50;
+    const unlocked = checkAchievements(state);
+    expect(unlocked.some((a) => a.id === 'commission_10')).toBe(true);
+    expect(unlocked.some((a) => a.id === 'commission_50')).toBe(true);
+    expect(unlocked.some((a) => a.id === 'commission_all')).toBe(false);
+
+    state.daily.progress.commission = 4;
+    expect(checkAchievements(state).some((a) => a.id === 'commission_all')).toBe(true);
+  });
+
+  it('料理种类数走 dish_types 位图，不是背包数量', () => {
+    const state = freshState();
+    // 背包里囤再多也不算法——料理会消耗，收录状态只看位图
+    state.inventory.dish_7001 = 99;
+    expect(checkAchievements(state).some((a) => a.id === 'dish_all')).toBe(false);
+
+    state.analytics.dish_types = 0b111111111; // 9 道全做过
+    expect(checkAchievements(state).some((a) => a.id === 'dish_all')).toBe(true);
+  });
+
+  it('求助板：累计次数、单日全员、人情满格三条线各自独立', () => {
+    const state = freshState();
+    state.analytics.help_fulfill = 20;
+    state.daily.progress.help = 3;
+    state.analytics.favor_full = 1;
+    const ids = checkAchievements(state).map((a) => a.id);
+    expect(ids).toContain('help_20');
+    expect(ids).toContain('help_all_day');
+    expect(ids).toContain('favor_10');
+  });
+
+  it('许愿池：热度满 10 天解锁「十全十美」，超大吉另算', () => {
+    const state = freshState();
+    state.wish.heat = 10;
+    state.analytics.wish_make = 30;
+    const unlocked = checkAchievements(state);
+    expect(unlocked.some((a) => a.id === 'wish_7')).toBe(true);
+    expect(unlocked.some((a) => a.id === 'wish_30')).toBe(true);
+    expect(unlocked.some((a) => a.id === 'wish_streak_max')).toBe(true);
+    expect(unlocked.some((a) => a.id === 'wish_high')).toBe(false);
+
+    state.analytics.wish_high = 1;
+    expect(checkAchievements(state).some((a) => a.id === 'wish_high')).toBe(true);
+  });
+});

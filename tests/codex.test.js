@@ -5,6 +5,7 @@ import { crops } from '../src/config/crops.js';
 import { hybridRecipes } from '../src/config/hybrid.js';
 import { furniture } from '../src/config/furniture.js';
 import { fishes } from '../src/systems/fishing.js';
+import { dishes } from '../src/config/dishes.js';
 import {
   recordCropHarvest, recordFurniture, recordFish,
   backfillCodex, getCodexProgress, canClaimCodexTier, claimCodexTier, CODEX_TIERS,
@@ -46,7 +47,11 @@ describe('图鉴收录', () => {
 
     const progress = getCodexProgress(state);
     expect(progress.collected).toBe(3 + 4 + 2);
-    expect(progress.total).toBe(crops.length + hybridRecipes.length + furniture.length + fishes.length);
+    // 料理图鉴走 dish_types 位图（料理会消耗，不能落 state.codex），
+    // 所以总量里含料理，本用例没做菜所以 collected 不含它们
+    expect(progress.total).toBe(
+      crops.length + hybridRecipes.length + furniture.length + fishes.length + dishes.length
+    );
     expect(progress.ratio).toBeCloseTo(9 / progress.total);
   });
 });
@@ -82,8 +87,8 @@ describe('档位奖励', () => {
     expect(canClaimCodexTier(state, 't25')).toBe(false);
     expect(claimCodexTier(state, 't25').success).toBe(false);
 
-    // 收满 25%
-    const total = crops.length + hybridRecipes.length + furniture.length + fishes.length;
+    // 收满 25%（总量含料理，这里用图鉴自己的口径算，避免测试跟着配置漂）
+    const total = getCodexProgress(state).total;
     const need = Math.ceil(total * 0.25);
     let added = 0;
     for (const c of crops) { if (added < need) { recordCropHarvest(state, c.id); added++; } }
@@ -110,5 +115,19 @@ describe('档位奖励', () => {
   it('档位配置从低到高排列', () => {
     const ratios = CODEX_TIERS.map((t) => t.ratio);
     expect(ratios).toEqual([...ratios].sort((a, b) => a - b));
+  });
+
+  it('料理也计入 collected：全收录时 100% 档领得到', () => {
+    const state = freshState();
+    const total = getCodexProgress(state).total;
+
+    crops.concat(hybridRecipes).forEach((c) => recordCropHarvest(state, c.id));
+    furniture.forEach((f) => recordFurniture(state, f.id));
+    fishes.forEach((f) => recordFish(state, f.id));
+    // 料理走 dish_types 位图（料理会消耗，收录状态不能落 state.codex）
+    dishes.forEach((d, i) => { state.analytics.dish_types |= (1 << i); });
+
+    expect(getCodexProgress(state).collected).toBe(total);
+    expect(canClaimCodexTier(state, 't100')).toBe(true);
   });
 });

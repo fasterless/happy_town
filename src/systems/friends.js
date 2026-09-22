@@ -4,11 +4,19 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
 import { tryNeighborGift } from './events.js';
+import { getBuffMultiplier } from './dishes.js';
 import { GAME_CONFIG } from '../config/constants.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
 
 const VISIT_FRIEND_POINT = 3;
 const LIKE_FRIEND_POINT = 5;
+
+/**
+ * 一次社交互动拿到的友情点（宠物加成 + 料理加成）
+ */
+function socialPoints(base, state) {
+  return Math.floor(applyPetToFriendPoint(base, state) * getBuffMultiplier(state, 'friendPointBonus'));
+}
 
 /**
  * 添加好友
@@ -71,8 +79,8 @@ export function visitFriend(state, friendId) {
     GAME_CONFIG.social.visitStreakBonusMax
   );
 
-  // 获得友情点（宠物加成 + 拜访连击）
-  const point = applyPetToFriendPoint(VISIT_FRIEND_POINT, state);
+  // 获得友情点（宠物 + 料理加成，再加拜访连击）
+  const point = socialPoints(VISIT_FRIEND_POINT, state);
   addItem(state, "friendPoint", point);
   if (streakBonus > 0) addItem(state, "friendPoint", streakBonus);
 
@@ -118,8 +126,8 @@ export function likeFriend(state, friendId) {
   state.daily.friendLikes[friendId] = true;
   friend.likes = (friend.likes || 0) + 1;
 
-  // 获得友情点（宠物加成）
-  const point = applyPetToFriendPoint(LIKE_FRIEND_POINT, state);
+  // 获得友情点（宠物 + 料理加成）
+  const point = socialPoints(LIKE_FRIEND_POINT, state);
   addItem(state, "friendPoint", point);
 
   logEvent(state, "home_like");
@@ -202,7 +210,7 @@ export function waterFriendPlot(state, friendId) {
   state.social.wateredBy.push(friendId);
 
   // 记录邻居的人情：给好友的 mood 变热络，并给一点友情点
-  const point = applyPetToFriendPoint(2, state);
+  const point = socialPoints(2, state);
   addItem(state, "friendPoint", point);
   logEvent(state, "friend_water");
   trackDaily(state, "water", 1);

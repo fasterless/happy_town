@@ -7,6 +7,7 @@ import { getRecipe, craftingRecipes } from '../config/crafting.js';
 import { getCount, addItem, spendItem, hasEnough } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { applyPetToCraftTime } from './pets.js';
+import { getBuffMultiplier } from './dishes.js';
 
 // 同时最多进行的加工批次数
 const MAX_QUEUE = 2;
@@ -57,7 +58,10 @@ export function startCrafting(state, recipeId) {
   state.crafting.queue.push({
     recipeId: recipe.id,
     startedAt: new Date().toISOString(),
-    time: applyPetToCraftTime(recipe.time, state),
+    // 鹦鹉缩短 20%，料理「香酥拼盘」再打 7 折（两者叠乘）
+    time: Math.max(30, Math.floor(
+      applyPetToCraftTime(recipe.time, state) * getBuffMultiplier(state, 'craftSpeed')
+    )),
   });
 
   logEvent(state, "craft_start");

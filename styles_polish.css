@@ -276,3 +276,238 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ==========================================================================
+   第六阶段：料理铺 / 小镇委托榜 / 许愿池
+   - 三个新视图共用既有卡片的观感（order-card / recipe-item），只补差异部分
+   ========================================================================== */
+
+/* ===== 料理铺 ===== */
+
+.buff-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px dashed rgba(150, 110, 70, 0.35);
+}
+
+.buff-panel.active {
+  background: rgba(255, 214, 122, 0.24);
+  border: 1px solid rgba(214, 140, 30, 0.45);
+}
+
+.buff-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.buff-info h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.buff-info p {
+  margin: 2px 0;
+}
+
+.dish-bag {
+  margin-bottom: 14px;
+}
+
+.dish-bag h3 {
+  margin-bottom: 8px;
+}
+
+.dish-bag-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.dish-bag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* ===== 小镇委托榜 ===== */
+
+.commission-header {
+  margin-bottom: 12px;
+}
+
+.commission-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.order-card.commission {
+  border-left: 4px solid rgba(214, 140, 30, 0.6);
+}
+
+.order-card.commission.done {
+  opacity: 0.62;
+}
+
+/* ===== 许愿池 ===== */
+
+.wish-heat,
+.wish-last,
+.wish-status {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.wish-heat h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.wish-heat p {
+  margin: 8px 0 0;
+}
+
+.wish-last {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wish-luck {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #a8571a;
+}
+
+.wish-status.wished {
+  background: rgba(160, 214, 190, 0.28);
+  border: 1px solid rgba(46, 125, 92, 0.35);
+}
+
+.wish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.wish-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 2px 8px rgba(120, 90, 55, 0.08);
+}
+
+.wish-card h4 {
+  margin: 0;
+}
+
+.wish-card p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.wish-card .primary-action {
+  margin-top: 8px;
+}
+
+.wish-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .buff-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .commission-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===== 邻居求助板 ===== */
+
+.help-board {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.help-board h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.help-board h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.help-board .commission-bar {
+  margin: 0 0 10px;
+}
+
+.help-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.help-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.help-row.done {
+  opacity: 0.6;
+}
+
+.help-avatar {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.help-info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.help-info p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .help-row {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .help-row button {
+    grid-column: 1 / -1;
+  }
+}

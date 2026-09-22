@@ -4,9 +4,10 @@ import { furniture } from '../config/furniture.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { hybridRecipes } from '../config/hybrid.js';
 import { fishes } from '../systems/fishing.js';
+import { dishes } from '../config/dishes.js';
 
 // 默认配置表，供 getItemName / getItemIcon 在未显式传入 configs 时使用
-const defaultConfigs = { crops, furniture, craftingRecipes, hybridRecipes, fishes };
+const defaultConfigs = { crops, furniture, craftingRecipes, hybridRecipes, fishes, dishes };
 
 // 基础物品的显示名与图标
 const BASIC_LABELS = {
@@ -158,6 +159,12 @@ export function getItemName(key, configs = defaultConfigs) {
     return fish ? fish.name : key;
   }
 
+  if (key.startsWith("dish_") && configs.dishes) {
+    const dishId = Number(key.replace("dish_", ""));
+    const dish = configs.dishes.find(d => d.id === dishId);
+    return dish ? dish.name : key;
+  }
+
   return key;
 }
 
@@ -204,6 +211,12 @@ export function getItemIcon(key, configs = defaultConfigs) {
     const fishId = Number(key.replace("fish_", ""));
     const fish = configs.fishes.find(f => f.id === fishId);
     return fish ? fish.icon : "🐟";
+  }
+
+  if (key.startsWith("dish_") && configs.dishes) {
+    const dishId = Number(key.replace("dish_", ""));
+    const dish = configs.dishes.find(d => d.id === dishId);
+    return dish ? dish.icon : "🍽️";
   }
 
   return "📦";
