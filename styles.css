@@ -656,7 +656,8 @@ h2 {
 .toast {
   position: absolute;
   top: 18px;
-  right: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
   z-index: 30;
   max-width: min(360px, calc(100vw - 48px));
   padding: 10px 12px;
@@ -665,7 +666,6 @@ h2 {
   color: #fff;
   box-shadow: 0 10px 30px rgba(47, 118, 86, 0.25);
   opacity: 0;
-  transform: translateY(-6px);
   pointer-events: none;
   transition:
     opacity 180ms ease,
@@ -674,7 +674,7 @@ h2 {
 
 .toast.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 .modal-backdrop {
