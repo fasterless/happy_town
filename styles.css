@@ -45,7 +45,8 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  padding: 16px 18px 92px;
+  /* 底部导航固定高 ~70px + 14px 间距，留 100px 保证内容不被盖住 */
+  padding: 16px 18px 100px;
 }
 
 .topbar {
@@ -600,11 +601,17 @@ h2 {
   left: 50%;
   bottom: 14px;
   z-index: 25;
-  display: grid;
-  grid-template-columns: repeat(7, minmax(72px, 1fr));
-  gap: 6px;
-  width: min(920px, calc(100vw - 28px));
-  padding: 8px;
+  /* 20 个入口一行放不下，改成单行横向滚动：flex + 溢出滚动，
+     再也不会掉到第二三行盖住页面内容 */
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: min(1180px, calc(100vw - 28px));
+  padding: 8px 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 250, 240, 0.94);
@@ -613,11 +620,23 @@ h2 {
   backdrop-filter: blur(14px);
 }
 
+.bottom-nav::-webkit-scrollbar {
+  height: 5px;
+}
+
+.bottom-nav::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(79, 61, 40, 0.28);
+}
+
 .nav-button {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   gap: 2px;
+  width: 60px;
   min-height: 54px;
+  padding: 4px 2px;
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -769,10 +788,6 @@ h2 {
     grid-template-columns: repeat(2, minmax(160px, 1fr));
   }
 
-  .bottom-nav {
-    grid-template-columns: repeat(7, 1fr);
-  }
-
   .nav-button {
     min-height: 50px;
   }
@@ -831,12 +846,12 @@ h2 {
   .bottom-nav {
     bottom: 8px;
     width: calc(100vw - 12px);
-    grid-template-columns: repeat(7, 1fr);
     gap: 3px;
-    padding: 5px;
+    padding: 5px 6px;
   }
 
   .nav-button {
+    width: 54px;
     min-height: 48px;
     font-size: 16px;
   }
