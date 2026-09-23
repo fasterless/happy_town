@@ -31,3 +31,15 @@ describe("周边探索", () => {
     expect(merged.explore.found).toEqual([]);
   });
 });
+
+import { dishes } from "../src/config/dishes.js";
+import { craftingRecipes } from "../src/config/crafting.js";
+import { commissionJobs, getCommissionCoin } from "../src/config/commissions.js";
+describe("探索物用途", () => {
+  it("分别进入料理、加工和委托，并产生正报酬", () => {
+    expect(dishes.find((item) => item.id === 7011).requires.map((item) => item.item)).toEqual(["twig", "resin"]);
+    expect(craftingRecipes.find((item) => item.id === 5012).result.key).toBe("goods_5012");
+    const job = commissionJobs.find((item) => item.id === 9011);
+    expect(getCommissionCoin(job)).toBeGreaterThan(100);
+  });
+});

@@ -57,6 +57,7 @@ describe('料理铺配置', () => {
 
     const knownKeys = new Set([
       'wood', 'stone', 'cloth', 'egg', 'wool', 'milk',
+      'twig', 'resin', 'pebble', 'shell', 'ticket', 'bell',
     ]);
     dishes.forEach((d) => {
       expect(d.buff.type).toBeTruthy();

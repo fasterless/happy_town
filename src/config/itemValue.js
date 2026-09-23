@@ -28,6 +28,7 @@ const RAW_VALUES = {
   gem_amethyst: 240,
   gem_emerald: 480,
   gem_crystal: 1000,
+  twig: 4, resin: 12, pebble: 4, shell: 12, ticket: 6, bell: 18,
 };
 
 // 递归计算时的防环标记

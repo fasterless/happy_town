@@ -56,6 +56,15 @@ export const dishes = [
     desc: "30 分钟内卖出作物单价 +20%",
   },
   {
+    id: 7011,
+    name: "松脂茶",
+    icon: "🍵",
+    unlockLevel: 6,
+    requires: [{ item: "twig", count: 2 }, { item: "resin", count: 1 }],
+    buff: { type: "expBonus", value: 1.15, durationSec: 1800 },
+    desc: "30 分钟内经验 +15%",
+  },
+  {
     id: 7006,
     name: "邻里下午茶",
     icon: "🫖",

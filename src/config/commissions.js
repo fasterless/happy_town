@@ -46,6 +46,15 @@ export const commissionJobs = [
     requires: [{ item: "goods_5001", count: 4 }, { item: "goods_5002", count: 2 }, { item: "crop_1006", count: 4 }],
   },
   {
+    id: 9011,
+    name: "湖岸小路修整",
+    icon: "🌊",
+    unlockLevel: 8,
+    payFactor: 1.8,
+    fixedCoin: 100,
+    requires: [{ item: "pebble", count: 4 }, { item: "shell", count: 1 }],
+  },
+  {
     id: 9005,
     name: "镇长家宴备料",
     icon: "🎊",

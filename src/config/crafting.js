@@ -96,6 +96,15 @@ export const craftingRecipes = [
     result: { key: "ingot_iron", count: 1 },
   },
   {
+    id: 5012,
+    name: "车票书签",
+    icon: "🔖",
+    unlockLevel: 10,
+    time: 600,
+    requires: [{ item: "ticket", count: 1 }, { item: "bell", count: 1 }],
+    result: { key: "goods_5012", count: 1 },
+  },
+  {
     id: 5011,
     name: "银锭",
     icon: "✨",
