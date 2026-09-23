@@ -37,6 +37,7 @@ const BASIC_LABELS = {
   goods_5012: "车票书签",
   token_spring: "春朝花笺", token_summer: "清凉贝壳", token_autumn: "丰收麦穗", token_winter: "暖冬丝带", token_newyear: "庙会灯结",
   twig: "青树枝", resin: "松脂", pebble: "圆卵石", shell: "湖贝", ticket: "旧车票", bell: "铜车站铃",
+  souvenir_grove: "林间书签", souvenir_shore: "湖岸贝饰", souvenir_station: "站台铃坠",
 };
 
 const BASIC_ICONS = {
@@ -66,6 +67,7 @@ const BASIC_ICONS = {
   goods_5012: "🔖",
   token_spring: "🌸", token_summer: "🐚", token_autumn: "🌾", token_winter: "🎀", token_newyear: "🏮",
   twig: "🌿", resin: "🍯", pebble: "🪨", shell: "🐚", ticket: "🎫", bell: "🔔",
+  souvenir_grove: "🍃", souvenir_shore: "🐚", souvenir_station: "🔔",
 };
 
 /**

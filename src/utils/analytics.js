@@ -66,6 +66,7 @@ function getEventDisplayName(eventName) {
     festival_reward: "兑换庆典收藏",
     explore_visit: "周边探索",
     explore_walk: "与邻居同行散步",
+    explore_souvenir: "收藏散步足迹",
     neighbor_gift: "邻居回礼",
     schedule_visit: "按日程拜访",
     relationship_gain: "提升邻居熟悉度",

@@ -1900,6 +1900,17 @@
   font-weight: 800;
 }
 
+.explore-souvenir {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.explore-souvenir.claimed {
+  color: var(--green-strong);
+}
+
 .explore-walk-journal {
   margin-top: 18px;
   padding: 16px;

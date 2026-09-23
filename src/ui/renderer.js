@@ -1778,9 +1778,19 @@ export function renderExploreView(state) {
              <button class="small-action" onclick="window.walkWithNeighborHandler('${place.id}', document.getElementById('walk-friend-${place.id}').value)">邀请散步</button>`
           : '<p class="muted-text">这里的邻居散步回忆都收录了</p>'}
         ${place.walks.length ? `<p class="explore-walk-count">同行回忆 ${place.walks.length} 条</p>` : ''}
+        ${renderWalkSouvenir(place)}
       </div>` : ''}
     </article>`).join("")}</div>
     ${renderExploreWalkJournal(state)}`;
+}
+
+function renderWalkSouvenir(place) {
+  const status = place.souvenir;
+  if (!status) return '';
+  const { souvenir, friends, goal, claimed, ready } = status;
+  if (claimed) return `<p class="explore-souvenir claimed">${souvenir.icon} ${escapeHtml(souvenir.name)} · 已收藏</p>`;
+  if (ready) return `<button class="small-action" onclick="window.claimWalkSouvenirHandler('${place.id}')">收藏${souvenir.icon}${escapeHtml(souvenir.name)}</button>`;
+  return `<p class="explore-souvenir">${souvenir.icon} ${escapeHtml(souvenir.name)} · 同行 ${friends}/${goal}</p>`;
 }
 
 function renderExploreWalkJournal(state) {

@@ -10,6 +10,7 @@ export function initExplore(state) {
   if (!Array.isArray(state.explore.visited)) state.explore.visited = [];
   if (!Array.isArray(state.explore.found)) state.explore.found = [];
   if (!Array.isArray(state.explore.walks)) state.explore.walks = [];
+  if (!Array.isArray(state.explore.souvenirs)) state.explore.souvenirs = [];
   if (state.explore.date !== todayKey()) { state.explore.date = todayKey(); state.explore.visited = []; }
   return state;
 }
@@ -24,6 +25,7 @@ export function getExploreBoard(state) {
     tales: place.tales.filter((_, index) => state.explore.found.includes(place.finds[index].id)),
     walkFriends: getAvailableWalkFriends(state, place.id),
     walks: state.explore.walks.filter((walk) => walk.placeId === place.id),
+    souvenir: getWalkSouvenirStatus(state, place.id),
   }));
 }
 
@@ -59,6 +61,57 @@ function walkLine(place, friend, tier) {
     },
   };
   return lines[place.id]?.[tier] || lines[place.id]?.base || `${friend.name}和你一起在${place.name}散步，留下了一段轻松的回忆。`;
+}
+
+
+// 一个地点的同行回忆集齐这么多位不同邻居，就能领取一次足迹纪念
+export const WALK_SOUVENIR_GOAL = 5;
+
+export const walkSouvenirs = [
+  { placeId: "grove", id: "souvenir_grove", name: "林间书签", icon: "🍃", rewards: { coin: 500, friendPoint: 30 } },
+  { placeId: "shore", id: "souvenir_shore", name: "湖岸贝饰", icon: "🐚", rewards: { coin: 600, diamond: 10 } },
+  { placeId: "station", id: "souvenir_station", name: "站台铃坠", icon: "🔔", rewards: { coin: 800, diamond: 15 } },
+];
+
+export function getWalkSouvenir(placeId) {
+  return walkSouvenirs.find((souvenir) => souvenir.placeId === placeId) || null;
+}
+
+function walkFriendCount(state, placeId) {
+  return new Set(state.explore.walks.filter((walk) => walk.placeId === placeId).map((walk) => walk.friendId)).size;
+}
+
+/**
+ * 一个地点的足迹纪念状态：集齐同行回忆后可领一次，已领的永久保留
+ * @returns {{ souvenir: Object, friends: number, goal: number, claimed: boolean, ready: boolean } | null}
+ */
+export function getWalkSouvenirStatus(state, placeId) {
+  const souvenir = getWalkSouvenir(placeId);
+  if (!souvenir) return null;
+  initExplore(state);
+  const friends = walkFriendCount(state, placeId);
+  const claimed = state.explore.souvenirs.includes(souvenir.id);
+  return { souvenir, friends, goal: WALK_SOUVENIR_GOAL, claimed, ready: !claimed && friends >= WALK_SOUVENIR_GOAL };
+}
+
+export function getClaimedWalkSouvenirs(state) {
+  initExplore(state);
+  return walkSouvenirs.filter((souvenir) => state.explore.souvenirs.includes(souvenir.id));
+}
+
+/**
+ * 领取地点足迹纪念：集齐同行回忆后限领一次，领取不消耗回忆记录
+ */
+export function claimWalkSouvenir(state, placeId) {
+  const status = getWalkSouvenirStatus(state, placeId);
+  if (!status) return { success: false, message: "这个地方没有足迹纪念" };
+  if (status.claimed) return { success: false, message: `${status.souvenir.name}已经收藏过了，会一直留着` };
+  if (!status.ready) return { success: false, message: `再和 ${status.goal - status.friends} 位邻居走过${getExplorePlace(placeId).name}，就能收藏${status.souvenir.name}` };
+
+  state.explore.souvenirs.push(status.souvenir.id);
+  addRewards(state, status.souvenir.rewards);
+  logEvent(state, "explore_souvenir");
+  return { success: true, message: `收藏了${status.souvenir.icon}${status.souvenir.name}，获得${formatRewards(status.souvenir.rewards)}`, state, souvenir: status.souvenir };
 }
 
 export function getExploreWalkJournal(state, placeId = null) {

@@ -5,7 +5,18 @@ import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
 import { renderExploreView } from '../src/ui/renderer.js';
 import { checkAchievements } from '../src/systems/achievements.js';
-import { explorePlace, getExploreWalkJournal, walkWithNeighbor } from '../src/systems/explore.js';
+import { claimWalkSouvenir, explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, walkWithNeighbor } from '../src/systems/explore.js';
+
+const WALK_FRIENDS = ['npc_mayor', 'npc_baker', 'npc_florist', 'npc_carpenter', 'npc_barista'];
+
+function befriendAll(state) {
+  state.friends.forEach((friend) => { friend.isFriend = true; });
+}
+
+function fillWalks(state, placeId) {
+  befriendAll(state);
+  WALK_FRIENDS.forEach((friendId) => walkWithNeighbor(state, placeId, friendId));
+}
 
 function finishedState() {
   const state = createDefaultState();
@@ -96,6 +107,76 @@ describe('邻居同行散步', () => {
     checkAchievements(state);
     expect(state.achievements.unlocked).toContain('explore_walk_1');
     expect(state.achievements.progress.explore_walk_all).toBe(2);
+  });
+
+  it('集齐一个地点的同行回忆后可领取一次足迹纪念，领取不消耗回忆', () => {
+    const state = finishedState();
+    befriendAll(state);
+    WALK_FRIENDS.slice(0, 4).forEach((friendId) => walkWithNeighbor(state, 'grove', friendId));
+    expect(claimWalkSouvenir(state, 'grove').success).toBe(false);
+
+    walkWithNeighbor(state, 'grove', 'npc_barista');
+    const before = state.explore.walks.length;
+    const result = claimWalkSouvenir(state, 'grove');
+    expect(result.success).toBe(true);
+    expect(result.souvenir.id).toBe('souvenir_grove');
+    expect(result.message).toContain('林间书签');
+    expect(state.wallet.coin).toBeGreaterThan(0);
+    expect(state.explore.walks).toHaveLength(before);
+    expect(getClaimedWalkSouvenirs(state).map((souvenir) => souvenir.id)).toEqual(['souvenir_grove']);
+    expect(claimWalkSouvenir(state, 'grove').success).toBe(false);
+  });
+
+  it('足迹纪念按地点分开计算，旧档里已经集齐的回忆可以直接补领', () => {
+    const state = finishedState();
+    fillWalks(state, 'grove');
+    walkWithNeighbor(state, 'shore', 'npc_mayor');
+    expect(claimWalkSouvenir(state, 'shore').success).toBe(false);
+    expect(claimWalkSouvenir(state, 'grove').success).toBe(true);
+  });
+
+  it('探索页按进度展示足迹纪念，集齐后显示收藏按钮', () => {
+    const state = finishedState();
+    walkWithNeighbor(state, 'grove', 'npc_mayor');
+    expect(renderExploreView(state)).toContain('林间书签 · 同行 1/5');
+
+    fillWalks(state, 'grove');
+    const ready = renderExploreView(state);
+    expect(ready).toContain('收藏🍃林间书签');
+    expect(ready).toContain("claimWalkSouvenirHandler('grove')");
+
+    claimWalkSouvenir(state, 'grove');
+    expect(renderExploreView(state)).toContain('林间书签 · 已收藏');
+  });
+
+  it('收藏足迹纪念解锁成就，集齐三枚达成全收藏', () => {
+    const state = finishedState();
+    fillWalks(state, 'grove');
+    claimWalkSouvenir(state, 'grove');
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain('explore_souvenir_1');
+    expect(state.achievements.progress.explore_souvenir_all).toBe(1);
+
+    fillWalks(state, 'shore');
+    fillWalks(state, 'station');
+    claimWalkSouvenir(state, 'shore');
+    claimWalkSouvenir(state, 'station');
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain('explore_souvenir_all');
+  });
+
+  it('v31 老存档迁移和损坏结构归一化会补齐 souvenirs', () => {
+    const saved = createDefaultState();
+    saved.version = 31;
+    delete saved.explore.souvenirs;
+    const merged = mergeState(createDefaultState(), saved);
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.explore.souvenirs).toEqual([]);
+
+    merged.explore.souvenirs = null;
+    normalizeState(merged);
+    expect(merged.explore.souvenirs).toEqual([]);
   });
 
   it('v30 老存档迁移和损坏结构归一化会补齐 walks', () => {
