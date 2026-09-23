@@ -1539,6 +1539,7 @@
 .explore-card.locked { opacity: .65; }
 .explore-card h3, .explore-card p { margin: 0; }
 .explore-tale { color: #6d5338; }
+.story-endings { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 
 .season-card {
     grid-template-columns: 1fr;

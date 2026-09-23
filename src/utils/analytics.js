@@ -98,6 +98,7 @@ function getEventDisplayName(eventName) {
     cafe_serve: "咖啡馆上菜",
     cafe_tip: "收到小费",
     story_chapter: "完成剧情章节",
+    story_ending: "选择剧情结局",
     cosmetic_equip: "装备称号或头像框",
   };
 

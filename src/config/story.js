@@ -9,6 +9,11 @@
 
 // 剧情解锁等级
 export const STORY_MIN_LEVEL = 3;
+export const storyEndings = [
+  { id: "lantern", name: "灯火镇口", icon: "🏮", line: "镇口每晚亮起一盏灯，晚归的人都能找到路。" },
+  { id: "garden", name: "花满广场", icon: "🌸", line: "广场换上花坛，季节过去，花也会再开。" },
+  { id: "station", name: "车站新钟", icon: "🔔", line: "旧车站挂上新钟，它只为迎接回来的人敲响。" },
+];
 
 // check 的几种读法：
 //   { stat }            —— state.analytics[stat] 的累计次数

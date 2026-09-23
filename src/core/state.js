@@ -9,7 +9,7 @@ import { initRelationships } from '../systems/relationships.js';
 import { initExplore } from '../systems/explore.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 25;
+export const CURRENT_VERSION = 26;
 
 /**
  * 创建默认游戏状态
@@ -140,6 +140,7 @@ export function createDefaultState() {
     // 小镇剧情：chapterIndex 是当前进行的章节（等于章节总数表示通关）
     story: {
       chapterIndex: 0,
+      ending: null,
     },
     // 称号与头像框：只存当前装备的那一个，解锁状态由计数现算
     cosmetics: {
@@ -467,6 +468,7 @@ export function normalizeState(state) {
   if (typeof state.story.chapterIndex !== "number" || state.story.chapterIndex < 0) {
     state.story.chapterIndex = 0;
   }
+  if (typeof state.story.ending !== "string") state.story.ending = null;
 
   // 称号与头像框（v19）
   if (!state.cosmetics || typeof state.cosmetics !== "object") {

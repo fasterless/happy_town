@@ -867,6 +867,7 @@ window.unlockTalentHandler = (nodeId) => runAction(() => TalentSystem.unlockTale
 
 // 小镇剧情
 window.claimChapterHandler = () => runAction(() => StorySystem.claimChapter(state), 'levelup');
+window.chooseStoryEndingHandler = (endingId) => runAction(() => StorySystem.chooseStoryEnding(state, endingId));
 
 // 称号与头像框
 window.equipTitleHandler = (titleId) => runAction(() => CosmeticSystem.equipTitle(state, titleId), 'success');

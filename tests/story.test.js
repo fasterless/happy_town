@@ -6,7 +6,7 @@ import { checkAchievements } from '../src/systems/achievements.js';
 import { levels } from '../src/config/levels.js';
 import { storyChapters } from '../src/config/story.js';
 import {
-  isStoryUnlocked, getCurrentChapter, claimChapter, isStoryComplete, getChapterIndex,
+  isStoryUnlocked, getCurrentChapter, claimChapter, isStoryComplete, getChapterIndex, chooseStoryEnding,
 } from '../src/systems/story.js';
 
 function freshState(level = 20) {
@@ -167,5 +167,17 @@ describe("第二季剧情", () => {
     expect(claimChapter(state).success).toBe(true);
     expect(state.story.chapterIndex).toBe(8);
     expect(storyChapters).toHaveLength(10);
+  });
+});
+
+describe("分支装饰结局", () => {
+  it("未通关不能选择，通关后可更换且不回退章节", () => {
+    const state = freshState(20);
+    expect(chooseStoryEnding(state, "lantern").success).toBe(false);
+    state.story.chapterIndex = storyChapters.length;
+    expect(chooseStoryEnding(state, "lantern").success).toBe(true);
+    expect(chooseStoryEnding(state, "station").success).toBe(true);
+    expect(state.story.ending).toBe("station");
+    expect(state.story.chapterIndex).toBe(storyChapters.length);
   });
 });

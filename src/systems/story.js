@@ -3,7 +3,7 @@
 // 进度存在 state.story.chapterIndex：指向当前进行的章节，
 // 等于章节总数时表示全部完成。任务本身的进度不存，每次从 state 里现算，
 // 所以玩家在解锁剧情之前做过的事也会被算进去。
-import { storyChapters, STORY_MIN_LEVEL } from '../config/story.js';
+import { storyChapters, storyEndings, STORY_MIN_LEVEL } from '../config/story.js';
 import { addRewards } from '../core/inventory.js';
 import { logEvent } from '../utils/analytics.js';
 
@@ -99,3 +99,16 @@ export function claimChapter(state) {
 }
 
 export { storyChapters, STORY_MIN_LEVEL };
+
+export function getStoryEnding(state) {
+  return storyEndings.find((ending) => ending.id === state.story?.ending) || null;
+}
+export function chooseStoryEnding(state, endingId) {
+  if (!isStoryComplete(state)) return { success: false, message: "先完成第二季剧情" };
+  const ending = storyEndings.find((item) => item.id === endingId);
+  if (!ending) return { success: false, message: "没有这种小镇装饰" };
+  state.story.ending = ending.id;
+  logEvent(state, "story_ending");
+  return { success: true, message: `小镇换上了「${ending.name}」：${ending.line}`, state };
+}
+export { storyEndings };

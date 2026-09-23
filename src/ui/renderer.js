@@ -1676,10 +1676,13 @@ export function renderStoryView(state) {
   const total = StorySystem.storyChapters.length;
 
   if (StorySystem.isStoryComplete(state)) {
+    const selected = StorySystem.getStoryEnding(state);
+    const choices = StorySystem.storyEndings.map((ending) => `<button class="small-action" onclick="window.chooseStoryEndingHandler('${ending.id}')" ${selected?.id === ending.id ? "disabled" : ""}>${ending.icon} ${escapeHtml(ending.name)}</button>`).join("");
     return `<div class="story-done">
-      <span class="story-done-icon">📖</span>
-      <h3>故事告一段落</h3>
-      <p class="muted-text">七章委托全部完成，小镇的居民都记住你了。</p>
+      <span class="story-done-icon">${selected ? selected.icon : "📖"}</span>
+      <h3>${selected ? escapeHtml(selected.name) : "故事告一段落"}</h3>
+      <p class="muted-text">${selected ? escapeHtml(selected.line) : "十章委托全部完成，给小镇选一种新装饰吧。"}</p>
+      <div class="story-endings">${choices}</div>
     </div>${renderCosmeticsPanel(state)}`;
   }
 
