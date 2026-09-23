@@ -442,6 +442,11 @@
 .player-avatar.frame-wave { box-shadow: 0 0 0 2px #6aa8c8; background: #e2f1f8; }
 .player-avatar.frame-ore { box-shadow: 0 0 0 2px #a08a6a; background: #f3ece2; }
 .player-avatar.frame-bloom { box-shadow: 0 0 0 2px #d48aa6; background: #fbe8ef; }
+.player-avatar.frame-bond {
+  box-shadow: 0 0 0 3px #e2b15a, 0 0 0 6px #fff4d6;
+  background: #fff4d6;
+}
+
 .player-avatar.frame-gold { box-shadow: 0 0 0 2px #e2b43a; background: #fff4d4; }
 
 .cosmetics-panel {

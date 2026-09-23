@@ -21,6 +21,16 @@ function isUnlocked(state, item) {
   if (unlock.stat) return (state.analytics?.[unlock.stat] || 0) >= unlock.need;
   if (unlock.story) return (state.story?.chapterIndex || 0) >= unlock.story;
   if (unlock.achievements) return (state.achievements?.unlocked || []).length >= unlock.achievements;
+  if (unlock.memories) {
+    const memories = state.relationships?.memories || {};
+    const heard = Object.values(memories).reduce((sum, tiers) => sum + (Array.isArray(tiers) ? tiers.length : 0), 0);
+    return heard >= unlock.memories;
+  }
+  if (unlock.closeFriends) {
+    const claimed = state.relationships?.claimed || {};
+    const count = Object.values(claimed).filter((tiers) => Array.isArray(tiers) && tiers.includes('close')).length;
+    return count >= unlock.closeFriends;
+  }
   return false;
 }
 

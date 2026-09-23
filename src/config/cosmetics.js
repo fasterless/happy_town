@@ -8,6 +8,8 @@
 //   { level }        —— 玩家等级
 //   { story }        —— 完成的剧情章节数
 //   { achievements } —— 已解锁的成就数
+//   { memories }     —— 听过的邻居回忆段数
+//   { closeFriends } —— 达到「知心」的邻居人数
 
 // 收藏解锁等级
 export const COSMETICS_MIN_LEVEL = 4;
@@ -21,6 +23,8 @@ export const titles = [
   { id: "host", name: "好客主人", icon: "☕", unlock: { stat: "cafe_serve", need: 10 }, desc: "招待 10 位客人" },
   { id: "storyteller", name: "小镇说书人", icon: "📖", unlock: { story: 7 }, desc: "完成全部剧情" },
   { id: "legend", name: "邻里传说", icon: "🏆", unlock: { achievements: 30 }, desc: "解锁 30 项成就" },
+  { id: "listener", name: "邻里知音", icon: "💛", unlock: { memories: 5 }, desc: "听过 5 段邻居回忆" },
+  { id: "confidant", name: "知心好友", icon: "🤝", unlock: { closeFriends: 1 }, desc: "与 1 位邻居成为知心" },
 ];
 
 // 头像框。装备后包在顶栏头像外面。
@@ -31,6 +35,7 @@ export const frames = [
   { id: "ore", name: "矿石框", icon: "🪨", css: "frame-ore", unlock: { stat: "mine_dig", need: 10 }, desc: "下矿 10 次" },
   { id: "bloom", name: "繁花框", icon: "🌸", css: "frame-bloom", unlock: { story: 3 }, desc: "完成 3 章剧情" },
   { id: "gold", name: "金穗框", icon: "✨", css: "frame-gold", unlock: { stat: "gold_crop", need: 5 }, desc: "收获 5 株金穗" },
+  { id: "bond", name: "知心框", icon: "💛", css: "frame-bond", unlock: { closeFriends: 3 }, desc: "与 3 位邻居成为知心" },
 ];
 
 /** 取一个称号的配置 */

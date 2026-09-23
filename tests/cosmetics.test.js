@@ -104,6 +104,13 @@ describe('称号与头像框', () => {
     state.analytics.plant_crop = 20;
     state.analytics.gold_crop = 5;
     state.story.chapterIndex = 7;
+    state.relationships.memories = {
+      npc_mayor: ['acquainted', 'familiar', 'close'],
+      npc_baker: ['acquainted', 'familiar'],
+    };
+    state.relationships.claimed = {
+      npc_mayor: ['close'], npc_baker: ['close'], npc_florist: ['close'],
+    };
     state.achievements.unlocked = Array.from({ length: 30 }, (_, i) => `a${i}`);
 
     expect(getUnlockedCosmeticCount(state)).toBe(titles.length + frames.length);
@@ -141,5 +148,23 @@ describe('存档迁移 v19', () => {
     normalizeState(state);
     expect(state.cosmetics.equippedTitle).toBeNull();
     expect(state.cosmetics.equippedFrame).toBeNull();
+  });
+});
+
+describe('关系收藏', () => {
+  it('听过五段回忆解锁称号，三位知心邻居解锁头像框', () => {
+    const state = createDefaultState();
+    state.wallet.level = 4;
+    state.relationships.memories = {
+      npc_mayor: ['acquainted', 'familiar'],
+      npc_baker: ['acquainted', 'familiar'],
+      npc_florist: ['acquainted'],
+    };
+    state.relationships.claimed = {
+      npc_mayor: ['close'], npc_baker: ['close'], npc_florist: ['close'],
+    };
+    const board = getCosmeticBoard(state);
+    expect(board.titles.find((row) => row.item.id === 'listener').unlocked).toBe(true);
+    expect(board.frames.find((row) => row.item.id === 'bond').unlocked).toBe(true);
   });
 });
