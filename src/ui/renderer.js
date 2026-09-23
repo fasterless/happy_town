@@ -1869,7 +1869,29 @@ function renderYearbook(state) {
       : milestone.ready
         ? `<button class="small-action" onclick="window.claimYearbookHandler('${milestone.id}')">领取年鉴奖励 ${milestone.need}</button>`
         : `<span class="explore-souvenir">${milestone.count}/${milestone.need}</span>`).join("")}</div>
+    ${renderYearbookVolumes(state)}
   </section>`;
+}
+
+function renderYearbookVolumes(state) {
+  const volumes = ExploreSystem.getYearbookVolumes(state);
+  if (!volumes.length) return "";
+  const rewards = ExploreSystem.getYearbookVolumeRewards(state);
+  return `<div class="explore-volumes">
+    <h4>📚 年鉴分册</h4>
+    ${volumes.map((volume) => `<article class="explore-volume">
+      <h5>${escapeHtml(volume.year)} 年 <small>${volume.count} 条</small></h5>
+      ${volume.sections.filter((section) => section.entries.length).map((section) => `<p>${section.icon} ${section.entries.map((entry) => escapeHtml(entry.name)).join("、")}</p>`).join("")}
+      ${volume.bound
+        ? `<span class="explore-souvenir claimed">已装订</span>`
+        : `<button class="small-action" onclick="window.bindYearbookHandler('${volume.year}')">装订这一年</button>`}
+    </article>`).join("")}
+    <div class="explore-yearbook-milestones">${rewards.map((reward) => reward.claimed
+      ? `<span class="explore-souvenir claimed">已领取 ${reward.need} 册</span>`
+      : reward.ready
+        ? `<button class="small-action" onclick="window.claimYearbookVolumeHandler('${reward.id}')">领取装订奖励 ${reward.need} 册</button>`
+        : `<span class="explore-souvenir">${reward.bound}/${reward.need} 册</span>`).join("")}</div>
+  </div>`;
 }
 
 

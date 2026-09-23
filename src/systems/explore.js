@@ -18,6 +18,7 @@ export function initExplore(state) {
   if (!state.explore.gifts || typeof state.explore.gifts !== "object") state.explore.gifts = { date: "", claimed: [] };
   if (!Array.isArray(state.explore.seasons)) state.explore.seasons = [];
   if (!Array.isArray(state.explore.yearbook)) state.explore.yearbook = [];
+  if (!state.explore.volumes || typeof state.explore.volumes !== "object") state.explore.volumes = {};
   if (state.explore.date !== todayKey()) { state.explore.date = todayKey(); state.explore.visited = []; }
   if (state.explore.gifts.date !== todayKey()) { state.explore.gifts = { date: todayKey(), claimed: [] }; }
   return state;
@@ -403,5 +404,89 @@ export function getYearbookMilestones(state) {
     count,
     claimed: state.explore.yearbook.includes(milestone.id),
     ready: count >= milestone.need && !state.explore.yearbook.includes(milestone.id),
+  }));
+}
+
+// ---------- round 18 1/3: yearbook volumes ----------
+
+export function getYearbookVolume(state, year = new Date().getFullYear()) {
+  initExplore(state);
+  const key = String(year);
+  const volume = state.explore.volumes[key];
+  if (!volume) return null;
+  const sections = YEARBOOK_SECTIONS.map((section) => ({
+    ...section,
+    entries: Array.isArray(volume[section.id]) ? volume[section.id] : [],
+  }));
+  return {
+    year: key,
+    bound: Boolean(volume.bound),
+    count: sections.reduce((sum, section) => sum + section.entries.length, 0),
+    sections,
+  };
+}
+
+export function getYearbookVolumes(state) {
+  initExplore(state);
+  return Object.keys(state.explore.volumes).sort().map((year) => getYearbookVolume(state, year));
+}
+
+function volumeOf(state, year) {
+  const key = String(year);
+  if (!state.explore.volumes[key]) state.explore.volumes[key] = { bound: false };
+  return state.explore.volumes[key];
+}
+
+export function recordYearbookEntry(state, year, sectionId, entry) {
+  const section = YEARBOOK_SECTIONS.find((item) => item.id === sectionId);
+  if (!section || !entry || !entry.id) return false;
+  initExplore(state);
+  const volume = volumeOf(state, year);
+  if (!Array.isArray(volume[sectionId])) volume[sectionId] = [];
+  if (volume[sectionId].some((item) => item.id === entry.id)) return false;
+  volume[sectionId].push({ id: entry.id, name: entry.name, icon: entry.icon });
+  logEvent(state, "yearbook_entry");
+  return true;
+}
+
+export function bindYearbookVolume(state, year = new Date().getFullYear()) {
+  const volume = getYearbookVolume(state, year);
+  if (!volume) return { success: false, message: year + " 年还没有可以装订的记录" };
+  if (volume.bound) return { success: false, message: year + " 年的年鉴已经装订过了" };
+  if (!volume.count) return { success: false, message: year + " 年还没有可以装订的记录" };
+  state.explore.volumes[String(year)].bound = true;
+  logEvent(state, "yearbook_bind");
+  return { success: true, message: year + " 年的年鉴装订成册，共 " + volume.count + " 条记录", state };
+}
+
+
+export const YEARBOOK_VOLUME_REWARDS = [
+  { id: "vol_1", need: 1, rewards: { coin: 200 } },
+  { id: "vol_3", need: 3, rewards: { coin: 600, diamond: 8 } },
+];
+
+export function claimYearbookVolumeReward(state, rewardId) {
+  const reward = YEARBOOK_VOLUME_REWARDS.find((entry) => entry.id === rewardId);
+  if (!reward) return { success: false, message: "没有这个装订奖励" };
+  initExplore(state);
+  if (!Array.isArray(state.explore.volumes.claimed)) state.explore.volumes.claimed = [];
+  if (state.explore.volumes.claimed.includes(rewardId)) return { success: false, message: "这个装订奖励已经领过了" };
+  const bound = getYearbookVolumes(state).filter((volume) => volume.bound).length;
+  if (bound < reward.need) return { success: false, message: "还差 " + (reward.need - bound) + " 册装订好的年鉴" };
+  state.explore.volumes.claimed.push(rewardId);
+  addRewards(state, reward.rewards);
+  logEvent(state, "yearbook_volume");
+  return { success: true, message: "装订了 " + bound + " 册年鉴，获得" + formatRewards(reward.rewards), state };
+}
+
+export function getYearbookVolumeRewards(state) {
+  initExplore(state);
+  if (!Array.isArray(state.explore.volumes.claimed)) state.explore.volumes.claimed = [];
+  const bound = getYearbookVolumes(state).filter((volume) => volume.bound).length;
+  return YEARBOOK_VOLUME_REWARDS.map((reward) => ({
+    ...reward,
+    bound,
+    claimed: state.explore.volumes.claimed.includes(reward.id),
+    ready: bound >= reward.need && !state.explore.volumes.claimed.includes(reward.id),
   }));
 }

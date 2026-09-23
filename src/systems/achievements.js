@@ -67,6 +67,7 @@ export const achievements = [
   { id: "explore_album_all", name: "相册集齐", desc: "解锁全部 3 本散步相册", icon: "📔", category: "收藏", target: 3, trackKey: "explore_album", rewards: { coin: 500, friendPoint: 40 } },
   { id: "explore_season_all", name: "四季走遍", desc: "集齐全部 12 枚四季散步集章", icon: "🍂", category: "收藏", target: 12, trackKey: "explore_season", rewards: { diamond: 30, coin: 600 } },
   { id: "yearbook_1", name: "翻开年鉴", desc: "领取 1 次年鉴里程碑", icon: "📖", category: "收藏", target: 1, trackKey: "yearbook_claim", rewards: { coin: 300 } },
+  { id: "yearbook_volume_1", name: "第一册年鉴", desc: "装订 1 册年鉴分册", icon: "📚", category: "收藏", target: 1, trackKey: "yearbook_bind", rewards: { coin: 400 } },
 
   { id: "festival_reward_1", name: "第一份纪念", desc: "兑换 1 份庆典收藏", icon: "🎁", category: "里程碑", target: 1, trackKey: "festival_reward", rewards: { diamond: 20, coin: 300 } },
   { id: "festival_3", name: "庆典常客", desc: "领取 3 次庆典任务奖励", icon: "🎊", category: "里程碑", target: 3, trackKey: "festival_task", rewards: { coin: 300, diamond: 10 } },
@@ -247,6 +248,7 @@ function getAchievementProgress(state, achievement) {
   if (achievement.trackKey === "explore_souvenir_all") return Array.isArray(state.explore?.souvenirs) ? state.explore.souvenirs.length : 0;
   if (achievement.trackKey === "explore_album") return Array.isArray(state.explore?.souvenirs) ? state.explore.souvenirs.length : 0;
   if (achievement.trackKey === "explore_season") return Array.isArray(state.explore?.seasons) ? state.explore.seasons.length : 0;
+  if (achievement.trackKey === "yearbook_bind") return Object.values(state.explore?.volumes || {}).filter((volume) => volume && volume.bound).length;
   if (achievement.trackKey === "town_project_complete") return Array.isArray(state.community?.projects?.completed) ? state.community.projects.completed.length : 0;
   if (achievement.trackKey === "town_style_seen") return Array.isArray(state.community?.projects?.seenStyles) ? state.community.projects.seenStyles.length : 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;

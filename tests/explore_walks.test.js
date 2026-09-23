@@ -5,7 +5,7 @@ import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
 import { renderExploreView } from '../src/ui/renderer.js';
 import { checkAchievements } from '../src/systems/achievements.js';
-import { claimSouvenirGift, claimWalkSouvenir, claimYearbookMilestone, explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
+import { claimSouvenirGift, claimWalkSouvenir, bindYearbookVolume, claimYearbookMilestone, claimYearbookVolumeReward,  explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, getYearbookVolume, getYearbookVolumes, recordYearbookEntry,  recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
 import { visitFriend } from '../src/systems/friends.js';
 import { renderHomeView } from '../src/ui/renderer.js';
 
@@ -282,6 +282,37 @@ describe('邻居同行散步', () => {
     expect(getYearbook(state).find((section) => section.id === "endings").entries).toHaveLength(3);
     checkAchievements(state);
     expect(state.achievements.unlocked).toContain("yearbook_1");
+  });
+
+  it("年鉴按年份装订，装订奖励只领一次且不消耗记录", () => {
+    const state = finishedState();
+    expect(recordYearbookEntry(state, 2024, "souvenirs", { id: "souvenir_grove", name: "林间书签", icon: "🍃" })).toBe(true);
+    expect(recordYearbookEntry(state, 2024, "souvenirs", { id: "souvenir_grove", name: "林间书签", icon: "🍃" })).toBe(false);
+    recordYearbookEntry(state, 2025, "seasons", { id: "grove:spring", name: "林间小路·春", icon: "🌸" });
+    recordYearbookEntry(state, 2026, "endings", { id: "lantern", name: "灯会", icon: "🏮" });
+    expect(getYearbookVolumes(state)).toHaveLength(3);
+    expect(bindYearbookVolume(state, 2024).success).toBe(true);
+    expect(bindYearbookVolume(state, 2024).success).toBe(false);
+    expect(getYearbookVolume(state, 2024).bound).toBe(true);
+    expect(getYearbookVolume(state, 2024).count).toBe(1);
+    expect(claimYearbookVolumeReward(state, "vol_1").success).toBe(true);
+    expect(claimYearbookVolumeReward(state, "vol_1").success).toBe(false);
+    expect(claimYearbookVolumeReward(state, "vol_3").success).toBe(false);
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain("yearbook_volume_1");
+  });
+
+  it("v33 老存档迁移会补齐年鉴分册", () => {
+    const saved = createDefaultState();
+    saved.version = 33;
+    delete saved.explore.volumes;
+    const merged = mergeState(createDefaultState(), saved);
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.explore.volumes).toEqual({});
+    merged.explore.volumes = null;
+    normalizeState(merged);
+    expect(merged.explore.volumes).toEqual({});
   });
 
   it("v32 老存档迁移和损坏结构归一化会补齐新字段", () => {

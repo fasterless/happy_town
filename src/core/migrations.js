@@ -48,6 +48,7 @@ const MIGRATIONS = [
   { fromVersion: 30, migrate: toV31 },
   { fromVersion: 31, migrate: toV32 },
   { fromVersion: 32, migrate: toV33 },
+  { fromVersion: 33, migrate: toV34 },
 ];
 
 /**
@@ -313,6 +314,12 @@ function toV32(state) {          // v31 → v32：散步足迹收藏
   if (!state.explore || typeof state.explore !== 'object') state.explore = { date: '', visited: [], found: [], walks: [], souvenirs: [] };
   if (!Array.isArray(state.explore.souvenirs)) state.explore.souvenirs = [];
   state.version = 32;
+}
+
+function toV34(state) {          // v33 → v34：年鉴分册
+  if (!state.explore || typeof state.explore !== 'object') state.explore = {};
+  if (!state.explore.volumes || typeof state.explore.volumes !== 'object') state.explore.volumes = {};
+  state.version = 34;
 }
 
 function toV33(state) {          // v32 → v33：散步相册、四季集章与年鉴

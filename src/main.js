@@ -948,6 +948,8 @@ window.claimWalkSouvenirHandler = (placeId) => runAction(() => ExploreSystem.cla
 window.toggleSouvenirDisplayHandler = (souvenirId) => runAction(() => ExploreSystem.toggleSouvenirDisplay(state, souvenirId));
 window.claimSouvenirGiftHandler = (souvenirId) => runAction(() => ExploreSystem.claimSouvenirGift(state, souvenirId));
 window.claimYearbookHandler = (milestoneId) => runAction(() => ExploreSystem.claimYearbookMilestone(state, milestoneId));
+window.bindYearbookHandler = (year) => runAction(() => ExploreSystem.bindYearbookVolume(state, year));
+window.claimYearbookVolumeHandler = (rewardId) => runAction(() => ExploreSystem.claimYearbookVolumeReward(state, rewardId));
 
 // 养殖栏
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');

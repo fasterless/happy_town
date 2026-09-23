@@ -2963,3 +2963,26 @@
   background: var(--green-strong);
   color: #fff;
 }
+
+.explore-volumes {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.explore-volumes h4,
+.explore-volume h5 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.explore-volume {
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+}
+
+.explore-volume p {
+  margin: 4px 0;
+  font-size: 13px;
+}

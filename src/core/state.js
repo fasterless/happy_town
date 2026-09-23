@@ -9,7 +9,7 @@ import { initRelationships } from '../systems/relationships.js';
 import { initExplore } from '../systems/explore.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 33;
+export const CURRENT_VERSION = 34;
 
 /**
  * 创建默认游戏状态
@@ -171,6 +171,7 @@ export function createDefaultState() {
       gifts: { date: "", claimed: [] },
       seasons: [],
       yearbook: [],
+      volumes: {},
     },
     // 小镇集市：NPC 买家对每种作物的需求热度（价格倍率的种子）
     // demand.<cropId> 是 0-100 的热度，越高挂单价越好，每天轮换
@@ -558,6 +559,7 @@ export function normalizeState(state) {
   if (!state.explore.gifts || typeof state.explore.gifts !== "object") state.explore.gifts = { date: "", claimed: [] };
   if (!Array.isArray(state.explore.seasons)) state.explore.seasons = [];
   if (!Array.isArray(state.explore.yearbook)) state.explore.yearbook = [];
+  if (!state.explore.volumes || typeof state.explore.volumes !== "object") state.explore.volumes = {};
 
   state.version = CURRENT_VERSION;
   return state;
