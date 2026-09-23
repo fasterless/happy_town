@@ -45,6 +45,7 @@ const MIGRATIONS = [
   { fromVersion: 27, migrate: toV28 },
   { fromVersion: 28, migrate: toV29 },
   { fromVersion: 29, migrate: toV30 },
+  { fromVersion: 30, migrate: toV31 },
 ];
 
 /**
@@ -298,6 +299,12 @@ function toV30(state) {          // v29 → v30：共建风貌收藏
   if (typeof state.community.projects.activeStyle !== 'string') state.community.projects.activeStyle = null;
   if (!Array.isArray(state.community.projects.seenStyles)) state.community.projects.seenStyles = [];
   state.version = 30;
+}
+
+function toV31(state) {          // v30 → v31：邻居同行散步日记
+  if (!state.explore || typeof state.explore !== 'object') state.explore = { date: '', visited: [], found: [], walks: [] };
+  if (!Array.isArray(state.explore.walks)) state.explore.walks = [];
+  state.version = 31;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

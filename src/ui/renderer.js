@@ -1772,7 +1772,29 @@ export function renderExploreView(state) {
       <span>${place.icon}</span>
       <div><h3>${escapeHtml(place.name)}</h3><p class="muted-text">${place.unlocked ? escapeHtml(place.story) : `Lv.${place.level} 开放`} · 已发现 ${place.discovered}/${place.finds.length}</p>${place.tales.map((tale) => `<p class="explore-tale">${escapeHtml(tale)}</p>`).join("")}</div>
       <button class="small-action" onclick="window.explorePlaceHandler('${place.id}')" ${!place.unlocked || place.visited ? "disabled" : ""}>${place.visited ? "今天去过" : "探索"}</button>
-    </article>`).join("")}</div>`;
+      ${place.unlocked ? `<div class="explore-walk">
+        ${place.walkFriends.length
+          ? `<select id="walk-friend-${place.id}">${place.walkFriends.map((friend) => `<option value="${escapeHtml(friend.id)}">${escapeHtml(friend.name)} · ${escapeHtml(friend.relationship)}</option>`).join('')}</select>
+             <button class="small-action" onclick="window.walkWithNeighborHandler('${place.id}', document.getElementById('walk-friend-${place.id}').value)">邀请散步</button>`
+          : '<p class="muted-text">这里的邻居散步回忆都收录了</p>'}
+        ${place.walks.length ? `<p class="explore-walk-count">同行回忆 ${place.walks.length} 条</p>` : ''}
+      </div>` : ''}
+    </article>`).join("")}</div>
+    ${renderExploreWalkJournal(state)}`;
+}
+
+function renderExploreWalkJournal(state) {
+  const walks = ExploreSystem.getExploreWalkJournal(state);
+  if (!walks.length) return '';
+  return `<section class="explore-walk-journal">
+    <h3>👣 邻居同行回忆 <small>${walks.length}</small></h3>
+    <div class="explore-walk-grid">${walks.map((walk) => `
+      <article class="explore-walk-entry">
+        <span>${escapeHtml(walk.placeName)} · 与${escapeHtml(walk.friendName)}</span>
+        <p>${escapeHtml(walk.line)}</p>
+        <small>${escapeHtml(String(walk.at).slice(0, 10))}</small>
+      </article>`).join('')}</div>
+  </section>`;
 }
 
 export function renderStoryView(state) {

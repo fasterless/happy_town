@@ -60,6 +60,8 @@ export const achievements = [
   { id: "memory_first", name: "第一段回忆", desc: "听完一位邻居的回忆", icon: "📖", category: "社交", target: 1, trackKey: "relationship_memory", rewards: { coin: 200, diamond: 5 } },
   { id: "explore_3", name: "出门看看", desc: "探索周边 3 次", icon: "🧭", category: "里程碑", target: 3, trackKey: "explore_visit", rewards: { coin: 300 } },
   { id: "explore_all", name: "小镇足迹", desc: "发现全部 6 种探索物", icon: "🗺️", category: "里程碑", target: 6, trackKey: "explore_found", rewards: { diamond: 30, coin: 500 } },
+  { id: "explore_walk_1", name: "散步有伴", desc: "第一次邀请邻居同行散步", icon: "👣", category: "社交", target: 1, trackKey: "explore_walk", rewards: { friendPoint: 20, coin: 150 } },
+  { id: "explore_walk_all", name: "并肩看遍小镇", desc: "收录 5 位邻居的同行散步回忆", icon: "🚶", category: "社交", target: 5, trackKey: "explore_walk_friends", rewards: { diamond: 30, friendPoint: 80 } },
   { id: "festival_reward_1", name: "第一份纪念", desc: "兑换 1 份庆典收藏", icon: "🎁", category: "里程碑", target: 1, trackKey: "festival_reward", rewards: { diamond: 20, coin: 300 } },
   { id: "festival_3", name: "庆典常客", desc: "领取 3 次庆典任务奖励", icon: "🎊", category: "里程碑", target: 3, trackKey: "festival_task", rewards: { coin: 300, diamond: 10 } },
   { id: "memory_15", name: "小镇故事集", desc: "听完全部 15 段邻居回忆", icon: "📚", category: "社交", target: 15, trackKey: "relationship_memory", rewards: { diamond: 80, coin: 2000 } },
@@ -232,6 +234,10 @@ function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
   if (achievement.trackKey === "story_seen_endings") return state.story?.seenEndings?.length || 0;
+  if (achievement.trackKey === "explore_walk_friends") {
+    const walks = Array.isArray(state.explore?.walks) ? state.explore.walks : [];
+    return new Set(walks.map((walk) => walk.friendId)).size;
+  }
   if (achievement.trackKey === "town_project_complete") return Array.isArray(state.community?.projects?.completed) ? state.community.projects.completed.length : 0;
   if (achievement.trackKey === "town_style_seen") return Array.isArray(state.community?.projects?.seenStyles) ? state.community.projects.seenStyles.length : 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;

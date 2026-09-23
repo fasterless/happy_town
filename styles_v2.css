@@ -1820,6 +1820,19 @@
 }
 
 @media (max-width: 900px) {
+  .explore-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .explore-card > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .explore-walk {
+    grid-column: 1 / -1;
+  }
+
   .town-projects {
     padding: 14px;
   }
@@ -1861,6 +1874,74 @@
 .explore-card.locked { opacity: .65; }
 .explore-card h3, .explore-card p { margin: 0; }
 .explore-tale { color: #6d5338; }
+
+.explore-walk {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.explore-walk select {
+  min-width: min(100%, 190px);
+  min-height: 34px;
+}
+
+.explore-walk p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.explore-walk-count {
+  color: var(--green-strong);
+  font-weight: 800;
+}
+
+.explore-walk-journal {
+  margin-top: 18px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.explore-walk-journal h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.explore-walk-journal h3 small {
+  color: var(--muted);
+}
+
+.explore-walk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 8px;
+}
+
+.explore-walk-entry {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.explore-walk-entry span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.explore-walk-entry p {
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.explore-walk-entry small {
+  color: var(--muted);
+}
 .story-endings { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 
 .season-card {

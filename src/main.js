@@ -943,6 +943,7 @@ window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSe
 window.claimFestivalTaskHandler = (eventId, taskId) => runAction(() => SeasonsSystem.claimFestivalTask(state, eventId, taskId), 'coin');
 window.claimFestivalRewardHandler = (eventId) => runAction(() => SeasonsSystem.claimFestivalReward(state, eventId), 'levelup');
 window.explorePlaceHandler = (placeId) => runAction(() => ExploreSystem.explorePlace(state, placeId));
+window.walkWithNeighborHandler = (placeId, friendId) => runAction(() => ExploreSystem.walkWithNeighbor(state, placeId, friendId));
 
 // 养殖栏
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');
