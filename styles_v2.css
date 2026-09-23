@@ -341,6 +341,91 @@
   font-size: 12px;
 }
 
+/* ===== 小镇剧情（第八轮） ===== */
+
+.story-chapter {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.story-chapter h3 {
+  margin: 2px 0 8px;
+  font-size: 1.15rem;
+}
+
+.story-chapter > .muted-text {
+  margin: 0;
+  font-size: 12px;
+}
+
+.story-intro {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--yellow);
+  background: rgba(255, 246, 223, 0.8);
+  font-size: 13px;
+}
+
+.story-tasks {
+  display: grid;
+  gap: 8px;
+}
+
+.story-task {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.story-task.done {
+  background: #eef6e8;
+  border-color: var(--green);
+}
+
+.story-task-text {
+  font-size: 14px;
+}
+
+.story-task-progress {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(93, 65, 39, 0.7);
+}
+
+.story-reward {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.story-done {
+  padding: 28px 16px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+  text-align: center;
+}
+
+.story-done-icon {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.story-done h3 {
+  margin: 8px 0 4px;
+}
+
 .seed-shop,
 .furniture-shop {
   margin-top: 18px;

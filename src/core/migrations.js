@@ -32,6 +32,7 @@ const MIGRATIONS = [
   { fromVersion: 14, migrate: toV15 },
   { fromVersion: 15, migrate: toV16 },
   { fromVersion: 16, migrate: toV17 },
+  { fromVersion: 17, migrate: toV18 },
 ];
 
 /**
@@ -184,6 +185,16 @@ function toV17(state) {          // v16 → v17：咖啡馆
   if (typeof state.cafe.totalServed !== 'number') state.cafe.totalServed = 0;
   if (typeof state.cafe.totalTips !== 'number') state.cafe.totalTips = 0;
   state.version = 17;
+}
+
+function toV18(state) {          // v17 → v18：小镇剧情
+  if (!state.story || typeof state.story !== 'object') {
+    state.story = { chapterIndex: 0 };
+  }
+  if (typeof state.story.chapterIndex !== 'number' || state.story.chapterIndex < 0) {
+    state.story.chapterIndex = 0;
+  }
+  state.version = 18;
 }
 
 /**

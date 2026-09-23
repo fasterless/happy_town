@@ -96,6 +96,10 @@ export const achievements = [
   { id: "cafe_30", name: "回头客", desc: "累计招待30位客人", icon: "🍽️", category: "咖啡馆", target: 30, trackKey: "cafe_serve", rewards: { diamond: 60, coin: 1500 } },
   { id: "cafe_tip_10", name: "小费满满", desc: "累计收到10次小费", icon: "💝", category: "咖啡馆", target: 10, trackKey: "cafe_tip", rewards: { diamond: 40, coin: 800 } },
 
+  // ============ 📖 剧情 ============
+  { id: "story_first", name: "故事开场", desc: "完成第一章剧情", icon: "📖", category: "剧情", target: 1, trackKey: "story_chapter", rewards: { coin: 200, diamond: 5 } },
+  { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: 7, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
+
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
   { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },

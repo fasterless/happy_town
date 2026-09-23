@@ -125,7 +125,7 @@ describe('存档迁移 v16', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(17);
+    expect(merged.version).toBe(18);
     expect(merged.talents.unlocked).toContain('farm_1');
     expect(Array.isArray(merged.greenhouse.usedToday)).toBe(true);
     expect(merged.greenhouse.totalPlanted).toBe(0);

@@ -47,6 +47,7 @@ import * as CharmSystem from './systems/charms.js';
 import * as TalentSystem from './systems/talents.js';
 import * as GreenhouseSystem from './systems/greenhouse.js';
 import * as CafeSystem from './systems/cafe.js';
+import * as StorySystem from './systems/story.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -512,6 +513,10 @@ function renderTalentsView() {
   setHtml('talentsContent', Renderer.renderTalentsView(state));
 }
 
+function renderStoryView() {
+  setHtml('storyContent', Renderer.renderStoryView(state));
+}
+
 function renderAdminView() {
   setHtml('statsPanel', Renderer.renderAdminView(state));
 }
@@ -540,6 +545,7 @@ const VIEW_RENDERERS = {
   commissionView: renderCommissionView,
   wishView: renderWishView,
   talentsView: renderTalentsView,
+  storyView: renderStoryView,
   adminView: renderAdminView,
 };
 
@@ -849,6 +855,9 @@ window.unequipCharmHandler = () => runAction(() => CharmSystem.unequipCharm(stat
 
 // 天赋树
 window.unlockTalentHandler = (nodeId) => runAction(() => TalentSystem.unlockTalent(state, nodeId), 'levelup');
+
+// 小镇剧情
+window.claimChapterHandler = () => runAction(() => StorySystem.claimChapter(state), 'levelup');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {

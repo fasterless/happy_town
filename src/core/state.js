@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 17;
+export const CURRENT_VERSION = 18;
 
 /**
  * 创建默认游戏状态
@@ -133,6 +133,10 @@ export function createDefaultState() {
       guests: [],
       totalServed: 0,
       totalTips: 0,
+    },
+    // 小镇剧情：chapterIndex 是当前进行的章节（等于章节总数表示通关）
+    story: {
+      chapterIndex: 0,
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -265,6 +269,7 @@ export function mergeState(base, saved) {
     talents: { ...base.talents, ...(saved.talents || {}) },
     greenhouse: { ...base.greenhouse, ...(saved.greenhouse || {}) },
     cafe: { ...base.cafe, ...(saved.cafe || {}) },
+    story: { ...base.story, ...(saved.story || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -424,6 +429,14 @@ export function normalizeState(state) {
   if (!Array.isArray(state.cafe.guests)) state.cafe.guests = [];
   if (typeof state.cafe.totalServed !== "number") state.cafe.totalServed = 0;
   if (typeof state.cafe.totalTips !== "number") state.cafe.totalTips = 0;
+
+  // 小镇剧情（v18）
+  if (!state.story || typeof state.story !== "object") {
+    state.story = { chapterIndex: 0 };
+  }
+  if (typeof state.story.chapterIndex !== "number" || state.story.chapterIndex < 0) {
+    state.story.chapterIndex = 0;
+  }
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

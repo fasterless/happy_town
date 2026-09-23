@@ -90,6 +90,7 @@ function getEventDisplayName(eventName) {
     greenhouse_plant: "温室种植",
     cafe_serve: "咖啡馆上菜",
     cafe_tip: "收到小费",
+    story_chapter: "完成剧情章节",
   };
 
   return names[eventName] || eventName;

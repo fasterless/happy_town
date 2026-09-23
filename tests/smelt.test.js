@@ -235,7 +235,7 @@ describe('存档迁移 v14', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(17);
+    expect(merged.version).toBe(18);
     expect(merged.mine.pickLevel).toBe(3);
     expect(Array.isArray(merged.charms.owned)).toBe(true);
     expect(merged.charms.equipped).toBeNull();

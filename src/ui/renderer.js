@@ -52,6 +52,7 @@ import * as CharmSystem from '../systems/charms.js';
 import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
 import * as CafeSystem from '../systems/cafe.js';
+import * as StorySystem from '../systems/story.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { getCafePrice } from '../config/cafe.js';
 import { commissionJobs } from '../config/commissions.js';
@@ -1620,6 +1621,52 @@ export function renderCharmsPanel(state) {
     .join('');
 
   return `${active}<div class="charm-grid">${list}</div>`;
+}
+
+/**
+ * 渲染小镇剧情视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderStoryView(state) {
+  if (!StorySystem.isStoryUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${StorySystem.STORY_MIN_LEVEL} 解锁小镇剧情</p>`;
+  }
+
+  const index = StorySystem.getChapterIndex(state);
+  const total = StorySystem.storyChapters.length;
+
+  if (StorySystem.isStoryComplete(state)) {
+    return `<div class="story-done">
+      <span class="story-done-icon">📖</span>
+      <h3>故事告一段落</h3>
+      <p class="muted-text">七章委托全部完成，小镇的居民都记住你了。</p>
+    </div>`;
+  }
+
+  const { chapter, tasks } = StorySystem.getCurrentChapter(state);
+  const doneCount = tasks.filter((entry) => entry.done).length;
+  const allDone = doneCount === tasks.length;
+
+  const taskRows = tasks.map(({ task, progress, done }) => `
+    <div class="story-task ${done ? 'done' : ''}">
+      <span class="story-task-mark">${done ? '✅' : '⬜'}</span>
+      <span class="story-task-text">${escapeHtml(task.text)}</span>
+      <span class="story-task-progress">${progress}/${task.check.need}</span>
+    </div>`).join('');
+
+  return `<div class="story-chapter">
+    <p class="muted-text">第 ${index + 1} / ${total} 章</p>
+    <h3>${chapter.icon} ${escapeHtml(chapter.title)}</h3>
+    <p class="story-intro">${escapeHtml(chapter.npc)}：${escapeHtml(chapter.intro)}</p>
+    <div class="story-tasks">${taskRows}</div>
+    <div class="story-reward">
+      <span>完成奖励：${escapeHtml(formatRewards(chapter.reward))}</span>
+      <button class="primary-action" onclick="window.claimChapterHandler()" ${allDone ? '' : 'disabled'}>
+        ${allDone ? '交付委托' : `还差 ${tasks.length - doneCount} 件`}
+      </button>
+    </div>
+  </div>`;
 }
 
 /**
