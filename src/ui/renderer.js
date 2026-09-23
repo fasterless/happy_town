@@ -868,12 +868,25 @@ function renderTownProjectsPanel(state) {
 
   const cards = townProjects.map((project) => {
     const status = TownProjectsSystem.getTownProjectProgress(state, project.id);
+    const inviteOptions = !status.invitedNpc
+      ? (state.friends || []).filter((friend) => friend.isFriend).map((friend) =>
+          `<option value="${escapeHtml(friend.id)}">${escapeHtml(friend.name)}</option>`
+        ).join('')
+      : '';
+    const invitePanel = status.invitedNpc
+      ? `<p class="town-project-companion">🤝 邀请邻居：${escapeHtml(status.invitedName || '')} · ${status.relationshipTier === 'close' ? '知心' : status.relationshipTier === 'familiar' ? '熟识' : status.relationshipTier === 'acquainted' ? '相识' : '刚认识'}</p>`
+      : `<div class="town-project-invite">
+          <select id="project-invite-${project.id}" ${inviteOptions ? '' : 'disabled'}>${inviteOptions || '<option value="">先添加好友</option>'}</select>
+          <button type="button" class="small-action" onclick="window.inviteTownProjectNeighborHandler('${project.id}')" ${inviteOptions ? '' : 'disabled'}>邀请邻居</button>
+        </div>`;
     if (status.completed) {
       const rewardKey = Object.keys(project.stages.at(-1).reward).find((key) => key.startsWith('f_'));
       const keepsake = rewardKey ? getFurniture(Number(rewardKey.slice(2))) : null;
       return `<article class="town-project completed">
         <div class="town-project-heading"><span>${project.icon}</span><div><h4>${escapeHtml(project.name)}</h4><p>${escapeHtml(project.description)}</p></div></div>
         <p class="town-project-done">✓ 已完工 · ${keepsake ? `${keepsake.icon} ${escapeHtml(keepsake.name)}已收入图鉴` : '建设纪念已收录'}</p>
+        ${status.invitedNpc ? `<p class="town-project-companion">🤝 邀请邻居：${escapeHtml(status.invitedName || '')}</p>` : ''}
+        ${status.tale ? `<blockquote class="town-project-tale">${escapeHtml(status.tale)}</blockquote>` : ''}
         <div class="build-track"><span style="width:100%"></span></div>
       </article>`;
     }
@@ -893,6 +906,8 @@ function renderTownProjectsPanel(state) {
     return `<article class="town-project">
       <div class="town-project-heading"><span>${project.icon}</span><div><h4>${escapeHtml(project.name)}</h4><p>${escapeHtml(project.description)}</p></div></div>
       <h5>阶段 ${status.stage + 1}/${status.totalStages} · ${escapeHtml(stage.label)}</h5>
+      ${invitePanel}
+      ${status.tale ? `<blockquote class="town-project-tale">${escapeHtml(status.tale)}</blockquote>` : ''}
       <div class="build-track"><span style="width:${status.percent}%"></span></div>
       <p class="muted-text">${status.points}/${stage.target} · 阶段完成：${escapeHtml(formatRewards(stage.reward))}</p>
       <div class="town-project-materials">${materials}</div>
@@ -903,6 +918,21 @@ function renderTownProjectsPanel(state) {
     <div class="town-projects-header"><div><h3>🧱 小镇共建计划</h3><p class="muted-text">第二季后的长期建设 · 三条路线可同时推进，进度永久保留</p></div>
       <span>${(Array.isArray(state.community.projects?.completed) ? state.community.projects.completed.length : 0)}/${townProjects.length} 完工</span></div>
     <div class="town-project-grid">${cards}</div>
+    ${renderTownProjectJournal(state)}
+  </section>`;
+}
+
+function renderTownProjectJournal(state) {
+  const journal = TownProjectsSystem.getTownProjectJournalAll(state);
+  if (!journal.length) return '';
+  return `<section class="town-project-journal">
+    <h4>📖 共建回顾 <small>${journal.length} 条记录</small></h4>
+    <div class="town-project-journal-list">${journal.map((entry) => `
+      <article class="town-project-journal-entry">
+        <span>${escapeHtml(entry.projectName)}</span>
+        <p>${escapeHtml(entry.line)}</p>
+        <small>${escapeHtml(String(entry.at).slice(0, 10))}${entry.npcName ? ` · 与${escapeHtml(entry.npcName)}` : ''}</small>
+      </article>`).join('')}</div>
   </section>`;
 }
 

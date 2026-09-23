@@ -43,6 +43,7 @@ const MIGRATIONS = [
   { fromVersion: 25, migrate: toV26 },
   { fromVersion: 26, migrate: toV27 },
   { fromVersion: 27, migrate: toV28 },
+  { fromVersion: 28, migrate: toV29 },
 ];
 
 /**
@@ -274,6 +275,18 @@ function toV28(state) {          // v27 → v28：小镇共建计划
     state.community.projects.progress = {};
   }
   state.version = 28;
+}
+
+function toV29(state) {          // v28 → v29：居民共建邀请与建设回顾
+  if (!state.community || typeof state.community !== 'object') state.community = {};
+  if (!state.community.projects || typeof state.community.projects !== 'object') {
+    state.community.projects = { completed: [], progress: {}, invitations: {}, journal: [] };
+  }
+  if (!state.community.projects.invitations || typeof state.community.projects.invitations !== 'object') {
+    state.community.projects.invitations = {};
+  }
+  if (!Array.isArray(state.community.projects.journal)) state.community.projects.journal = [];
+  state.version = 29;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

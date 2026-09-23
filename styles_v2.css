@@ -989,6 +989,79 @@
   gap: 6px;
 }
 
+.town-project-invite {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.town-project-invite select {
+  min-width: 0;
+  min-height: 34px;
+}
+
+.town-project-companion {
+  margin: 0;
+  color: var(--green-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.town-project-tale {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--yellow);
+  border-radius: 0 8px 8px 0;
+  background: var(--panel-strong);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.town-project-journal {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.town-project-journal h4 {
+  margin: 0 0 10px;
+}
+
+.town-project-journal h4 small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.town-project-journal-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.town-project-journal-entry {
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--panel-strong);
+}
+
+.town-project-journal-entry > span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.town-project-journal-entry p {
+  margin: 5px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.town-project-journal-entry small {
+  color: var(--muted);
+}
+
 .town-project-donate-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 64px auto;

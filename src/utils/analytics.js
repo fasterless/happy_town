@@ -101,6 +101,7 @@ function getEventDisplayName(eventName) {
     story_ending: "选择剧情结局",
     town_project_donate: "参与小镇共建",
     town_project_complete: "完成小镇共建",
+    town_project_invite: "邀请邻居参与共建",
     cosmetic_equip: "装备称号或头像框",
   };
 

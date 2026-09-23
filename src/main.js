@@ -805,6 +805,11 @@ window.contributeTownProjectHandler = (projectId, itemKey) => {
   runAction(() => TownProjectsSystem.contributeToTownProject(state, projectId, itemKey, amount), 'coin');
 };
 
+window.inviteTownProjectNeighborHandler = (projectId) => {
+  const friendId = $(`project-invite-${projectId}`)?.value;
+  runAction(() => TownProjectsSystem.inviteNeighborToTownProject(state, projectId, friendId));
+};
+
 // 商城
 window.buyGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyGoods(state, goodsId), 'buy');
 window.buyFriendGoodsHandler = (goodsId) => runAction(() => ShopSystem.buyFriendGoods(state, goodsId), 'buy');
