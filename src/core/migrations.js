@@ -31,6 +31,7 @@ const MIGRATIONS = [
   { fromVersion: 13, migrate: toV14 },
   { fromVersion: 14, migrate: toV15 },
   { fromVersion: 15, migrate: toV16 },
+  { fromVersion: 16, migrate: toV17 },
 ];
 
 /**
@@ -172,6 +173,17 @@ function toV16(state) {          // v15 → v16：温室大棚
   if (!Array.isArray(state.greenhouse.usedToday)) state.greenhouse.usedToday = [];
   if (typeof state.greenhouse.totalPlanted !== 'number') state.greenhouse.totalPlanted = 0;
   state.version = 16;
+}
+
+function toV17(state) {          // v16 → v17：咖啡馆
+  if (!state.cafe || typeof state.cafe !== 'object') {
+    state.cafe = { date: '', guests: [], totalServed: 0, totalTips: 0 };
+  }
+  if (typeof state.cafe.date !== 'string') state.cafe.date = '';
+  if (!Array.isArray(state.cafe.guests)) state.cafe.guests = [];
+  if (typeof state.cafe.totalServed !== 'number') state.cafe.totalServed = 0;
+  if (typeof state.cafe.totalTips !== 'number') state.cafe.totalTips = 0;
+  state.version = 17;
 }
 
 /**

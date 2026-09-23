@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 16;
+export const CURRENT_VERSION = 17;
 
 /**
  * 创建默认游戏状态
@@ -126,6 +126,13 @@ export function createDefaultState() {
       date: "",
       usedToday: [],
       totalPlanted: 0,
+    },
+    // 咖啡馆：date 是今日客人名单所在的日期键，guests 是今天的点单
+    cafe: {
+      date: "",
+      guests: [],
+      totalServed: 0,
+      totalTips: 0,
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -257,6 +264,7 @@ export function mergeState(base, saved) {
     charms: { ...base.charms, ...(saved.charms || {}) },
     talents: { ...base.talents, ...(saved.talents || {}) },
     greenhouse: { ...base.greenhouse, ...(saved.greenhouse || {}) },
+    cafe: { ...base.cafe, ...(saved.cafe || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -407,6 +415,15 @@ export function normalizeState(state) {
   if (typeof state.greenhouse.date !== "string") state.greenhouse.date = "";
   if (!Array.isArray(state.greenhouse.usedToday)) state.greenhouse.usedToday = [];
   if (typeof state.greenhouse.totalPlanted !== "number") state.greenhouse.totalPlanted = 0;
+
+  // 咖啡馆（v17）
+  if (!state.cafe || typeof state.cafe !== "object") {
+    state.cafe = { date: "", guests: [], totalServed: 0, totalTips: 0 };
+  }
+  if (typeof state.cafe.date !== "string") state.cafe.date = "";
+  if (!Array.isArray(state.cafe.guests)) state.cafe.guests = [];
+  if (typeof state.cafe.totalServed !== "number") state.cafe.totalServed = 0;
+  if (typeof state.cafe.totalTips !== "number") state.cafe.totalTips = 0;
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

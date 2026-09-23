@@ -46,6 +46,7 @@ import * as HelpSystem from './systems/helpBoard.js';
 import * as CharmSystem from './systems/charms.js';
 import * as TalentSystem from './systems/talents.js';
 import * as GreenhouseSystem from './systems/greenhouse.js';
+import * as CafeSystem from './systems/cafe.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -873,6 +874,7 @@ window.claimCodexTierHandler = (tierId) => runAction(() => CodexSystem.claimCode
 // 料理铺
 window.cookDishHandler = (dishId) => runAction(() => DishSystem.cookDish(state, dishId), 'buy');
 window.serveDishHandler = (dishId) => runAction(() => DishSystem.serveDish(state, dishId), 'levelup');
+window.serveGuestHandler = (index) => runAction(() => CafeSystem.serveGuest(state, index), 'coin');
 
 // 小镇委托榜
 window.completeCommissionHandler = (jobId) => runAction(() => CommissionSystem.completeCommission(state, jobId), 'coin');

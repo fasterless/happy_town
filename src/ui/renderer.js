@@ -51,7 +51,9 @@ import * as HelpSystem from '../systems/helpBoard.js';
 import * as CharmSystem from '../systems/charms.js';
 import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
+import * as CafeSystem from '../systems/cafe.js';
 import { dishes, getDish } from '../config/dishes.js';
+import { getCafePrice } from '../config/cafe.js';
 import { commissionJobs } from '../config/commissions.js';
 import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
 import { HELP_REROLL_COST, FAVOR_FOR_BONUS } from '../config/helpBoard.js';
@@ -1834,7 +1836,49 @@ export function renderDishesView(state) {
 
   return `${buffPanel}${bagPanel}
     <h3>菜谱</h3>
-    <div class="recipe-list">${list}</div>`;
+    <div class="recipe-list">${list}</div>
+    ${renderCafePanel(state)}`;
+}
+
+/**
+ * 咖啡馆面板：今天的客人与点单（挂在料理铺底部）
+ */
+function renderCafePanel(state) {
+  if (!CafeSystem.isCafeUnlocked(state)) {
+    return `<p class="lock-banner">🔒 Lv.${CafeSystem.CAFE_MIN_LEVEL} 解锁咖啡馆：把做好的菜端给上门的客人</p>`;
+  }
+
+  const guests = CafeSystem.getTodayGuests(state);
+  const waiting = guests.filter((order) => !order.served).length;
+
+  const rows = guests.map((order, index) => {
+    const guest = CafeSystem.cafeGuests.find((item) => item.id === order.guestId);
+    const dish = getDish(order.dishId);
+    if (!guest || !dish) return '';
+    const owned = getCount(state, `dish_${dish.id}`);
+    const price = getCafePrice(dish);
+
+    const action = order.served
+      ? '<span class="season-badge">已招待</span>'
+      : `<button class="small-action" onclick="window.serveGuestHandler(${index})" ${owned > 0 ? '' : 'disabled'}>
+          ${owned > 0 ? `上菜 · 🪙${price}` : '还没做好'}
+        </button>`;
+
+    return `<div class="cafe-guest ${order.served ? 'served' : ''}">
+      <span class="cafe-guest-icon">${guest.icon}</span>
+      <div class="cafe-guest-info">
+        <h4>${escapeHtml(guest.name)}</h4>
+        <p class="muted-text">点了 ${dish.icon}${escapeHtml(dish.name)} · 背包 ${owned} 份</p>
+      </div>
+      <div class="cafe-guest-action">${action}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="cafe-panel">
+    <h3>☕ 咖啡馆 <small>今天还有 ${waiting} 位客人</small></h3>
+    <p class="muted-text">客人每天上门点菜，端上就给金币，有人还会留小费。菜只有一份，自己吃还是卖出由你定。</p>
+    <div class="cafe-guests">${rows}</div>
+  </div>`;
 }
 
 /**

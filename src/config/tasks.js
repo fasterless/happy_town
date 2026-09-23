@@ -11,6 +11,7 @@ export const dailyTasks = [
   { id: "charm", name: "装备一枚宝石护符", type: "charm", target: 1, active: 15, rewards: { coin: 100, exp: 10 } },
   { id: "talent", name: "点亮一个天赋", type: "talent", target: 1, active: 15, rewards: { coin: 80, exp: 15 } },
   { id: "greenhouse", name: "在温室种 1 株作物", type: "greenhouse", target: 1, active: 15, rewards: { coin: 90, exp: 15 } },
+  { id: "cafe", name: "在咖啡馆招待 2 位客人", type: "cafe", target: 2, active: 20, rewards: { coin: 150, exp: 20 } },
   { id: "craft", name: "完成加工 1 次", type: "craft", target: 1, active: 15, rewards: { coin: 60 } },
   { id: "donate", name: "捐献社区资源 1 次", type: "donate", target: 1, active: 10, rewards: { communityContribution: 30 } },
   { id: "buyFurniture", name: "购买家具 1 次", type: "buyFurniture", target: 1, active: 10, rewards: { coin: 50 } },

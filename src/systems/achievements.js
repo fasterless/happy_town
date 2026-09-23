@@ -91,6 +91,11 @@ export const achievements = [
   { id: "greenhouse_first", name: "第一株温室苗", desc: "在温室种下第一株作物", icon: "🪟", category: "温室", target: 1, trackKey: "greenhouse_plant", rewards: { coin: 400, diamond: 15 } },
   { id: "greenhouse_30", name: "四季常青", desc: "在温室累计种植30次", icon: "🌿", category: "温室", target: 30, trackKey: "greenhouse_plant", rewards: { diamond: 80, coin: 2000 } },
 
+  // ============ ☕ 咖啡馆 ============
+  { id: "cafe_first", name: "第一位客人", desc: "在咖啡馆招待第一位客人", icon: "☕", category: "咖啡馆", target: 1, trackKey: "cafe_serve", rewards: { coin: 300, diamond: 10 } },
+  { id: "cafe_30", name: "回头客", desc: "累计招待30位客人", icon: "🍽️", category: "咖啡馆", target: 30, trackKey: "cafe_serve", rewards: { diamond: 60, coin: 1500 } },
+  { id: "cafe_tip_10", name: "小费满满", desc: "累计收到10次小费", icon: "💝", category: "咖啡馆", target: 10, trackKey: "cafe_tip", rewards: { diamond: 40, coin: 800 } },
+
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
   { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },

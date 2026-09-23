@@ -280,6 +280,67 @@
   opacity: 0.6;
 }
 
+/* ===== 咖啡馆（第七轮） ===== */
+
+.cafe-panel {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(176, 122, 74, 0.5);
+  border-radius: var(--radius);
+  background: rgba(255, 244, 230, 0.7);
+}
+
+.cafe-panel h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.cafe-panel h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.cafe-panel > .muted-text {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.cafe-guests {
+  display: grid;
+  gap: 8px;
+}
+
+.cafe-guest {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.cafe-guest.served {
+  opacity: 0.6;
+}
+
+.cafe-guest-icon {
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+}
+
+.cafe-guest-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cafe-guest-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
 .seed-shop,
 .furniture-shop {
   margin-top: 18px;
