@@ -5,7 +5,7 @@ export const levels = [
   { level: 3, needExp: 80, unlock: "木桌、木椅、小镇剧情" },
   { level: 4, needExp: 150, unlock: "草莓、许愿池、称号与头像框、关系收藏" },
   { level: 5, needExp: 250, unlock: "好友拜访、小镇委托榜、邻居求助板、天赋树、邻居每日日程、邻居关系、邻居回忆" },
-  { level: 6, needExp: 400, unlock: "玉米、料理铺（田园沙拉）" },
+  { level: 6, needExp: 400, unlock: "玉米、料理铺（田园沙拉）、周边探索" },
   { level: 7, needExp: 600, unlock: "每日任务" },
   { level: 8, needExp: 850, unlock: "南瓜、后山矿洞、咖啡馆" },
   { level: 9, needExp: 1100, unlock: "向日葵、鱼缸、温室大棚" },

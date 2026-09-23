@@ -6,9 +6,10 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 import { initSchedules } from '../systems/schedules.js';
 import { initRelationships } from '../systems/relationships.js';
+import { initExplore } from '../systems/explore.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 24;
+export const CURRENT_VERSION = 25;
 
 /**
  * 创建默认游戏状态
@@ -156,6 +157,11 @@ export function createDefaultState() {
       festivals: {},
       festivalRewards: [],
     },
+    explore: {
+      date: "",
+      visited: [],
+      found: [],
+    },
     // 小镇集市：NPC 买家对每种作物的需求热度（价格倍率的种子）
     // demand.<cropId> 是 0-100 的热度，越高挂单价越好，每天轮换
     market: {
@@ -293,6 +299,7 @@ export function mergeState(base, saved) {
     cosmetics: { ...base.cosmetics, ...(saved.cosmetics || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
+    explore: { ...base.explore, ...(saved.explore || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
     schedules: { ...base.schedules, ...(saved.schedules || {}) },
     relationships: { ...base.relationships, ...(saved.relationships || {}) },
@@ -516,6 +523,7 @@ export function normalizeState(state) {
 
   // 邻居关系（v21）
   initRelationships(state);
+  initExplore(state);
 
   state.version = CURRENT_VERSION;
   return state;

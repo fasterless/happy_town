@@ -39,6 +39,7 @@ const MIGRATIONS = [
   { fromVersion: 21, migrate: toV22 },
   { fromVersion: 22, migrate: toV23 },
   { fromVersion: 23, migrate: toV24 },
+  { fromVersion: 24, migrate: toV25 },
 ];
 
 /**
@@ -238,6 +239,13 @@ function toV24(state) {
   if (!state.seasons || typeof state.seasons !== "object") state.seasons = { claimedEventId: "", festivals: {}, festivalRewards: [] };
   if (!Array.isArray(state.seasons.festivalRewards)) state.seasons.festivalRewards = [];
   state.version = 24;
+}
+
+function toV25(state) {
+  if (!state.explore || typeof state.explore !== "object") state.explore = { date: "", visited: [], found: [] };
+  if (!Array.isArray(state.explore.visited)) state.explore.visited = [];
+  if (!Array.isArray(state.explore.found)) state.explore.found = [];
+  state.version = 25;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

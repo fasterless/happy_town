@@ -55,6 +55,8 @@ export const achievements = [
   { id: "relationship_first", name: "初次熟识", desc: "和一位邻居的关系达到「相识」", icon: "🌱", category: "社交", target: 1, trackKey: "relationship_tier", rewards: { friendPoint: 40, coin: 200 } },
   { id: "relationship_close", name: "知心邻居", desc: "和一位邻居的关系达到「知心」", icon: "💛", category: "社交", target: 1, trackKey: "relationship_close", rewards: { diamond: 40, friendPoint: 100 } },
   { id: "memory_first", name: "第一段回忆", desc: "听完一位邻居的回忆", icon: "📖", category: "社交", target: 1, trackKey: "relationship_memory", rewards: { coin: 200, diamond: 5 } },
+  { id: "explore_3", name: "出门看看", desc: "探索周边 3 次", icon: "🧭", category: "里程碑", target: 3, trackKey: "explore_visit", rewards: { coin: 300 } },
+  { id: "explore_all", name: "小镇足迹", desc: "发现全部 6 种探索物", icon: "🗺️", category: "里程碑", target: 6, trackKey: "explore_found", rewards: { diamond: 30, coin: 500 } },
   { id: "festival_reward_1", name: "第一份纪念", desc: "兑换 1 份庆典收藏", icon: "🎁", category: "里程碑", target: 1, trackKey: "festival_reward", rewards: { diamond: 20, coin: 300 } },
   { id: "festival_3", name: "庆典常客", desc: "领取 3 次庆典任务奖励", icon: "🎊", category: "里程碑", target: 3, trackKey: "festival_task", rewards: { coin: 300, diamond: 10 } },
   { id: "memory_15", name: "小镇故事集", desc: "听完全部 15 段邻居回忆", icon: "📚", category: "社交", target: 15, trackKey: "relationship_memory", rewards: { diamond: 80, coin: 2000 } },
@@ -222,6 +224,7 @@ function popcount(value) {
 function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
+  if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;
   if (achievement.trackKey === "relationship_close") {
     const claimed = state.relationships?.claimed || {};
     return Object.values(claimed).some((tiers) => Array.isArray(tiers) && tiers.includes("close")) ? 1 : 0;

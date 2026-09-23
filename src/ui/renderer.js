@@ -55,6 +55,7 @@ import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
 import * as CafeSystem from '../systems/cafe.js';
 import * as StorySystem from '../systems/story.js';
+import * as ExploreSystem from '../systems/explore.js';
 import * as CosmeticSystem from '../systems/cosmetics.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { getCafePrice } from '../config/cafe.js';
@@ -1656,6 +1657,16 @@ export function renderCharmsPanel(state) {
  * @param {Object} state - 游戏状态
  * @returns {string} HTML字符串
  */
+export function renderExploreView(state) {
+  if (!ExploreSystem.isExploreUnlocked(state)) return '<p class="lock-banner">🔒 Lv.6 解锁周边探索</p>';
+  return `<div class="explore-list">${ExploreSystem.getExploreBoard(state).map((place) => `
+    <article class="explore-card ${place.unlocked ? "" : "locked"}">
+      <span>${place.icon}</span>
+      <div><h3>${escapeHtml(place.name)}</h3><p class="muted-text">${place.unlocked ? escapeHtml(place.story) : `Lv.${place.level} 开放`} · 已发现 ${place.discovered}/${place.finds.length}</p></div>
+      <button class="small-action" onclick="window.explorePlaceHandler('${place.id}')" ${!place.unlocked || place.visited ? "disabled" : ""}>${place.visited ? "今天去过" : "探索"}</button>
+    </article>`).join("")}</div>`;
+}
+
 export function renderStoryView(state) {
   if (!StorySystem.isStoryUnlocked(state)) {
     return `<p class="lock-banner">🔒 需要 Lv.${StorySystem.STORY_MIN_LEVEL} 解锁小镇剧情</p>${renderCosmeticsPanel(state)}`;

@@ -49,6 +49,7 @@ import * as TalentSystem from './systems/talents.js';
 import * as GreenhouseSystem from './systems/greenhouse.js';
 import * as CafeSystem from './systems/cafe.js';
 import * as StorySystem from './systems/story.js';
+import * as ExploreSystem from './systems/explore.js';
 import * as CosmeticSystem from './systems/cosmetics.js';
 
 // 导入 UI 层
@@ -515,6 +516,10 @@ function renderTalentsView() {
   setHtml('talentsContent', Renderer.renderTalentsView(state));
 }
 
+function renderExploreView() {
+  setHtml("exploreContent", Renderer.renderExploreView(state));
+}
+
 function renderStoryView() {
   setHtml('storyContent', Renderer.renderStoryView(state));
 }
@@ -547,6 +552,7 @@ const VIEW_RENDERERS = {
   commissionView: renderCommissionView,
   wishView: renderWishView,
   talentsView: renderTalentsView,
+  exploreView: renderExploreView,
   storyView: renderStoryView,
   adminView: renderAdminView,
 };
@@ -881,6 +887,7 @@ window.spinLotteryHandler = () => {
 window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSeasonalReward(state, eventId), 'levelup');
 window.claimFestivalTaskHandler = (eventId, taskId) => runAction(() => SeasonsSystem.claimFestivalTask(state, eventId, taskId), 'coin');
 window.claimFestivalRewardHandler = (eventId) => runAction(() => SeasonsSystem.claimFestivalReward(state, eventId), 'levelup');
+window.explorePlaceHandler = (placeId) => runAction(() => ExploreSystem.explorePlace(state, placeId));
 
 // 养殖栏
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');
