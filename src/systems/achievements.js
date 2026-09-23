@@ -64,6 +64,10 @@ export const achievements = [
   { id: "explore_walk_all", name: "并肩看遍小镇", desc: "收录 5 位邻居的同行散步回忆", icon: "🚶", category: "社交", target: 5, trackKey: "explore_walk_friends", rewards: { diamond: 30, friendPoint: 80 } },
   { id: "explore_souvenir_1", name: "第一枚足迹", desc: "收藏 1 枚散步足迹纪念", icon: "🍃", category: "收藏", target: 1, trackKey: "explore_souvenir", rewards: { coin: 300, friendPoint: 20 } },
   { id: "explore_souvenir_all", name: "足迹满载", desc: "收藏全部 3 枚散步足迹纪念", icon: "🏅", category: "收藏", target: 3, trackKey: "explore_souvenir_all", rewards: { diamond: 40, friendPoint: 100 } },
+  { id: "explore_album_all", name: "相册集齐", desc: "解锁全部 3 本散步相册", icon: "📔", category: "收藏", target: 3, trackKey: "explore_album", rewards: { coin: 500, friendPoint: 40 } },
+  { id: "explore_season_all", name: "四季走遍", desc: "集齐全部 12 枚四季散步集章", icon: "🍂", category: "收藏", target: 12, trackKey: "explore_season", rewards: { diamond: 30, coin: 600 } },
+  { id: "yearbook_1", name: "翻开年鉴", desc: "领取 1 次年鉴里程碑", icon: "📖", category: "收藏", target: 1, trackKey: "yearbook_claim", rewards: { coin: 300 } },
+
   { id: "festival_reward_1", name: "第一份纪念", desc: "兑换 1 份庆典收藏", icon: "🎁", category: "里程碑", target: 1, trackKey: "festival_reward", rewards: { diamond: 20, coin: 300 } },
   { id: "festival_3", name: "庆典常客", desc: "领取 3 次庆典任务奖励", icon: "🎊", category: "里程碑", target: 3, trackKey: "festival_task", rewards: { coin: 300, diamond: 10 } },
   { id: "memory_15", name: "小镇故事集", desc: "听完全部 15 段邻居回忆", icon: "📚", category: "社交", target: 15, trackKey: "relationship_memory", rewards: { diamond: 80, coin: 2000 } },
@@ -241,6 +245,8 @@ function getAchievementProgress(state, achievement) {
     return new Set(walks.map((walk) => walk.friendId)).size;
   }
   if (achievement.trackKey === "explore_souvenir_all") return Array.isArray(state.explore?.souvenirs) ? state.explore.souvenirs.length : 0;
+  if (achievement.trackKey === "explore_album") return Array.isArray(state.explore?.souvenirs) ? state.explore.souvenirs.length : 0;
+  if (achievement.trackKey === "explore_season") return Array.isArray(state.explore?.seasons) ? state.explore.seasons.length : 0;
   if (achievement.trackKey === "town_project_complete") return Array.isArray(state.community?.projects?.completed) ? state.community.projects.completed.length : 0;
   if (achievement.trackKey === "town_style_seen") return Array.isArray(state.community?.projects?.seenStyles) ? state.community.projects.seenStyles.length : 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;

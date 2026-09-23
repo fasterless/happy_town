@@ -2,6 +2,8 @@ import { EXPLORE_MIN_LEVEL, explorePlaces, getExplorePlace } from "../config/exp
 import { addRewards } from "../core/inventory.js";
 import { logEvent } from "../utils/analytics.js";
 import { todayKey } from "../utils/time.js";
+import { getSeenStoryEndings } from "./story.js";
+import { getSeenTownStyles } from "./townStyles.js";
 import { formatRewards } from "../utils/format.js";
 import { getRelationshipProgress, gainRelationship } from './relationships.js';
 export function initExplore(state) {
@@ -11,7 +13,13 @@ export function initExplore(state) {
   if (!Array.isArray(state.explore.found)) state.explore.found = [];
   if (!Array.isArray(state.explore.walks)) state.explore.walks = [];
   if (!Array.isArray(state.explore.souvenirs)) state.explore.souvenirs = [];
+  if (!state.explore.album || typeof state.explore.album !== "object") state.explore.album = {};
+  if (!state.explore.display || typeof state.explore.display !== "object") state.explore.display = {};
+  if (!state.explore.gifts || typeof state.explore.gifts !== "object") state.explore.gifts = { date: "", claimed: [] };
+  if (!Array.isArray(state.explore.seasons)) state.explore.seasons = [];
+  if (!Array.isArray(state.explore.yearbook)) state.explore.yearbook = [];
   if (state.explore.date !== todayKey()) { state.explore.date = todayKey(); state.explore.visited = []; }
+  if (state.explore.gifts.date !== todayKey()) { state.explore.gifts = { date: todayKey(), claimed: [] }; }
   return state;
 }
 export function isExploreUnlocked(state) { return state.wallet.level >= EXPLORE_MIN_LEVEL; }
@@ -147,8 +155,9 @@ export function walkWithNeighbor(state, placeId, friendId) {
     at: new Date().toISOString(),
   };
   state.explore.walks.push(walk);
+  const season = recordSeasonWalk(state, placeId);
   logEvent(state, 'explore_walk');
-  return { success: true, message: line, state, walk };
+  return { success: true, message: line, state, walk, season };
 }
 export function explorePlace(state, placeId) {
   const place = getExplorePlace(placeId);
@@ -167,4 +176,232 @@ export function explorePlace(state, placeId) {
   state.explore.visited.push(place.id);
   logEvent(state, "explore_visit");
   return { success: true, message: `${place.story} 获得${formatRewards(rewards)}`, state };
+}
+
+// ---------- round 14 3/3: walk album ----------
+
+const ALBUM_COVERS = {
+  grove: { title: "林间小路相册", icon: "🌲", line: "树影和脚步声都收进了这一册。" },
+  shore: { title: "湖岸浅滩相册", icon: "🌊", line: "浅滩的水纹一页页留在这里。" },
+  station: { title: "旧车站相册", icon: "🚉", line: "站台上的每次同行都有了封面。" },
+};
+
+export function getWalkAlbum(state, placeId) {
+  initExplore(state);
+  const place = getExplorePlace(placeId);
+  const cover = ALBUM_COVERS[placeId];
+  if (!place || !cover) return null;
+  const souvenir = getWalkSouvenir(placeId);
+  const unlocked = state.explore.souvenirs.includes(souvenir.id);
+  return { placeId, ...cover, unlocked, pages: getExploreWalkJournal(state, placeId) };
+}
+
+export function getWalkAlbums(state) {
+  return explorePlaces.map((place) => getWalkAlbum(state, place.id));
+}
+
+
+// ---------- round 15: souvenirs back into daily play ----------
+
+export function getSouvenirDisplay(state) {
+  initExplore(state);
+  return getClaimedWalkSouvenirs(state).map((souvenir) => ({
+    ...souvenir,
+    shown: Boolean(state.explore.display[souvenir.id]),
+  }));
+}
+
+export function toggleSouvenirDisplay(state, souvenirId) {
+  const souvenir = walkSouvenirs.find((entry) => entry.id === souvenirId);
+  if (!souvenir) return { success: false, message: "没有这枚足迹纪念" };
+  initExplore(state);
+  if (!state.explore.souvenirs.includes(souvenirId)) return { success: false, message: "先收藏这枚纪念，再摆出来" };
+  state.explore.display[souvenirId] = !state.explore.display[souvenirId];
+  const shown = state.explore.display[souvenirId];
+  logEvent(state, "explore_display");
+  return { success: true, message: shown ? souvenir.icon + souvenir.name + "摆上了陈列架" : souvenir.name + "收回了陈列架", state };
+}
+
+const SOUVENIR_GIFTS = {
+  souvenir_grove: { coin: 60 },
+  souvenir_shore: { coin: 80 },
+  souvenir_station: { friendPoint: 15 },
+};
+
+export function claimSouvenirGift(state, souvenirId) {
+  const souvenir = walkSouvenirs.find((entry) => entry.id === souvenirId);
+  if (!souvenir) return { success: false, message: "没有这枚足迹纪念" };
+  initExplore(state);
+  if (!state.explore.souvenirs.includes(souvenirId)) return { success: false, message: "先收藏这枚纪念，再来换小礼" };
+  if (state.explore.gifts.claimed.includes(souvenirId)) return { success: false, message: "今天已经用这枚纪念换过小礼了，明天再来" };
+  const rewards = SOUVENIR_GIFTS[souvenirId];
+  state.explore.gifts.claimed.push(souvenirId);
+  addRewards(state, rewards);
+  logEvent(state, "explore_gift");
+  return { success: true, message: souvenir.name + "换来了" + formatRewards(rewards) + "，纪念还在", state };
+}
+
+export function getSouvenirGifts(state) {
+  initExplore(state);
+  return getClaimedWalkSouvenirs(state).map((souvenir) => ({
+    ...souvenir,
+    rewards: SOUVENIR_GIFTS[souvenir.id],
+    claimedToday: state.explore.gifts.claimed.includes(souvenir.id),
+  }));
+}
+
+
+const SOUVENIR_RECOGNITION = {
+  souvenir_grove: "还记得林间小路的风声",
+  souvenir_shore: "提起湖岸边一起看过的水纹",
+  souvenir_station: "说起旧车站那声熟悉的钟响",
+};
+
+export function getSouvenirRecognition(state) {
+  initExplore(state);
+  const lines = state.explore.souvenirs
+    .map((id) => {
+      const souvenir = walkSouvenirs.find((entry) => entry.id === id);
+      return souvenir ? souvenir.icon + SOUVENIR_RECOGNITION[id] : null;
+    })
+    .filter(Boolean);
+  return lines.length ? "邻居" + lines.join("，") : "";
+}
+
+// ---------- round 16: seasonal walks ----------
+
+export const WALK_SEASONS = [
+  { id: "spring", name: "春", icon: "🌸", months: [3, 4, 5] },
+  { id: "summer", name: "夏", icon: "🏖", months: [6, 7, 8] },
+  { id: "autumn", name: "秋", icon: "🍂", months: [9, 10] },
+  { id: "winter", name: "冬", icon: "❄", months: [11, 12, 1, 2] },
+];
+
+export function getWalkSeason(date = new Date()) {
+  const month = date.getMonth() + 1;
+  return WALK_SEASONS.find((season) => season.months.includes(month));
+}
+
+const SEASON_LINES = {
+  grove: {
+    spring: "新芽刚冒头，林间小路比平时更亮。",
+    summer: "树荫把整条小路罩得凉凉的。",
+    autumn: "落叶铺满小路，踩上去轻轻响。",
+    winter: "树枝光了，风声却比哪个季节都清楚。",
+  },
+  shore: {
+    spring: "浅滩边的水暖了，石头上长出一层薄绿。",
+    summer: "湖面反光晃眼，赤脚踩进水里正好。",
+    autumn: "芦苇黄了，湖风带着一点干草的味道。",
+    winter: "湖边结了薄冰，脚步声传得很远。",
+  },
+  station: {
+    spring: "站台栏杆上停着回来的候鸟。",
+    summer: "晚风穿过空站，钟声显得格外懒。",
+    autumn: "落叶扫过站台，像有人刚下车。",
+    winter: "雪落在站牌上，钟声却还是准时的。",
+  },
+};
+
+
+export function recordSeasonWalk(state, placeId, date = new Date()) {
+  const season = getWalkSeason(date);
+  const place = getExplorePlace(placeId);
+  if (!season || !place) return null;
+  initExplore(state);
+  const id = placeId + ":" + season.id;
+  if (state.explore.seasons.some((stamp) => stamp.id === id)) return null;
+  const stamp = {
+    id,
+    placeId,
+    placeName: place.name,
+    seasonId: season.id,
+    seasonName: season.name,
+    icon: season.icon,
+    line: (SEASON_LINES[placeId] || {})[season.id] || "",
+    at: date.toISOString(),
+  };
+  state.explore.seasons.push(stamp);
+  logEvent(state, "explore_season");
+  return stamp;
+}
+
+export function getSeasonStamps(state, placeId = null) {
+  initExplore(state);
+  return placeId ? state.explore.seasons.filter((stamp) => stamp.placeId === placeId) : state.explore.seasons;
+}
+
+export function getSeasonRoutes(state) {
+  initExplore(state);
+  return explorePlaces.map((place) => {
+    const stamps = getSeasonStamps(state, place.id);
+    const unlocked = WALK_SEASONS.every((season) => stamps.some((stamp) => stamp.seasonId === season.id));
+    return {
+      placeId: place.id,
+      name: place.name + "四季路线",
+      icon: place.icon,
+      unlocked,
+      stamps,
+      line: unlocked ? stamps.map((stamp) => stamp.icon + stamp.line).join("") : "",
+    };
+  });
+}
+
+// ---------- round 17: town yearbook ----------
+
+export const YEARBOOK_SECTIONS = [
+  { id: "endings", name: "看过的结局", icon: "🏮" },
+  { id: "styles", name: "小镇风貌", icon: "🎨" },
+  { id: "souvenirs", name: "散步足迹", icon: "🍃" },
+  { id: "seasons", name: "四季集章", icon: "🍂" },
+];
+
+function yearbookEntries(state) {
+  return {
+    endings: getSeenStoryEndings(state).map((ending) => ({ id: ending.id, name: ending.name, icon: ending.icon })),
+    styles: getSeenTownStyles(state).map((style) => ({ id: style.id, name: style.name, icon: style.icon })),
+    souvenirs: getClaimedWalkSouvenirs(state).map((souvenir) => ({ id: souvenir.id, name: souvenir.name, icon: souvenir.icon })),
+    seasons: getSeasonStamps(state).map((stamp) => ({ id: stamp.id, name: stamp.placeName + "·" + stamp.seasonName, icon: stamp.icon })),
+  };
+}
+
+export function getYearbook(state) {
+  initExplore(state);
+  const entries = yearbookEntries(state);
+  return YEARBOOK_SECTIONS.map((section) => ({ ...section, entries: entries[section.id] }));
+}
+
+export function getYearbookCount(state) {
+  return getYearbook(state).reduce((sum, section) => sum + section.entries.length, 0);
+}
+
+
+export const YEARBOOK_MILESTONES = [
+  { id: "yb_3", need: 3, rewards: { coin: 300 } },
+  { id: "yb_8", need: 8, rewards: { coin: 800, diamond: 10 } },
+  { id: "yb_15", need: 15, rewards: { diamond: 30, friendPoint: 50 } },
+];
+
+export function claimYearbookMilestone(state, milestoneId) {
+  const milestone = YEARBOOK_MILESTONES.find((entry) => entry.id === milestoneId);
+  if (!milestone) return { success: false, message: "没有这个里程碑" };
+  initExplore(state);
+  if (state.explore.yearbook.includes(milestoneId)) return { success: false, message: "这个里程碑已经领过了" };
+  const count = getYearbookCount(state);
+  if (count < milestone.need) return { success: false, message: "年鉴还差 " + (milestone.need - count) + " 条记录" };
+  state.explore.yearbook.push(milestoneId);
+  addRewards(state, milestone.rewards);
+  logEvent(state, "yearbook_claim");
+  return { success: true, message: "年鉴收录了 " + count + " 条记录，获得" + formatRewards(milestone.rewards), state };
+}
+
+export function getYearbookMilestones(state) {
+  initExplore(state);
+  const count = getYearbookCount(state);
+  return YEARBOOK_MILESTONES.map((milestone) => ({
+    ...milestone,
+    count,
+    claimed: state.explore.yearbook.includes(milestone.id),
+    ready: count >= milestone.need && !state.explore.yearbook.includes(milestone.id),
+  }));
 }

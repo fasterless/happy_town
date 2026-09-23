@@ -631,7 +631,10 @@ export function renderHomeView(state, selectedFurnitureId = null) {
     </div>
   `;
 
-  return { layout, furniture: furnitureList, score };
+  const shelf = ExploreSystem.getSouvenirDisplay(state);
+  const shelfHtml = shelf.length ? `<div class="souvenir-shelf"><h4>🍃 足迹陈列</h4>${shelf.map((souvenir) => `<button class="small-action ${souvenir.shown ? "shown" : ""}" onclick="window.toggleSouvenirDisplayHandler('${souvenir.id}')">${souvenir.icon} ${escapeHtml(souvenir.name)} ${souvenir.shown ? "已摆出" : "摆出来"}</button>`).join("")}</div>` : "";
+
+  return { layout, furniture: furnitureList, score: score + shelfHtml };
 }
 
 /**
@@ -1781,7 +1784,11 @@ export function renderExploreView(state) {
         ${renderWalkSouvenir(place)}
       </div>` : ''}
     </article>`).join("")}</div>
-    ${renderExploreWalkJournal(state)}`;
+    ${renderExploreWalkJournal(state)}
+    ${renderSouvenirGifts(state)}
+    ${renderExploreAlbums(state)}
+    ${renderSeasonRoutes(state)}
+    ${renderYearbook(state)}`;
 }
 
 function renderWalkSouvenir(place) {
@@ -1806,6 +1813,65 @@ function renderExploreWalkJournal(state) {
       </article>`).join('')}</div>
   </section>`;
 }
+
+function renderSouvenirGifts(state) {
+  const gifts = ExploreSystem.getSouvenirGifts(state);
+  if (!gifts.length) return "";
+  return `<section class="explore-gifts"><h3>🎁 每日足迹小礼</h3>${gifts.map((gift) => gift.claimedToday
+    ? `<span class="explore-souvenir claimed">${gift.icon} 今天已换</span>`
+    : `<button class="small-action" onclick="window.claimSouvenirGiftHandler('${gift.id}')">${gift.icon} 换一份小礼</button>`).join("")}</section>`;
+}
+
+function renderExploreAlbums(state) {
+  const albums = ExploreSystem.getWalkAlbums(state);
+  if (!albums.some((album) => album.pages.length)) return "";
+  return `<section class="explore-album">
+    <h3>📔 散步相册</h3>
+    ${albums.map((album) => `<article class="explore-album-card ${album.unlocked ? "unlocked" : ""}">
+      <h4>${album.icon} ${escapeHtml(album.title)}</h4>
+      ${album.unlocked
+        ? `<p class="explore-album-cover">${escapeHtml(album.line)}</p>`
+        : `<p class="muted-text">收齐这个地点的足迹纪念后解锁封面</p>`}
+      ${album.pages.length ? `<ul>${album.pages.map((page) => `<li>与${escapeHtml(page.friendName)}：${escapeHtml(page.line)}</li>`).join("")}</ul>` : ""}
+    </article>`).join("")}
+  </section>`;
+}
+
+function renderSeasonRoutes(state) {
+  const routes = ExploreSystem.getSeasonRoutes(state);
+  const stamps = ExploreSystem.getSeasonStamps(state);
+  if (!stamps.length) return "";
+  return `<section class="explore-seasons">
+    <h3>🍂 四季散步 <small>${stamps.length}</small></h3>
+    ${routes.map((route) => `<article class="explore-season-card">
+      <h4>${route.icon} ${escapeHtml(route.name)}</h4>
+      <p>${route.stamps.map((stamp) => `${stamp.icon}${escapeHtml(stamp.seasonName)}`).join(" ")}</p>
+      ${route.unlocked ? `<p class="explore-album-cover">${escapeHtml(route.line)}</p>` : `<p class="muted-text">四季都走过才解锁这条路线</p>`}
+    </article>`).join("")}
+  </section>`;
+}
+
+function renderYearbook(state) {
+  const sections = ExploreSystem.getYearbook(state);
+  const total = sections.reduce((sum, section) => sum + section.entries.length, 0);
+  if (!total) return "";
+  const milestones = ExploreSystem.getYearbookMilestones(state);
+  return `<section class="explore-yearbook">
+    <h3>📖 小镇年鉴 <small>${total}</small></h3>
+    ${sections.map((section) => `<article class="explore-yearbook-section">
+      <h4>${section.icon} ${escapeHtml(section.name)} <small>${section.entries.length}</small></h4>
+      ${section.entries.length
+        ? `<p>${section.entries.map((entry) => `${entry.icon}${escapeHtml(entry.name)}`).join("、")}</p>`
+        : `<p class="muted-text">还没有收录</p>`}
+    </article>`).join("")}
+    <div class="explore-yearbook-milestones">${milestones.map((milestone) => milestone.claimed
+      ? `<span class="explore-souvenir claimed">已领取 ${milestone.need}</span>`
+      : milestone.ready
+        ? `<button class="small-action" onclick="window.claimYearbookHandler('${milestone.id}')">领取年鉴奖励 ${milestone.need}</button>`
+        : `<span class="explore-souvenir">${milestone.count}/${milestone.need}</span>`).join("")}</div>
+  </section>`;
+}
+
 
 export function renderStoryView(state) {
   if (!StorySystem.isStoryUnlocked(state)) {

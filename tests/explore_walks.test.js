@@ -5,7 +5,9 @@ import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
 import { renderExploreView } from '../src/ui/renderer.js';
 import { checkAchievements } from '../src/systems/achievements.js';
-import { claimWalkSouvenir, explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, walkWithNeighbor } from '../src/systems/explore.js';
+import { claimSouvenirGift, claimWalkSouvenir, claimYearbookMilestone, explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
+import { visitFriend } from '../src/systems/friends.js';
+import { renderHomeView } from '../src/ui/renderer.js';
 
 const WALK_FRIENDS = ['npc_mayor', 'npc_baker', 'npc_florist', 'npc_carpenter', 'npc_barista'];
 
@@ -192,4 +194,112 @@ describe('邻居同行散步', () => {
     normalizeState(merged);
     expect(merged.explore.walks).toEqual([]);
   });
+
+  it("散步相册：集齐足迹纪念后解锁封面，不发新奖励", () => {
+    const state = finishedState();
+    fillWalks(state, "grove");
+    expect(getWalkAlbum(state, "grove").unlocked).toBe(false);
+    claimWalkSouvenir(state, "grove");
+    const album = getWalkAlbum(state, "grove");
+    expect(album.unlocked).toBe(true);
+    expect(album.pages).toHaveLength(5);
+    expect(getWalkAlbum(state, "shore").unlocked).toBe(false);
+    const coin = state.wallet.coin;
+    expect(coin).toBe(state.wallet.coin);
+  });
+
+  it("家园陈列只改展示，不占家具格也不消耗纪念", () => {
+    const state = finishedState();
+    fillWalks(state, "grove");
+    claimWalkSouvenir(state, "grove");
+    expect(toggleSouvenirDisplay(state, "souvenir_grove").success).toBe(true);
+    expect(getSouvenirDisplay(state)[0].shown).toBe(true);
+    expect(state.explore.souvenirs).toContain("souvenir_grove");
+    expect(toggleSouvenirDisplay(state, "souvenir_shore").success).toBe(false);
+    expect(renderHomeView(state).score).toContain("林间书签");
+  });
+
+  it("每枚纪念每天只能换一次小礼，纪念本身不消耗", () => {
+    const state = finishedState();
+    fillWalks(state, "grove");
+    claimWalkSouvenir(state, "grove");
+    const before = state.wallet.coin;
+    expect(claimSouvenirGift(state, "souvenir_grove").success).toBe(true);
+    expect(state.wallet.coin).toBe(before + 60);
+    expect(state.explore.souvenirs).toContain("souvenir_grove");
+    expect(claimSouvenirGift(state, "souvenir_grove").success).toBe(false);
+    state.explore.gifts.date = "2000-01-01";
+    expect(claimSouvenirGift(state, "souvenir_grove").success).toBe(true);
+  });
+
+  it("拜访时邻居按已收藏的足迹多一句对白，不加数值", () => {
+    const state = finishedState();
+    expect(getSouvenirRecognition(state)).toBe("");
+    fillWalks(state, "grove");
+    claimWalkSouvenir(state, "grove");
+    const points = state.wallet.friendPoint;
+    const result = visitFriend(state, "npc_mayor");
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("林间小路的风声");
+    expect(state.wallet.friendPoint - points).toBeLessThan(20);
+  });
+
+  it("同季同行盖一枚季章，每个地点每个季节只盖一次", () => {
+    const state = finishedState();
+    walkWithNeighbor(state, "grove", "npc_mayor");
+    const stamped = state.explore.seasons.length;
+    expect(stamped).toBe(1);
+    walkWithNeighbor(state, "grove", "npc_baker");
+    expect(state.explore.seasons).toHaveLength(1);
+    const season = getWalkSeason(new Date("2026-01-15"));
+    expect(recordSeasonWalk(state, "grove", new Date("2026-01-15")).seasonId).toBe(season.id);
+    expect(recordSeasonWalk(state, "grove", new Date("2026-02-02"))).toBeNull();
+  });
+
+  it("集齐一个地点的四季集章后解锁常驻路线", () => {
+    const state = finishedState();
+    ["2026-04-01", "2026-07-01", "2026-09-15", "2026-12-01"].forEach((day) => {
+      expect(recordSeasonWalk(state, "shore", new Date(day))).not.toBeNull();
+    });
+    const route = getSeasonRoutes(state).find((entry) => entry.placeId === "shore");
+    expect(route.unlocked).toBe(true);
+    expect(route.line.length).toBeGreaterThan(0);
+    expect(getSeasonRoutes(state).find((entry) => entry.placeId === "grove").unlocked).toBe(false);
+    checkAchievements(state);
+    expect(state.achievements.progress.explore_season_all).toBe(4);
+  });
+
+  it("年鉴汇总已有收藏，里程碑达标领一次且不消耗收藏", () => {
+    const state = finishedState();
+    state.story.seenEndings = ["lantern", "garden", "station"];
+    fillWalks(state, "grove");
+    claimWalkSouvenir(state, "grove");
+    expect(getYearbookCount(state)).toBeGreaterThanOrEqual(4);
+    const before = getYearbookCount(state);
+    expect(claimYearbookMilestone(state, "yb_3").success).toBe(true);
+    expect(getYearbookCount(state)).toBe(before);
+    expect(claimYearbookMilestone(state, "yb_3").success).toBe(false);
+    expect(getYearbook(state).find((section) => section.id === "endings").entries).toHaveLength(3);
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain("yearbook_1");
+  });
+
+  it("v32 老存档迁移和损坏结构归一化会补齐新字段", () => {
+    const saved = createDefaultState();
+    saved.version = 32;
+    delete saved.explore.seasons;
+    delete saved.explore.yearbook;
+    delete saved.explore.display;
+    const merged = mergeState(createDefaultState(), saved);
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.explore.seasons).toEqual([]);
+    expect(merged.explore.yearbook).toEqual([]);
+    expect(merged.explore.display).toEqual({});
+
+    merged.explore.seasons = null;
+    normalizeState(merged);
+    expect(merged.explore.seasons).toEqual([]);
+  });
+
 });

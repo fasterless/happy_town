@@ -2885,3 +2885,81 @@
   margin: 2px 0 0;
   font-size: 12px;
 }
+
+.explore-album,
+.explore-seasons,
+.explore-yearbook,
+.explore-gifts {
+  margin-top: 18px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.explore-album h3,
+.explore-seasons h3,
+.explore-yearbook h3,
+.explore-gifts h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.explore-album-card,
+.explore-season-card,
+.explore-yearbook-section {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.explore-album-card h4,
+.explore-season-card h4,
+.explore-yearbook-section h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.explore-album-card ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.explore-album-card li {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.explore-album-cover {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green-strong);
+}
+
+.explore-album-card.unlocked {
+  border-color: var(--green-strong);
+}
+
+.explore-yearbook-milestones,
+.explore-gifts,
+.souvenir-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.souvenir-shelf {
+  margin-top: 12px;
+}
+
+.souvenir-shelf h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.souvenir-shelf .shown {
+  background: var(--green-strong);
+  color: #fff;
+}

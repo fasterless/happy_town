@@ -5,6 +5,7 @@ import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
 import { tryScheduleGift } from './schedules.js';
 import { gainRelationship } from './relationships.js';
+import { getSouvenirRecognition } from './explore.js';
 import { getBuffMultiplier } from './dishes.js';
 import { GAME_CONFIG } from '../config/constants.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
@@ -98,9 +99,10 @@ export function visitFriend(state, friendId) {
     ? `，和${friend.name}成为「${bond.tiers.map((tier) => tier.name).join('、')}」（${bond.rewardText}）`
     : `，熟悉度 +${bond.gained}`;
   const streakText = streakBonus > 0 ? `（连续拜访${social.visitStreak}天，+${streakBonus}）` : "";
+  const recognitionText = getSouvenirRecognition(state);
   return {
     success: true,
-    message: `拜访了${friend.name}，获得${point}友情点${streakText}${giftText}${bondText}`,
+    message: `拜访了${friend.name}，获得${point}友情点${streakText}${recognitionText ? " " + recognitionText : ""}${giftText}${bondText}`,
     state,
   };
 }

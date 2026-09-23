@@ -945,6 +945,9 @@ window.claimFestivalRewardHandler = (eventId) => runAction(() => SeasonsSystem.c
 window.explorePlaceHandler = (placeId) => runAction(() => ExploreSystem.explorePlace(state, placeId));
 window.walkWithNeighborHandler = (placeId, friendId) => runAction(() => ExploreSystem.walkWithNeighbor(state, placeId, friendId));
 window.claimWalkSouvenirHandler = (placeId) => runAction(() => ExploreSystem.claimWalkSouvenir(state, placeId));
+window.toggleSouvenirDisplayHandler = (souvenirId) => runAction(() => ExploreSystem.toggleSouvenirDisplay(state, souvenirId));
+window.claimSouvenirGiftHandler = (souvenirId) => runAction(() => ExploreSystem.claimSouvenirGift(state, souvenirId));
+window.claimYearbookHandler = (milestoneId) => runAction(() => ExploreSystem.claimYearbookMilestone(state, milestoneId));
 
 // 养殖栏
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');

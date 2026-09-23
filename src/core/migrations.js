@@ -47,6 +47,7 @@ const MIGRATIONS = [
   { fromVersion: 29, migrate: toV30 },
   { fromVersion: 30, migrate: toV31 },
   { fromVersion: 31, migrate: toV32 },
+  { fromVersion: 32, migrate: toV33 },
 ];
 
 /**
@@ -312,6 +313,16 @@ function toV32(state) {          // v31 → v32：散步足迹收藏
   if (!state.explore || typeof state.explore !== 'object') state.explore = { date: '', visited: [], found: [], walks: [], souvenirs: [] };
   if (!Array.isArray(state.explore.souvenirs)) state.explore.souvenirs = [];
   state.version = 32;
+}
+
+function toV33(state) {          // v32 → v33：散步相册、四季集章与年鉴
+  if (!state.explore || typeof state.explore !== 'object') state.explore = {};
+  if (!state.explore.album || typeof state.explore.album !== 'object') state.explore.album = {};
+  if (!state.explore.display || typeof state.explore.display !== 'object') state.explore.display = {};
+  if (!state.explore.gifts || typeof state.explore.gifts !== 'object') state.explore.gifts = { date: '', claimed: [] };
+  if (!Array.isArray(state.explore.seasons)) state.explore.seasons = [];
+  if (!Array.isArray(state.explore.yearbook)) state.explore.yearbook = [];
+  state.version = 33;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框
