@@ -6,7 +6,7 @@ import { checkAchievements } from '../src/systems/achievements.js';
 import { levels } from '../src/config/levels.js';
 import { storyChapters } from '../src/config/story.js';
 import {
-  isStoryUnlocked, getCurrentChapter, claimChapter, isStoryComplete, getChapterIndex, chooseStoryEnding,
+  isStoryUnlocked, getCurrentChapter, claimChapter, isStoryComplete, getChapterIndex, chooseStoryEnding, getSeenStoryEndings,
 } from '../src/systems/story.js';
 
 function freshState(level = 20) {
@@ -179,5 +179,20 @@ describe("分支装饰结局", () => {
     expect(chooseStoryEnding(state, "station").success).toBe(true);
     expect(state.story.ending).toBe("station");
     expect(state.story.chapterIndex).toBe(storyChapters.length);
+    expect(getSeenStoryEndings(state).map((ending) => ending.id)).toEqual(["lantern", "station"]);
+  });
+});
+
+describe("结局回顾迁移", () => {
+  it("v26 已选结局会补进回顾且不重复", () => {
+    const saved = createDefaultState();
+    saved.version = 26;
+    saved.story = { chapterIndex: 10, ending: "garden" };
+    const merged = mergeState(createDefaultState(), saved);
+    merged.version = 26;
+    delete merged.story.seenEndings;
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.story.seenEndings).toEqual(["garden"]);
   });
 });

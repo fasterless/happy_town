@@ -1683,6 +1683,7 @@ export function renderStoryView(state) {
       <h3>${selected ? escapeHtml(selected.name) : "故事告一段落"}</h3>
       <p class="muted-text">${selected ? escapeHtml(selected.line) : "十章委托全部完成，给小镇选一种新装饰吧。"}</p>
       <div class="story-endings">${choices}</div>
+      <p class="muted-text">回顾：${StorySystem.getSeenStoryEndings(state).map((ending) => `${ending.icon}${escapeHtml(ending.name)}`).join("、") || "还没有结局"}</p>
     </div>${renderCosmeticsPanel(state)}`;
   }
 

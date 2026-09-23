@@ -9,7 +9,7 @@ import { initRelationships } from '../systems/relationships.js';
 import { initExplore } from '../systems/explore.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 26;
+export const CURRENT_VERSION = 27;
 
 /**
  * 创建默认游戏状态
@@ -141,6 +141,7 @@ export function createDefaultState() {
     story: {
       chapterIndex: 0,
       ending: null,
+      seenEndings: [],
     },
     // 称号与头像框：只存当前装备的那一个，解锁状态由计数现算
     cosmetics: {
@@ -469,6 +470,7 @@ export function normalizeState(state) {
     state.story.chapterIndex = 0;
   }
   if (typeof state.story.ending !== "string") state.story.ending = null;
+  if (!Array.isArray(state.story.seenEndings)) state.story.seenEndings = [];
 
   // 称号与头像框（v19）
   if (!state.cosmetics || typeof state.cosmetics !== "object") {

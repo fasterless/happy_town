@@ -41,6 +41,7 @@ const MIGRATIONS = [
   { fromVersion: 23, migrate: toV24 },
   { fromVersion: 24, migrate: toV25 },
   { fromVersion: 25, migrate: toV26 },
+  { fromVersion: 26, migrate: toV27 },
 ];
 
 /**
@@ -253,6 +254,13 @@ function toV26(state) {
   if (!state.story || typeof state.story !== "object") state.story = { chapterIndex: 0, ending: null };
   if (typeof state.story.ending !== "string") state.story.ending = null;
   state.version = 26;
+}
+
+function toV27(state) {
+  if (!state.story || typeof state.story !== "object") state.story = { chapterIndex: 0, ending: null, seenEndings: [] };
+  if (!Array.isArray(state.story.seenEndings)) state.story.seenEndings = [];
+  if (state.story.ending && !state.story.seenEndings.includes(state.story.ending)) state.story.seenEndings.push(state.story.ending);
+  state.version = 27;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

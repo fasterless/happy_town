@@ -110,6 +110,7 @@ export const achievements = [
 
   // ============ 📖 剧情 ============
   { id: "story_first", name: "故事开场", desc: "完成第一章剧情", icon: "📖", category: "剧情", target: 1, trackKey: "story_chapter", rewards: { coin: 200, diamond: 5 } },
+  { id: "story_endings", name: "三种风景", desc: "看过全部 3 种剧情装饰结局", icon: "🏞️", category: "剧情", target: 3, trackKey: "story_seen_endings", rewards: { diamond: 30, coin: 600 } },
   { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: storyChapters.length, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
 
   // ============ 🎖️ 收藏 ============
@@ -225,6 +226,7 @@ function popcount(value) {
 function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
+  if (achievement.trackKey === "story_seen_endings") return state.story?.seenEndings?.length || 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;
   if (achievement.trackKey === "relationship_close") {
     const claimed = state.relationships?.claimed || {};

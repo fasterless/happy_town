@@ -108,7 +108,14 @@ export function chooseStoryEnding(state, endingId) {
   const ending = storyEndings.find((item) => item.id === endingId);
   if (!ending) return { success: false, message: "没有这种小镇装饰" };
   state.story.ending = ending.id;
+  if (!Array.isArray(state.story.seenEndings)) state.story.seenEndings = [];
+  if (!state.story.seenEndings.includes(ending.id)) state.story.seenEndings.push(ending.id);
   logEvent(state, "story_ending");
   return { success: true, message: `小镇换上了「${ending.name}」：${ending.line}`, state };
 }
 export { storyEndings };
+
+export function getSeenStoryEndings(state) {
+  const seen = Array.isArray(state.story?.seenEndings) ? state.story.seenEndings : [];
+  return storyEndings.filter((ending) => seen.includes(ending.id));
+}
