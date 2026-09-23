@@ -70,6 +70,14 @@ export const achievements = [
   { id: "lottery_30", name: "小镇锦鲤",  desc: "转盘累计抽奖30次", icon: "🎡", category: "转盘", target: 30,  trackKey: "lottery_spin", rewards: { diamond: 60, lottery_ticket: 3 } },
   { id: "lottery_100", name: "转盘常客",  desc: "转盘累计抽奖100次", icon: "🎰", category: "转盘", target: 100, trackKey: "lottery_spin", rewards: { diamond: 200, lottery_ticket: 10 } },
 
+  // ============ ⛏️ 矿洞 ============
+  { id: "mine_10",  name: "初探矿洞",   desc: "累计下矿10次",     icon: "⛏️", category: "矿洞", target: 10,  trackKey: "mine_dig", rewards: { coin: 300 } },
+  { id: "mine_60",  name: "矿洞常客",   desc: "累计下矿60次",     icon: "🪨", category: "矿洞", target: 60,  trackKey: "mine_dig", rewards: { diamond: 40, coin: 800 } },
+  { id: "mine_250", name: "深井矿工",   desc: "累计下矿250次",    icon: "⚒️", category: "矿洞", target: 250, trackKey: "mine_dig", rewards: { diamond: 150, coin: 3000 } },
+  { id: "ore_sell_20", name: "矿石商人", desc: "在矿洞卖出20次矿藏", icon: "💰", category: "矿洞", target: 20, trackKey: "ore_sell", rewards: { coin: 1200 } },
+  { id: "pick_max", name: "神装矿镐",   desc: "把镐子升到满级（银镐）", icon: "⛏️", category: "矿洞", target: 4, trackKey: "pickaxe_upgrade", rewards: { diamond: 120, coin: 2500 } },
+  { id: "trove_all", name: "矿藏收藏家", desc: "集齐全部7种矿石与宝石", icon: "💠", category: "矿洞", target: 7, trackKey: "mine_trove", rewards: { diamond: 200, coin: 5000 } },
+
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
   { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },
@@ -261,6 +269,9 @@ function getAchievementProgress(state, achievement) {
 
     case "hybrid_all":
       return (state.hybrid?.discovered || []).length;
+
+    case "mine_trove":
+      return (state.mine?.found || []).length;
 
     default:
       return 0;

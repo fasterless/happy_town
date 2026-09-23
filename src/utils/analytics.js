@@ -80,6 +80,9 @@ function getEventDisplayName(eventName) {
     help_fulfill: "帮助邻居",
     help_reroll: "刷新求助板",
     favor_full: "人情满格",
+    mine_dig: "后山下矿",
+    ore_sell: "卖出矿藏",
+    pickaxe_upgrade: "升级镐子",
   };
 
   return names[eventName] || eventName;

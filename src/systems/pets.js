@@ -206,6 +206,20 @@ export function applyPetToFishingLuck(baseWeightMultiplier, state) {
 }
 
 /**
+ * 应用宠物buff到挖矿稀有度（mine.js 用它调整宝石/稀有矿权重）
+ * @param {number} baseWeightMultiplier - 基础稀有倍率
+ * @param {Object} state - 游戏状态
+ * @returns {number} 调整后的倍率
+ */
+export function applyPetToMiningLuck(baseWeightMultiplier, state) {
+  const buff = getActivePetBuff(state);
+  if (buff && buff.type === "miningLuck") {
+    return baseWeightMultiplier * buff.enhancedValue;
+  }
+  return baseWeightMultiplier;
+}
+
+/**
  * 应用宠物buff到加工时长（crafting.js 用它缩短加工时间）
  * @param {number} baseTime - 基础加工秒数
  * @param {Object} state - 游戏状态

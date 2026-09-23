@@ -32,6 +32,7 @@ import * as WeatherSystem from './systems/weather.js';
 import * as PetsSystem from './systems/pets.js';
 import * as CraftingSystem from './systems/crafting.js';
 import * as FishingSystem from './systems/fishing.js';
+import * as MineSystem from './systems/mine.js';
 import * as LotterySystem from './systems/lottery.js';
 import * as SeasonsSystem from './systems/seasons.js';
 import * as RanchSystem from './systems/ranch.js';
@@ -464,6 +465,13 @@ function renderFishingView() {
   setHtml('fishingActions', fishing.stats);
 }
 
+function renderMineView() {
+  const mine = Renderer.renderMineView(state);
+  setHtml('minePit', mine.pit);
+  setHtml('mineTrove', mine.trove);
+  setHtml('mineUpgrade', mine.upgrade);
+}
+
 function renderLotteryView() {
   const lottery = Renderer.renderLotteryView(state);
   setHtml('lotteryPanel', lottery.wheel);
@@ -513,6 +521,7 @@ const VIEW_RENDERERS = {
   craftingView: renderCraftingView,
   hybridView: renderHybridView,
   fishingView: renderFishingView,
+  mineView: renderMineView,
   lotteryView: renderLotteryView,
   seasonsView: renderSeasonsView,
   ranchView: renderRanchView,
@@ -788,6 +797,25 @@ function claimAllCraft() {
 window.castRodHandler = () => runAction(() => FishingSystem.castRod(state), 'splash');
 window.sellFishHandler = (fishId) => runAction(() => FishingSystem.sellFish(state, fishId), 'coin');
 window.sellFishAllHandler = () => runAction(() => FishingSystem.sellAllFish(state), 'coin');
+
+// 后山矿洞
+window.mineDigHandler = () => {
+  const result = runAction(() => MineSystem.mineDig(state), 'harvest');
+  if (result?.success) {
+    const btn = document.querySelector('#minePit .primary-action');
+    if (btn) burstParticles(btn, [result.drop?.lucky ? '💎' : '🪨', '✨', '⛏️']);
+  }
+};
+window.upgradePickaxeHandler = () => runAction(() => MineSystem.upgradePickaxe(state), 'levelup');
+window.sellOreHandler = (key) => {
+  const result = runAction(() => MineSystem.sellOre(state, key), 'coin');
+  if (result?.success) {
+    const btn = document.querySelector(`#mineTrove .mine-card button[onclick="window.sellOreHandler('${key}')"]`);
+    const gained = /获得🪙(\d+)/.exec(result.message);
+    if (btn) floatCoinText(btn, gained ? `+🪙${gained[1]}` : '+🪙');
+  }
+};
+window.sellOreAllHandler = () => runAction(() => MineSystem.sellAllOre(state), 'coin');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {

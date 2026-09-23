@@ -37,6 +37,7 @@ import * as ShopSystem from '../systems/shop.js';
 import * as WeatherSystem from '../systems/weather.js';
 import * as CraftingSystem from '../systems/crafting.js';
 import * as FishingSystem from '../systems/fishing.js';
+import * as MineSystem from '../systems/mine.js';
 import * as LotterySystem from '../systems/lottery.js';
 import * as SeasonsSystem from '../systems/seasons.js';
 import * as RanchSystem from '../systems/ranch.js';
@@ -1418,6 +1419,84 @@ export function renderFishingView(state) {
   `;
 
   return { pond, catches, stats };
+}
+
+/**
+ * 渲染后山矿洞视图
+ * @param {Object} state - 游戏状态
+ * @returns {Object} { pit, trove, upgrade }
+ */
+export function renderMineView(state) {
+  if (!MineSystem.isMineUnlocked(state)) {
+    return {
+      pit: `<p class="lock-banner">🔒 需要 Lv.${MineSystem.MINE_MIN_LEVEL} 解锁后山矿洞</p>`,
+      trove: '',
+      upgrade: '',
+    };
+  }
+
+  const pick = MineSystem.pickaxes[MineSystem.getPickLevel(state) - 1];
+  const staminaLeft = MineSystem.getStaminaLeft(state);
+  const maxStamina = MineSystem.getMaxStamina(state);
+  const canDig = MineSystem.canDig(state);
+
+  const pit = `
+    <div class="mine-pit">
+      <div class="mine-cave">⛰️</div>
+      <div class="mine-info">
+        <h3>后山矿洞 · ${pick.icon}${escapeHtml(pick.name)}</h3>
+        <p class="muted-text">今日体力 <b>${staminaLeft}</b> / ${maxStamina}，用完后每次挖矿花 ${MineSystem.EXTRA_DIG_COST} 金币</p>
+        <p class="muted-text">累计下矿 <b>${MineSystem.getTotalDigs(state)}</b> 次 · 镐越好，矿层越深、宝石越多！</p>
+        <button class="primary-action" onclick="window.mineDigHandler()" ${!canDig ? 'disabled' : ''}>
+          ⛏️ 下矿${staminaLeft > 0 ? '（免费）' : `（${MineSystem.EXTRA_DIG_COST}金币）`}
+        </button>
+      </div>
+    </div>
+  `;
+
+  const trove = MineSystem.mineTrove
+    .map((key) => {
+      const count = getCount(state, key);
+      const found = (state.mine.found || []).includes(key) || count > 0;
+      return `<div class="mine-card ${count > 0 ? 'owned' : ''}">
+        <span class="mine-card-icon">${found ? getItemIcon(key) : '❔'}</span>
+        <h4>${found ? escapeHtml(getItemName(key)) : '未发现'}</h4>
+        <p class="muted-text">🪙${MineSystem.oreValues[key]}</p>
+        <div class="item-actions">
+          <span class="fish-count">持有 ${count}</span>
+          <button class="small-action" onclick="window.sellOreHandler('${key}')" ${count < 1 ? 'disabled' : ''}>卖出</button>
+        </div>
+      </div>`;
+    })
+    .join('');
+
+  const next = MineSystem.getNextUpgrade(state);
+  let upgradeCard;
+  if (!next) {
+    upgradeCard = `<div class="mine-upgrade"><p class="muted-text">🏆 镐子已升到最高级「${pick.icon}${escapeHtml(pick.name)}」</p></div>`;
+  } else {
+    const costText = Object.entries(next.cost)
+      .map(([key, need]) => `${getItemIcon(key)}${getItemName(key)}×${need}（有${getCount(state, key)}）`)
+      .join('、');
+    const canUpgrade = MineSystem.canUpgradePickaxe(state);
+    upgradeCard = `
+      <div class="mine-upgrade">
+        <h4>升级镐子 → ${next.pickaxe.icon}${escapeHtml(next.pickaxe.name)}</h4>
+        <p class="muted-text">升级后：每日体力上限 ${next.pickaxe.maxStamina}，解锁更深矿层</p>
+        <p class="muted-text">需要：${costText}</p>
+        <button class="primary-action" onclick="window.upgradePickaxeHandler()" ${!canUpgrade ? 'disabled' : ''}>升级镐子</button>
+      </div>
+    `;
+  }
+
+  const upgrade = `
+    ${upgradeCard}
+    <div class="button-row">
+      <button class="ghost-action" onclick="window.sellOreAllHandler()">一键卖出全部矿藏</button>
+    </div>
+  `;
+
+  return { pit, trove, upgrade };
 }
 
 /**

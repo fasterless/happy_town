@@ -27,6 +27,7 @@ const MIGRATIONS = [
   { fromVersion: 9, migrate: toV10 },
   { fromVersion: 10, migrate: toV11 },
   { fromVersion: 11, migrate: toV12 },
+  { fromVersion: 12, migrate: toV13 },
 ];
 
 /**
@@ -132,6 +133,15 @@ function toV12(state) {          // v11 → v12：委托榜 / 料理铺 / 许愿
   }
   if (!Array.isArray(state.help.requests)) state.help.requests = [];
   state.version = 12;
+}
+
+function toV13(state) {          // v12 → v13：后山矿洞
+  if (!state.mine || typeof state.mine !== 'object') {
+    state.mine = { pickLevel: 1, staminaDate: '', staminaUsed: 0, totalDigs: 0, found: [] };
+  }
+  if (typeof state.mine.pickLevel !== 'number' || state.mine.pickLevel < 1) state.mine.pickLevel = 1;
+  if (!Array.isArray(state.mine.found)) state.mine.found = [];
+  state.version = 13;
 }
 
 /**

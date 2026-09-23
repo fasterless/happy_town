@@ -24,6 +24,13 @@ const BASIC_LABELS = {
   egg: "鸡蛋",
   wool: "羊毛",
   milk: "牛奶",
+  ore_copper: "铜矿",
+  ore_iron: "铁矿",
+  ore_silver: "银矿",
+  gem_topaz: "黄水晶",
+  gem_amethyst: "紫水晶",
+  gem_emerald: "祖母绿",
+  gem_crystal: "幻彩水晶",
 };
 
 const BASIC_ICONS = {
@@ -40,6 +47,13 @@ const BASIC_ICONS = {
   egg: "🥚",
   wool: "🧶",
   milk: "🥛",
+  ore_copper: "🟤",
+  ore_iron: "⚙️",
+  ore_silver: "🥈",
+  gem_topaz: "🔶",
+  gem_amethyst: "💜",
+  gem_emerald: "💚",
+  gem_crystal: "💠",
 };
 
 /**

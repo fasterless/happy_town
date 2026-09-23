@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 12;
+export const CURRENT_VERSION = 13;
 
 /**
  * 创建默认游戏状态
@@ -102,6 +102,14 @@ export function createDefaultState() {
     fishing: {
       lastFreeDate: "",
       freeCastsUsed: 0,
+    },
+    // 后山矿洞：镐等级 + 每日体力 + 矿藏收藏册
+    mine: {
+      pickLevel: 1,        // 镐等级（1-5），决定体力上限与矿层深度
+      staminaDate: "",     // 体力所在的日期键，跨天归零
+      staminaUsed: 0,      // 今天已消耗的体力
+      totalDigs: 0,        // 累计下矿次数
+      found: [],           // 挖到过的矿石/宝石键（曾经拥有语义，收藏册用）
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -229,6 +237,7 @@ export function mergeState(base, saved) {
     shop: { ...base.shop, ...(saved.shop || {}) },
     crafting: { ...base.crafting, ...(saved.crafting || {}) },
     fishing: { ...base.fishing, ...(saved.fishing || {}) },
+    mine: { ...base.mine, ...(saved.mine || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -352,6 +361,17 @@ export function normalizeState(state) {
   if (!Array.isArray(state.crafting.queue)) state.crafting.queue = [];
   if (typeof state.fishing.lastFreeDate !== "string") state.fishing.lastFreeDate = "";
   if (typeof state.fishing.freeCastsUsed !== "number") state.fishing.freeCastsUsed = 0;
+
+  // 后山矿洞（v13）
+  if (!state.mine || typeof state.mine !== "object") {
+    state.mine = { pickLevel: 1, staminaDate: "", staminaUsed: 0, totalDigs: 0, found: [] };
+  }
+  if (typeof state.mine.pickLevel !== "number" || state.mine.pickLevel < 1) state.mine.pickLevel = 1;
+  if (state.mine.pickLevel > 5) state.mine.pickLevel = 5;
+  if (typeof state.mine.staminaDate !== "string") state.mine.staminaDate = "";
+  if (typeof state.mine.staminaUsed !== "number") state.mine.staminaUsed = 0;
+  if (typeof state.mine.totalDigs !== "number") state.mine.totalDigs = 0;
+  if (!Array.isArray(state.mine.found)) state.mine.found = [];
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

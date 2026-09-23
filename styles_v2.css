@@ -1397,6 +1397,111 @@
   margin-top: 16px;
 }
 
+/* --- 后山矿洞 -------------------------------------------------------------- */
+
+.mine-pit {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, #e6ddd0, #d3c4ae),
+    #d3c4ae;
+}
+
+.mine-cave {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 40% 30%, rgba(255, 255, 255, 0.4), transparent 55%),
+    linear-gradient(180deg, #7c6b57, #4a3d30);
+  font-size: 52px;
+}
+
+.mine-info h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.mine-info p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: #4a3d30;
+}
+
+.mine-info .primary-action {
+  margin-top: 10px;
+}
+
+.mine-upgrade-panel {
+  margin-bottom: 18px;
+}
+
+.mine-upgrade {
+  padding: 14px 16px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+  margin-bottom: 12px;
+}
+
+.mine-upgrade h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.mine-upgrade p {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+
+.mine-upgrade .primary-action {
+  margin-top: 8px;
+}
+
+.mine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.mine-card {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbf6ee;
+  text-align: center;
+}
+
+.mine-card.owned {
+  border-color: var(--yellow);
+  background: #fff4dc;
+}
+
+.mine-card h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.mine-card p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.mine-card-icon {
+  font-size: 30px;
+  line-height: 1;
+}
+
 /* --- 幸运转盘 ------------------------------------------------------------ */
 
 .lottery-panel {

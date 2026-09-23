@@ -7,6 +7,7 @@ export const dailyTasks = [
   { id: "visit", name: "拜访好友 3 次", type: "visit", target: 3, active: 15, rewards: { friendPoint: 20 } },
   { id: "like", name: "点赞好友 3 次", type: "like", target: 3, active: 15, rewards: { friendPoint: 20 } },
   { id: "fishing", name: "湖畔钓鱼 3 次", type: "fishing", target: 3, active: 15, rewards: { coin: 40 } },
+  { id: "mine", name: "后山下矿 3 次", type: "mine", target: 3, active: 15, rewards: { coin: 60 } },
   { id: "craft", name: "完成加工 1 次", type: "craft", target: 1, active: 15, rewards: { coin: 60 } },
   { id: "donate", name: "捐献社区资源 1 次", type: "donate", target: 1, active: 10, rewards: { communityContribution: 30 } },
   { id: "buyFurniture", name: "购买家具 1 次", type: "buyFurniture", target: 1, active: 10, rewards: { coin: 50 } },
