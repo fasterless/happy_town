@@ -65,7 +65,7 @@ import { getCafePrice } from '../config/cafe.js';
 import { commissionJobs } from '../config/commissions.js';
 import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
 import { HELP_REROLL_COST, FAVOR_FOR_BONUS } from '../config/helpBoard.js';
-import { isCloudEnabled as cloudOn, getLastSyncText } from '../core/sync.js';
+import { isCloudEnabled as cloudOn, getLastSyncText, isLoggedIn, getAuthEmail } from '../core/sync.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
 
@@ -1377,6 +1377,16 @@ export function renderAdminView(state) {
         </div>
         ${cloudOn ? '<div class="button-row"><button class="small-action" onclick="window.cloudMigrationHandler()">设备迁移</button></div>' : ''}
         <p class="muted-text">存档免费备份到 Cloudflare（与站点一起部署），换浏览器、清缓存也不丢进度。本地存档始终保留。</p>
+        <div class="data-row">
+          <span>账号</span>
+          <b>${isLoggedIn() ? escapeHtml(getAuthEmail()) : '未登录'}</b>
+        </div>
+        <div class="button-row">
+          ${isLoggedIn()
+            ? '<button class="small-action" onclick="window.logoutHandler()">退出登录</button>'
+            : '<button class="small-action" onclick="window.accountHandler()">注册 / 登录</button>'}
+        </div>
+        <p class="muted-text">用邮箱登录后，换设备直接登录就能接上云端存档，不用再复制迁移码。</p>
       </div>
     </div>
   `;

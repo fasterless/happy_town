@@ -12,6 +12,8 @@ import {
   isCloudEnabled,
   getMigrationCode,
   adoptMigrationCode,
+  authenticate,
+  logout,
 } from './core/sync.js';
 
 // 导入配置
@@ -57,7 +59,7 @@ import * as TownStylesSystem from './systems/townStyles.js';
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
 import { showToast } from './ui/toast.js';
-import { createModal, confirm } from './ui/components.js';
+import { createModal, closeModal, confirm } from './ui/components.js';
 import { initAudio, playSound, audioManager, toggleMusic } from './ui/audio.js';
 import { startTutorial, shouldStartTutorial } from './ui/tutorial.js';
 
@@ -119,7 +121,8 @@ function init() {
 
   state = loadState();
 
-  // 云端有更新（比如在另一台设备玩过）就取云端存档，之后照常启动
+  // 云端有更新（比如在另一台设备玩过）就取云端存档，之后照常启动。
+  // 登录后凭证走 token；没登录的老存档仍用 deviceKey，行为与之前一致。
   if (isCloudEnabled() && state.user.created) {
     fetchCloudState().then(({ cloudState, usedCloud, reason }) => {
       if (usedCloud && cloudState) {
@@ -1081,6 +1084,87 @@ window.resetGameHandler = () => {
     clearStorage();
     clearInterval(clockTimer);
     window.location.reload();
+  });
+};
+
+// ---------------------------------------------------------------------------
+// 账号（邮箱注册 / 登录）
+// ---------------------------------------------------------------------------
+
+/** 登录弹窗。注册绑定本机存档；登录后若账号存档比本机新，自动换上云端进度 */
+function openAccountModal() {
+  const backdrop = createModal({
+    title: '注册 / 登录',
+    content: `
+      <p class="muted-text">用邮箱和密码登录后，换设备直接登录就能接上云端存档。</p>
+      <label class="input-label" for="accountEmailInput">邮箱</label>
+      <input id="accountEmailInput" class="text-input" type="email" maxlength="128"
+        placeholder="you@example.com" autocomplete="username">
+      <label class="input-label" for="accountPasswordInput">密码（6-64 位）</label>
+      <input id="accountPasswordInput" class="text-input" type="password" maxlength="64"
+        placeholder="至少 6 位" autocomplete="current-password">
+    `,
+    confirmText: '登录',
+    secondaryText: '注册',
+    cancelText: '取消',
+    onConfirm: () => submitAccount('login', backdrop),
+    onSecondary: () => submitAccount('register', backdrop),
+  });
+}
+
+/** @returns {false|undefined} 校验失败时返回 false，让弹窗留着重试 */
+function submitAccount(mode, backdrop) {
+  const email = $('accountEmailInput')?.value.trim();
+  const password = $('accountPasswordInput')?.value || '';
+  if (!email || !password) {
+    showToast('请填写邮箱和密码', 'warning');
+    return false;
+  }
+
+  authenticate(mode, email, password).then(async (result) => {
+    if (!result.ok) {
+      showToast(result.message, 'error');
+      playSound('error');
+      return;
+    }
+
+    // 注册可能返回服务端生成的新 userId；登录其他账号时则切换到该账号。
+    if (result.uid && result.uid !== state.user.userId) {
+      if (mode === 'login') {
+        const { cloudState, usedCloud } = await fetchCloudState(result.uid);
+        if (usedCloud && cloudState) {
+          state = importSave(JSON.stringify(cloudState)) || state;
+          showToast('☁️ 已切换到该账号的云端存档', 'success');
+          renderAll();
+          saveState(state);
+          closeModal(backdrop);
+          return;
+        }
+      }
+      state.user.userId = result.uid;
+    }
+
+    showToast(result.message, 'success');
+    playSound('success');
+    renderViews('adminView');
+    closeModal(backdrop);
+  });
+  return false;
+}
+
+window.accountHandler = () => {
+  if (!isCloudEnabled()) {
+    showToast('本地预览没有云端接口，部署到 Cloudflare Pages 后才能注册登录', 'warning');
+    return;
+  }
+  openAccountModal();
+};
+
+window.logoutHandler = () => {
+  confirm('退出后本机存档还在，只是不再自动同步到账号。确定退出登录吗？', () => {
+    const result = logout();
+    showToast(result.ok ? '已退出登录' : result.message, result.ok ? 'success' : 'error');
+    renderViews('adminView');
   });
 };
 

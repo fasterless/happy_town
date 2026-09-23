@@ -20,8 +20,10 @@ export function createModal(options) {
     showCancel = true,
     confirmText = "确定",
     cancelText = "取消",
+    secondaryText = "",
     onConfirm = () => {},
     onCancel = () => {},
+    onSecondary = () => {},
   } = options;
 
   const backdrop = document.createElement("div");
@@ -35,6 +37,7 @@ export function createModal(options) {
     </div>
     <div class="modal-body">${content}</div>
     <div class="modal-footer">
+      ${secondaryText ? `<button class="btn-cancel btn-secondary-action">${secondaryText}</button>` : ""}
       ${showCancel ? `<button class="btn-cancel">${cancelText}</button>` : ""}
       <button class="btn-confirm">${confirmText}</button>
     </div>
@@ -45,10 +48,16 @@ export function createModal(options) {
 
   // 绑定事件
   const confirmBtn = modal.querySelector(".btn-confirm");
-  const cancelBtn = modal.querySelector(".btn-cancel");
+  const cancelBtn = modal.querySelector(".btn-cancel:not(.btn-secondary-action)");
+  const secondaryBtn = modal.querySelector(".btn-secondary-action");
 
   confirmBtn?.addEventListener("click", () => {
-    onConfirm();
+    if (onConfirm() === false) return;
+    closeModal(backdrop);
+  });
+
+  secondaryBtn?.addEventListener("click", () => {
+    if (onSecondary() === false) return;
     closeModal(backdrop);
   });
 

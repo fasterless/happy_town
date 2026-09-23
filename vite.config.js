@@ -1,4 +1,7 @@
 import { defineConfig } from 'vite';
+import { cpSync } from 'node:fs';
+
+const pagesFunctionsDir = 'functions';
 
 export default defineConfig({
   root: '.',
@@ -13,6 +16,7 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     minify: true,
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         // core 与 systems 相互依赖（storage.js 结算 orders/wishes/codex，
@@ -29,6 +33,12 @@ export default defineConfig({
       },
     },
   },
+  plugins: [{
+    name: 'copy-pages-functions',
+    closeBundle() {
+      cpSync(pagesFunctionsDir, 'dist/functions', { recursive: true });
+    },
+  }],
   server: {
     port: 3000,
     host: '127.0.0.1',
