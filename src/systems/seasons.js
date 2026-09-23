@@ -86,6 +86,16 @@ export function claimFestivalTask(state, eventId, taskId) {
   return { success: true, message: `完成庆典任务「${row.name}」，获得${formatRewards(row.rewards)}和${event.tokenIcon}${event.tokenName}`, state };
 }
 
+export function getFestivalHistory(state, event, date = new Date()) {
+  const current = `${event.id}:${date.getFullYear()}`;
+  const records = Object.entries(state.seasons.festivals || {})
+    .filter(([period]) => period.startsWith(`${event.id}:`) && period !== current)
+    .map(([period, record]) => ({ year: Number(period.split(':')[1]), completed: Array.isArray(record.claimed) ? record.claimed.length : 0 }))
+    .filter((item) => item.completed > 0)
+    .sort((a, b) => b.year - a.year);
+  return { years: records, rewardClaimed: isFestivalRewardClaimed(state, event.id) };
+}
+
 export function getFestivalTokenCount(state, event) {
   return state.inventory?.[event.token] || 0;
 }

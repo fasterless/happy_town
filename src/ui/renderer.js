@@ -1871,6 +1871,10 @@ export function renderSeasonsView(state) {
           ].join("、")}</p>`
         : "";
 
+      const history = SeasonsSystem.getFestivalHistory(state, event);
+      const historyLine = history.years.length || history.rewardClaimed
+        ? `<p class="festival-history">往年：${history.years.map((item) => `${item.year}年完成${item.completed}项`).join("、") || "尚未参加"}${history.rewardClaimed ? ` · ${event.rewardItem.icon}已收藏` : ""}</p>`
+        : "";
       const tasks = event.status === "inactive" ? "" : SeasonsSystem.getFestivalTasks(state, event).map((task) => `
         <div class="festival-task ${task.claimed ? "claimed" : ""}">
           <span>${escapeHtml(task.name)} ${task.progress}/${task.target}</span>
@@ -1883,6 +1887,7 @@ export function renderSeasonsView(state) {
           <p class="muted-text">${escapeHtml(event.description)}</p>
           <p class="muted-text">开放时间：${event.startMonth}月 - ${event.endMonth}月 · 礼物：${escapeHtml(formatRewards(event.rewards))}</p>
           ${limited}
+          ${historyLine}
           <div class="festival-tasks">${tasks}</div>
           ${event.status === "inactive" ? "" : `<div class="festival-reward"><span>${event.tokenIcon} ${escapeHtml(event.tokenName)} ${SeasonsSystem.getFestivalTokenCount(state, event)}/3</span><button class="small-action" onclick="window.claimFestivalRewardHandler('${event.id}')" ${SeasonsSystem.isFestivalRewardClaimed(state, event.id) || SeasonsSystem.getFestivalTokenCount(state, event) < 3 ? "disabled" : ""}>${SeasonsSystem.isFestivalRewardClaimed(state, event.id) ? "已收藏" : `兑换${event.rewardItem.icon}${escapeHtml(event.rewardItem.name)}`}</button></div>`}
         </div>

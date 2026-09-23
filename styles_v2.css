@@ -1533,6 +1533,7 @@
   .festival-tasks { display: grid; gap: 6px; margin-top: 8px; }
 .festival-task, .festival-reward { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .festival-reward { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.festival-history { color: #8a6240; font-weight: 700; }
 
 .season-card {
     grid-template-columns: 1fr;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createDefaultState, mergeState, CURRENT_VERSION } from "../src/core/state.js";
 import { migrateState } from "../src/core/migrations.js";
 import { seasonalEvents } from "../src/config/seasons.js";
-import { getFestivalTasks, claimFestivalTask, claimFestivalReward } from "../src/systems/seasons.js";
+import { getFestivalTasks, claimFestivalTask, claimFestivalReward, getFestivalHistory } from "../src/systems/seasons.js";
 import { getCount } from "../src/core/inventory.js";
 
 afterEach(() => vi.useRealTimers());
@@ -68,5 +68,22 @@ describe("庆典纪念物", () => {
     state.inventory.token_autumn = 3;
     expect(claimFestivalReward(state, event.id).success).toBe(false);
     expect(claimFestivalReward(state, "spring_bloom").success).toBe(false);
+  });
+});
+
+describe("历年返场", () => {
+  it("新年重新计任务，但保留去年记录、纪念物和收藏", () => {
+    const state = stateAt(9);
+    const event = seasonalEvents.find((item) => item.id === "autumn_harvest");
+    state.seasons.festivals["autumn_harvest:2025"] = { baseline: {}, claimed: ["harvest", "order"] };
+    state.inventory.token_autumn = 2;
+    state.seasons.festivalRewards = ["autumn_harvest"];
+    getFestivalTasks(state, event);
+    state.analytics.harvest_crop = 5;
+    expect(getFestivalTasks(state, event).find((task) => task.id === "harvest").done).toBe(true);
+    const history = getFestivalHistory(state, event);
+    expect(history.years).toEqual([{ year: 2025, completed: 2 }]);
+    expect(history.rewardClaimed).toBe(true);
+    expect(state.inventory.token_autumn).toBe(2);
   });
 });
