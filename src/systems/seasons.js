@@ -80,7 +80,29 @@ export function claimFestivalTask(state, eventId, taskId) {
   if (row.claimed) return { success: false, message: "这项心意已经领过了" };
   if (!row.done) return { success: false, message: `还差 ${row.target - row.progress} 次` };
   addRewards(state, row.rewards);
+  addRewards(state, { [event.token]: 1 });
   record.claimed.push(taskId);
   logEvent(state, "festival_task");
-  return { success: true, message: `完成庆典任务「${row.name}」，获得${formatRewards(row.rewards)}`, state };
+  return { success: true, message: `完成庆典任务「${row.name}」，获得${formatRewards(row.rewards)}和${event.tokenIcon}${event.tokenName}`, state };
+}
+
+export function getFestivalTokenCount(state, event) {
+  return state.inventory?.[event.token] || 0;
+}
+
+export function isFestivalRewardClaimed(state, eventId) {
+  return Array.isArray(state.seasons.festivalRewards) && state.seasons.festivalRewards.includes(eventId);
+}
+
+export function claimFestivalReward(state, eventId) {
+  const event = seasonalEvents.find((item) => item.id === eventId);
+  if (!event) return { success: false, message: "没有这场庆典" };
+  if (getCurrentSeasonalEvent()?.id !== eventId) return { success: false, message: "等庆典返场时再兑换" };
+  if (isFestivalRewardClaimed(state, eventId)) return { success: false, message: "这份收藏已经兑换过了" };
+  if (getFestivalTokenCount(state, event) < 3) return { success: false, message: `还需要 ${3 - getFestivalTokenCount(state, event)} 枚${event.tokenName}` };
+  if (!Array.isArray(state.seasons.festivalRewards)) state.seasons.festivalRewards = [];
+  state.inventory[event.token] -= 3;
+  state.seasons.festivalRewards.push(eventId);
+  logEvent(state, "festival_reward");
+  return { success: true, message: `兑换了${event.rewardItem.icon}${event.rewardItem.name}，已收入庆典收藏`, state };
 }

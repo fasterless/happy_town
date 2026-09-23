@@ -19,7 +19,7 @@ export const seasonalEvents = [
       { id: "plant", name: "种植 3 次", stat: "plant_crop", target: 3, rewards: { coin: 120 } },
       { id: "visit", name: "拜访邻居 3 次", stat: "friend_visit", target: 3, rewards: { friendPoint: 30 } },
       { id: "memory", name: "倾听 1 段回忆", stat: "relationship_memory", target: 1, rewards: { diamond: 5 } },
-    ],
+    ], token: "token_spring", tokenName: "春朝花笺", tokenIcon: "🌸", rewardItem: { id: 3106, name: "春朝挂画", icon: "🖼️" },
     rewards: { crop_1003: 5, crop_1008: 3, diamond: 20 },
     seasonal: {
       crops: [
@@ -45,7 +45,7 @@ export const seasonalEvents = [
       { id: "fish", name: "钓鱼 3 次", stat: "fishing_cast", target: 3, rewards: { coin: 120 } },
       { id: "cafe", name: "招待 2 位客人", stat: "cafe_serve", target: 2, rewards: { coin: 180 } },
       { id: "dish", name: "做出 1 道料理", stat: "dish_cook", target: 1, rewards: { diamond: 5 } },
-    ],
+    ], token: "token_summer", tokenName: "清凉贝壳", tokenIcon: "🐚", rewardItem: { id: 3107, name: "清凉风铃", icon: "🎐" },
     rewards: { crop_1002: 6, fish_1: 3, coin: 300 },
     seasonal: {
       crops: [
@@ -71,7 +71,7 @@ export const seasonalEvents = [
       { id: "harvest", name: "收获 5 次", stat: "harvest_crop", target: 5, rewards: { coin: 150 } },
       { id: "order", name: "完成 2 个订单", stat: "order_complete", target: 2, rewards: { coin: 160 } },
       { id: "greenhouse", name: "温室种植 1 次", stat: "greenhouse_plant", target: 1, rewards: { diamond: 5 } },
-    ],
+    ], token: "token_autumn", tokenName: "丰收麦穗", tokenIcon: "🌾", rewardItem: { id: 3108, name: "丰收壁挂", icon: "🧺" },
     rewards: { crop_1005: 2, crop_1009: 3, wood: 30 },
     seasonal: {
       crops: [
@@ -97,7 +97,7 @@ export const seasonalEvents = [
       { id: "craft", name: "完成加工 1 次", stat: "craft_finish", target: 1, rewards: { coin: 140 } },
       { id: "dish", name: "做出 2 道料理", stat: "dish_cook", target: 2, rewards: { coin: 180 } },
       { id: "visit", name: "拜访邻居 2 次", stat: "friend_visit", target: 2, rewards: { diamond: 5 } },
-    ],
+    ], token: "token_winter", tokenName: "暖冬丝带", tokenIcon: "🎀", rewardItem: { id: 3109, name: "暖冬壁灯", icon: "🕯️" },
     rewards: { goods_5001: 2, diamond: 30, cloth: 10 },
     seasonal: {
       crops: [
@@ -123,7 +123,7 @@ export const seasonalEvents = [
       { id: "wish", name: "许愿 1 次", stat: "wish_make", target: 1, rewards: { coin: 160 } },
       { id: "help", name: "帮助邻居 2 次", stat: "help_fulfill", target: 2, rewards: { friendPoint: 40 } },
       { id: "memory", name: "倾听 1 段回忆", stat: "relationship_memory", target: 1, rewards: { diamond: 8 } },
-    ],
+    ], token: "token_newyear", tokenName: "庙会灯结", tokenIcon: "🏮", rewardItem: { id: 3110, name: "庙会门牌", icon: "🧧" },
     rewards: { coin: 500, diamond: 50, lottery_ticket: 2 },
     seasonal: {
       crops: [

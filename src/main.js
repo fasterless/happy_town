@@ -880,6 +880,7 @@ window.spinLotteryHandler = () => {
 // 季节活动
 window.claimSeasonalHandler = (eventId) => runAction(() => SeasonsSystem.claimSeasonalReward(state, eventId), 'levelup');
 window.claimFestivalTaskHandler = (eventId, taskId) => runAction(() => SeasonsSystem.claimFestivalTask(state, eventId, taskId), 'coin');
+window.claimFestivalRewardHandler = (eventId) => runAction(() => SeasonsSystem.claimFestivalReward(state, eventId), 'levelup');
 
 // 养殖栏
 window.buyAnimalHandler = (animalId) => runAction(() => RanchSystem.buyAnimal(state, animalId), 'buy');

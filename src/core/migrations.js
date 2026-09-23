@@ -38,6 +38,7 @@ const MIGRATIONS = [
   { fromVersion: 20, migrate: toV21 },
   { fromVersion: 21, migrate: toV22 },
   { fromVersion: 22, migrate: toV23 },
+  { fromVersion: 23, migrate: toV24 },
 ];
 
 /**
@@ -231,6 +232,12 @@ function toV23(state) {
   if (!state.seasons || typeof state.seasons !== "object") state.seasons = { claimedEventId: "", festivals: {} };
   if (!state.seasons.festivals || typeof state.seasons.festivals !== "object") state.seasons.festivals = {};
   state.version = 23;
+}
+
+function toV24(state) {
+  if (!state.seasons || typeof state.seasons !== "object") state.seasons = { claimedEventId: "", festivals: {}, festivalRewards: [] };
+  if (!Array.isArray(state.seasons.festivalRewards)) state.seasons.festivalRewards = [];
+  state.version = 24;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

@@ -8,7 +8,7 @@ import { initSchedules } from '../systems/schedules.js';
 import { initRelationships } from '../systems/relationships.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 23;
+export const CURRENT_VERSION = 24;
 
 /**
  * 创建默认游戏状态
@@ -154,6 +154,7 @@ export function createDefaultState() {
     seasons: {
       claimedEventId: "",
       festivals: {},
+      festivalRewards: [],
     },
     // 小镇集市：NPC 买家对每种作物的需求热度（价格倍率的种子）
     // demand.<cropId> 是 0-100 的热度，越高挂单价越好，每天轮换
@@ -470,6 +471,7 @@ export function normalizeState(state) {
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";
   if (!state.seasons.festivals || typeof state.seasons.festivals !== "object") state.seasons.festivals = {};
+  if (!Array.isArray(state.seasons.festivalRewards)) state.seasons.festivalRewards = [];
 
   // 委托榜 / 料理增益 / 许愿池（v12）
   if (!state.commissions || typeof state.commissions !== "object") {

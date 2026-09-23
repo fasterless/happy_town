@@ -1884,6 +1884,7 @@ export function renderSeasonsView(state) {
           <p class="muted-text">开放时间：${event.startMonth}月 - ${event.endMonth}月 · 礼物：${escapeHtml(formatRewards(event.rewards))}</p>
           ${limited}
           <div class="festival-tasks">${tasks}</div>
+          ${event.status === "inactive" ? "" : `<div class="festival-reward"><span>${event.tokenIcon} ${escapeHtml(event.tokenName)} ${SeasonsSystem.getFestivalTokenCount(state, event)}/3</span><button class="small-action" onclick="window.claimFestivalRewardHandler('${event.id}')" ${SeasonsSystem.isFestivalRewardClaimed(state, event.id) || SeasonsSystem.getFestivalTokenCount(state, event) < 3 ? "disabled" : ""}>${SeasonsSystem.isFestivalRewardClaimed(state, event.id) ? "已收藏" : `兑换${event.rewardItem.icon}${escapeHtml(event.rewardItem.name)}`}</button></div>`}
         </div>
         <button class="primary-action" onclick="window.claimSeasonalHandler('${event.id}')" ${!canClaim ? 'disabled' : ''}>
           ${event.status === 'claimed' ? '已领取' : '领取礼物'}

@@ -34,6 +34,7 @@ const BASIC_LABELS = {
   ingot_copper: "铜锭",
   ingot_iron: "铁锭",
   ingot_silver: "银锭",
+  token_spring: "春朝花笺", token_summer: "清凉贝壳", token_autumn: "丰收麦穗", token_winter: "暖冬丝带", token_newyear: "庙会灯结",
 };
 
 const BASIC_ICONS = {
@@ -60,6 +61,7 @@ const BASIC_ICONS = {
   ingot_copper: "🟠",
   ingot_iron: "⚪",
   ingot_silver: "✨",
+  token_spring: "🌸", token_summer: "🐚", token_autumn: "🌾", token_winter: "🎀", token_newyear: "🏮",
 };
 
 /**

@@ -63,6 +63,7 @@ function getEventDisplayName(eventName) {
     lottery_spin: "幸运抽奖",
     seasonal_claim: "季节活动领奖",
     festival_task: "领取庆典任务",
+    festival_reward: "兑换庆典收藏",
     neighbor_gift: "邻居回礼",
     schedule_visit: "按日程拜访",
     relationship_gain: "提升邻居熟悉度",
