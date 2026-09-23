@@ -901,6 +901,49 @@
   line-height: 1.45;
 }
 
+/* 共建路线完工后解锁的小镇风貌（预览态与已采用状态共用主题令牌） */
+:root[data-town-style="plaza"],
+:root[data-town-style-preview="plaza"] {
+  --green: #668f55;
+  --green-strong: #496f3c;
+  --panel: #f2f8ed;
+  --panel-strong: #f6df91;
+  --yellow: #e9b84d;
+}
+
+:root[data-town-style="station"],
+:root[data-town-style-preview="station"] {
+  --green: #5d85a0;
+  --green-strong: #43677e;
+  --panel: #edf5f8;
+  --panel-strong: #e5bd67;
+  --yellow: #d8ad56;
+}
+
+:root[data-town-style="shore"],
+:root[data-town-style-preview="shore"] {
+  --green: #4f8e8b;
+  --green-strong: #36716f;
+  --panel: #edf7f5;
+  --panel-strong: #e7c277;
+  --yellow: #d8b05b;
+}
+
+:root[data-town-style="plaza"] body,
+:root[data-town-style-preview="plaza"] body {
+  background: radial-gradient(circle at 12% 8%, rgba(232, 190, 95, 0.22), transparent 30%), linear-gradient(180deg, #dcebd6 0%, #f5f3e4 48%, #edf2df 100%);
+}
+
+:root[data-town-style="station"] body,
+:root[data-town-style-preview="station"] body {
+  background: radial-gradient(circle at 12% 8%, rgba(220, 185, 107, 0.2), transparent 30%), linear-gradient(180deg, #d7e5e9 0%, #f1f3ec 48%, #e8edf0 100%);
+}
+
+:root[data-town-style="shore"] body,
+:root[data-town-style-preview="shore"] body {
+  background: radial-gradient(circle at 12% 8%, rgba(106, 184, 178, 0.2), transparent 30%), linear-gradient(180deg, #d6ebe6 0%, #eff5ec 48%, #e1efeb 100%);
+}
+
 /* --- 社区 ---------------------------------------------------------------- */
 
 .community-layout {
@@ -951,6 +994,94 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
+}
+
+.town-style-panel {
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+}
+
+.town-style-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.town-style-panel-header h4,
+.town-style-panel-header p {
+  margin: 0;
+}
+
+.town-style-panel-header p {
+  margin-top: 4px;
+}
+
+.town-style-panel-header > span {
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.town-style-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 8px;
+}
+
+.town-style-card {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.town-style-card.locked {
+  opacity: 0.72;
+}
+
+.town-style-card.selected {
+  outline: 2px solid var(--green);
+}
+
+.town-style-icon {
+  font-size: 24px;
+}
+
+.town-style-card h5,
+.town-style-card p {
+  margin: 0;
+}
+
+.town-style-card h5 small {
+  color: var(--green-strong);
+}
+
+.town-style-card p,
+.town-style-actions {
+  font-size: 12px;
+}
+
+.town-style-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.town-style-keepsake {
+  color: var(--green-strong);
+  font-weight: 800;
+}
+
+.town-style-reset {
+  margin-top: 10px;
 }
 
 .town-project {

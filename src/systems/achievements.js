@@ -7,6 +7,7 @@ import { titles, frames } from '../config/cosmetics.js';
 import { storyChapters } from '../config/story.js';
 import { getUnlockedCosmeticCount } from './cosmetics.js';
 import { townProjects } from '../config/townProjects.js';
+import { townStyles } from '../config/townStyles.js';
 
 // 成就配置
 //
@@ -115,6 +116,7 @@ export const achievements = [
   { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: storyChapters.length, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
   { id: "town_project_first", name: "第一份共建", desc: "完成一条小镇共建路线", icon: "🧱", category: "社区", target: 1, trackKey: "town_project_complete", rewards: { coin: 500, diamond: 10 } },
   { id: "town_projects_all", name: "小镇新风貌", desc: "完成全部小镇共建路线", icon: "🏘️", category: "社区", target: townProjects.length, trackKey: "town_project_complete", rewards: { diamond: 60, coin: 1500 } },
+  { id: "town_styles_all", name: "风貌收藏家", desc: "采用过全部小镇共建风貌", icon: "🎨", category: "收藏", target: townStyles.length, trackKey: "town_style_seen", rewards: { diamond: 40, coin: 1000 } },
 
   // ============ 🎖️ 收藏 ============
   { id: "cosmetic_first", name: "有点面子", desc: "装备一个称号或头像框", icon: "🎖️", category: "收藏", target: 1, trackKey: "cosmetic_equip", rewards: { coin: 200 } },
@@ -230,7 +232,8 @@ function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
   if (achievement.trackKey === "story_seen_endings") return state.story?.seenEndings?.length || 0;
-  if (achievement.trackKey === "town_project_complete") return state.community?.projects?.completed?.length || 0;
+  if (achievement.trackKey === "town_project_complete") return Array.isArray(state.community?.projects?.completed) ? state.community.projects.completed.length : 0;
+  if (achievement.trackKey === "town_style_seen") return Array.isArray(state.community?.projects?.seenStyles) ? state.community.projects.seenStyles.length : 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;
   if (achievement.trackKey === "relationship_close") {
     const claimed = state.relationships?.claimed || {};

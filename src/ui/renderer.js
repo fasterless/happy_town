@@ -58,6 +58,7 @@ import * as StorySystem from '../systems/story.js';
 import * as ExploreSystem from '../systems/explore.js';
 import * as CosmeticSystem from '../systems/cosmetics.js';
 import * as TownProjectsSystem from '../systems/townProjects.js';
+import * as TownStylesSystem from '../systems/townStyles.js';
 import { townProjects } from '../config/townProjects.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { getCafePrice } from '../config/cafe.js';
@@ -917,8 +918,38 @@ function renderTownProjectsPanel(state) {
   return `<section class="town-projects">
     <div class="town-projects-header"><div><h3>🧱 小镇共建计划</h3><p class="muted-text">第二季后的长期建设 · 三条路线可同时推进，进度永久保留</p></div>
       <span>${(Array.isArray(state.community.projects?.completed) ? state.community.projects.completed.length : 0)}/${townProjects.length} 完工</span></div>
+    ${renderTownStylePanel(state)}
     <div class="town-project-grid">${cards}</div>
     ${renderTownProjectJournal(state)}
+  </section>`;
+}
+
+function renderTownStylePanel(state) {
+  const active = TownStylesSystem.getActiveTownStyle(state);
+  const seen = TownStylesSystem.getSeenTownStyles(state);
+  const styles = TownStylesSystem.townStyles.map((style) => {
+    const unlocked = TownStylesSystem.getUnlockedTownStyles(state).some((entry) => entry.id === style.id);
+    const selected = active?.id === style.id;
+    const owned = seen.some((entry) => entry.id === style.id);
+    return `<article class="town-style-card ${unlocked ? '' : 'locked'} ${selected ? 'selected' : ''}">
+      <span class="town-style-icon">${style.icon}</span>
+      <h5>${escapeHtml(style.name)} ${selected ? '<small>使用中</small>' : ''}</h5>
+      <p>${escapeHtml(style.description)}</p>
+      <div class="town-style-actions">
+        ${unlocked
+          ? `<button type="button" class="small-action" onclick="window.previewTownStyleHandler('${style.id}')">预览</button>
+             <button type="button" class="${selected ? 'ghost-action' : 'small-action'}" onclick="window.chooseTownStyleHandler('${style.id}')" ${selected ? 'disabled' : ''}>${selected ? '使用中' : '采用'}</button>`
+          : `<span class="muted-text">完成「${escapeHtml(style.name === '花庭风貌' ? '花满广场' : style.name === '归钟风貌' ? '车站新钟' : '湖岸长椅')}」解锁</span>`}
+        ${owned ? '<span class="town-style-keepsake">✓ 曾采用</span>' : ''}
+      </div>
+    </article>`;
+  }).join('');
+
+  return `<section class="town-style-panel">
+    <div class="town-style-panel-header"><div><h4>🎨 小镇风貌收藏</h4><p class="muted-text">完工路线解锁对应风貌 · 更换不影响建设进度，曾采用的风貌会永久收录</p></div>
+      <span>${seen.length}/${TownStylesSystem.townStyles.length} 已收藏</span></div>
+    <div class="town-style-grid">${styles}</div>
+    <button type="button" class="ghost-action town-style-reset" onclick="window.clearTownStyleHandler()" ${active ? '' : 'disabled'}>恢复默认风貌</button>
   </section>`;
 }
 

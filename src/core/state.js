@@ -9,7 +9,7 @@ import { initRelationships } from '../systems/relationships.js';
 import { initExplore } from '../systems/explore.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 29;
+export const CURRENT_VERSION = 30;
 
 /**
  * 创建默认游戏状态
@@ -80,7 +80,7 @@ export function createDefaultState() {
         week: "",             // 当前周键（weekKey），跨周清零
         contribution: 0,      // 本周我的捐献贡献
       },
-      projects: { completed: [], progress: {}, invitations: {}, journal: [] },
+      projects: { completed: [], progress: {}, invitations: {}, journal: [], activeStyle: null, seenStyles: [] },
       members: [
         { name: "林镇长", role: "社长", contribution: 520 },
         { name: "麦香面包师", role: "副社长", contribution: 280 },
@@ -367,6 +367,8 @@ export function normalizeState(state) {
     state.community.projects.invitations = {};
   }
   if (!Array.isArray(state.community.projects.journal)) state.community.projects.journal = [];
+  if (typeof state.community.projects.activeStyle !== 'string') state.community.projects.activeStyle = null;
+  if (!Array.isArray(state.community.projects.seenStyles)) state.community.projects.seenStyles = [];
 
   if (!Array.isArray(state.home.layout) || state.home.layout.length !== 36) {
     state.home.layout = Array.from({ length: 36 }, () => null);

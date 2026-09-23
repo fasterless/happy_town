@@ -92,11 +92,11 @@ describe('小镇共建计划', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
     expect(merged.version).toBe(CURRENT_VERSION);
-    expect(merged.community.projects).toEqual({ completed: [], progress: {}, invitations: {}, journal: [] });
+    expect(merged.community.projects).toEqual({ completed: [], progress: {}, invitations: {}, journal: [], activeStyle: null, seenStyles: [] });
 
     merged.community.projects = { completed: null, progress: null };
     normalizeState(merged);
-    expect(merged.community.projects).toEqual({ completed: [], progress: {}, invitations: {}, journal: [] });
+    expect(merged.community.projects).toEqual({ completed: [], progress: {}, invitations: {}, journal: [], activeStyle: null, seenStyles: [] });
   });
 
   it('所有共建路线都有阶段、正向需求和家具奖励', () => {

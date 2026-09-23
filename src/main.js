@@ -52,6 +52,7 @@ import * as StorySystem from './systems/story.js';
 import * as ExploreSystem from './systems/explore.js';
 import * as CosmeticSystem from './systems/cosmetics.js';
 import * as TownProjectsSystem from './systems/townProjects.js';
+import * as TownStylesSystem from './systems/townStyles.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -569,13 +570,26 @@ function renderViews(...viewIds) {
     const render = VIEW_RENDERERS[id];
     if (render) render();
   });
+  applyTownStyle();
   debouncedSave(state);
 }
 
 /** 首次进入 / 存档导入后用：全量渲染一次 */
 function renderAll() {
   Object.values(VIEW_RENDERERS).forEach((render) => render());
+  applyTownStyle();
   debouncedSave(state);
+}
+
+function applyTownStyle() {
+  const root = document.documentElement;
+  root.removeAttribute('data-town-style-preview');
+  const style = TownStylesSystem.getActiveTownStyle(state);
+  if (!style) {
+    root.removeAttribute('data-town-style');
+    return;
+  }
+  root.dataset.townStyle = style.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -808,6 +822,34 @@ window.contributeTownProjectHandler = (projectId, itemKey) => {
 window.inviteTownProjectNeighborHandler = (projectId) => {
   const friendId = $(`project-invite-${projectId}`)?.value;
   runAction(() => TownProjectsSystem.inviteNeighborToTownProject(state, projectId, friendId));
+};
+
+window.previewTownStyleHandler = (styleId) => {
+  const result = TownStylesSystem.previewTownStyle(state, styleId);
+  if (!result.success) {
+    showToast(result.message, 'error');
+    return;
+  }
+  const root = document.documentElement;
+  root.removeAttribute('data-town-style');
+  root.dataset.townStylePreview = styleId;
+  showToast(`正在预览「${result.style.name}」，采用后会永久收录到风貌回顾`, 'success');
+};
+
+window.chooseTownStyleHandler = (styleId) => {
+  const result = runAction(() => TownStylesSystem.chooseTownStyle(state, styleId));
+  if (result?.success) {
+    document.documentElement.removeAttribute('data-town-style-preview');
+    applyTownStyle();
+  }
+};
+
+window.clearTownStyleHandler = () => {
+  const result = runAction(() => TownStylesSystem.clearTownStyle(state));
+  if (result?.success) {
+    document.documentElement.removeAttribute('data-town-style-preview');
+    applyTownStyle();
+  }
 };
 
 // 商城

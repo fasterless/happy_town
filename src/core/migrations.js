@@ -44,6 +44,7 @@ const MIGRATIONS = [
   { fromVersion: 26, migrate: toV27 },
   { fromVersion: 27, migrate: toV28 },
   { fromVersion: 28, migrate: toV29 },
+  { fromVersion: 29, migrate: toV30 },
 ];
 
 /**
@@ -287,6 +288,16 @@ function toV29(state) {          // v28 → v29：居民共建邀请与建设回
   }
   if (!Array.isArray(state.community.projects.journal)) state.community.projects.journal = [];
   state.version = 29;
+}
+
+function toV30(state) {          // v29 → v30：共建风貌收藏
+  if (!state.community || typeof state.community !== 'object') state.community = {};
+  if (!state.community.projects || typeof state.community.projects !== 'object') {
+    state.community.projects = { completed: [], progress: {}, invitations: {}, journal: [], activeStyle: null, seenStyles: [] };
+  }
+  if (typeof state.community.projects.activeStyle !== 'string') state.community.projects.activeStyle = null;
+  if (!Array.isArray(state.community.projects.seenStyles)) state.community.projects.seenStyles = [];
+  state.version = 30;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框
