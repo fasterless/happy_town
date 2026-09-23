@@ -10,6 +10,7 @@ import { hybridRecipes } from '../config/hybrid.js';
 import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
 import { getCharmMultiplier } from './charms.js';
+import { getTalentMultiplier } from './talents.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
 const GOLD_CHANCE = 0.05;
@@ -133,8 +134,8 @@ export function buyExpansion(state) {
  */
 export function getGrowTime(state, crop) {
   let time = applyPetToGrowTime(applyWeatherToGrowTime(crop.growTime, state), state);
-  // 料理增益（如田园沙拉）也参与生长时长
-  time = time / getBuffMultiplier(state, 'growthSpeed');
+  // 料理增益（如田园沙拉）和田园天赋也参与生长时长
+  time = time / getBuffMultiplier(state, 'growthSpeed') / getTalentMultiplier(state, 'growthSpeed');
   return Math.max(1, Math.floor(time));
 }
 
@@ -229,11 +230,12 @@ export function plantCrop(state, plotIndex, cropId) {
  * @returns {Object} { message, exp, goldCount, harvested }
  */
 function harvestPlotInto(state, crop) {
-  // 料理「丰收盛宴」与黄水晶护符：同样一次收获多拿几成（两者叠乘）
+  // 料理「丰收盛宴」、黄水晶护符与田园天赋：同样一次收获多拿几成（三者叠乘）
   const harvested = Math.max(1, Math.round(
     crop.harvestCount
     * getBuffMultiplier(state, "harvestBonus")
     * getCharmMultiplier(state, "harvestBonus")
+    * getTalentMultiplier(state, "harvestBonus")
   ));
   addItem(state, `crop_${crop.id}`, harvested);
   recordCropHarvest(state, crop.id);

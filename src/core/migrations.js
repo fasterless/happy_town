@@ -29,6 +29,7 @@ const MIGRATIONS = [
   { fromVersion: 11, migrate: toV12 },
   { fromVersion: 12, migrate: toV13 },
   { fromVersion: 13, migrate: toV14 },
+  { fromVersion: 14, migrate: toV15 },
 ];
 
 /**
@@ -152,6 +153,14 @@ function toV14(state) {          // v13 → v14：宝石护符
   if (!Array.isArray(state.charms.owned)) state.charms.owned = [];
   if (typeof state.charms.equipped !== 'number') state.charms.equipped = null;
   state.version = 14;
+}
+
+function toV15(state) {          // v14 → v15：天赋树
+  if (!state.talents || typeof state.talents !== 'object') {
+    state.talents = { unlocked: [] };
+  }
+  if (!Array.isArray(state.talents.unlocked)) state.talents.unlocked = [];
+  state.version = 15;
 }
 
 /**

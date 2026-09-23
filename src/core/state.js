@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 14;
+export const CURRENT_VERSION = 15;
 
 /**
  * 创建默认游戏状态
@@ -115,6 +115,10 @@ export function createDefaultState() {
     charms: {
       owned: [],
       equipped: null,
+    },
+    // 天赋树：unlocked 是已点亮的节点 id（天赋点由等级推导，不单独存）
+    talents: {
+      unlocked: [],
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -244,6 +248,7 @@ export function mergeState(base, saved) {
     fishing: { ...base.fishing, ...(saved.fishing || {}) },
     mine: { ...base.mine, ...(saved.mine || {}) },
     charms: { ...base.charms, ...(saved.charms || {}) },
+    talents: { ...base.talents, ...(saved.talents || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -385,6 +390,12 @@ export function normalizeState(state) {
   }
   if (!Array.isArray(state.charms.owned)) state.charms.owned = [];
   if (typeof state.charms.equipped !== "number") state.charms.equipped = null;
+
+  // 天赋树（v15）
+  if (!state.talents || typeof state.talents !== "object") {
+    state.talents = { unlocked: [] };
+  }
+  if (!Array.isArray(state.talents.unlocked)) state.talents.unlocked = [];
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

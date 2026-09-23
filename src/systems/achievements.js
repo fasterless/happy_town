@@ -2,6 +2,7 @@
 import { addRewards } from '../core/inventory.js';
 import { emit, Events } from '../core/events.js';
 import { calculateRoomScore } from './home.js';
+import { talentNodes } from '../config/talents.js';
 
 // 成就配置
 //
@@ -80,6 +81,11 @@ export const achievements = [
   { id: "ingot_10", name: "熔炉新火", desc: "熔炼出10块矿锭", icon: "🔥", category: "矿洞", target: 10, trackKey: "ingot_smelt", rewards: { coin: 800, diamond: 20 } },
   { id: "charm_first", name: "第一枚护符", desc: "做成第一枚宝石护符", icon: "🔶", category: "矿洞", target: 1, trackKey: "charm_craft", rewards: { diamond: 40, coin: 600 } },
   { id: "charm_all", name: "护符大师", desc: "集齐全部4枚宝石护符", icon: "💠", category: "矿洞", target: 4, trackKey: "charm_all", rewards: { diamond: 200, coin: 4000 } },
+
+  // ============ 🌟 天赋 ============
+  { id: "talent_first", name: "初窥门径", desc: "点亮第一个天赋", icon: "🌟", category: "天赋", target: 1, trackKey: "talent_unlock", rewards: { coin: 300, diamond: 10 } },
+  { id: "talent_branch", name: "一门精通", desc: "点满一条天赋分支", icon: "🌳", category: "天赋", target: 1, trackKey: "talent_branch_full", rewards: { diamond: 60, coin: 1500 } },
+  { id: "talent_all", name: "全知全能", desc: "点亮全部20个天赋", icon: "✨", category: "天赋", target: 20, trackKey: "talent_all", rewards: { diamond: 300, coin: 8000 } },
 
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
@@ -282,6 +288,22 @@ function getAchievementProgress(state, achievement) {
 
     case "charm_all":
       return (state.charms?.owned || []).length;
+
+    case "talent_branch_full": {
+      // 点满的分支数：一条分支的全部节点都在已点亮列表里才算
+      const unlocked = new Set(state.talents?.unlocked || []);
+      const byBranch = new Map();
+      talentNodes.forEach((node) => {
+        const entry = byBranch.get(node.branch) || { total: 0, done: 0 };
+        entry.total += 1;
+        if (unlocked.has(node.id)) entry.done += 1;
+        byBranch.set(node.branch, entry);
+      });
+      return [...byBranch.values()].filter((entry) => entry.done === entry.total).length;
+    }
+
+    case "talent_all":
+      return (state.talents?.unlocked || []).length;
 
     default:
       return 0;

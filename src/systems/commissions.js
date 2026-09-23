@@ -19,6 +19,7 @@ import { applyWeatherToReward } from './weather.js';
 import { applyPetToOrderReward } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
 import { getCharmMultiplier } from './charms.js';
+import { getTalentMultiplier } from './talents.js';
 
 // 换一批委托的价钱
 export const REROLL_COST = 50;
@@ -133,6 +134,7 @@ export function completeCommission(state, jobId) {
     applyPetToOrderReward(applyWeatherToReward(base, state), state)
     * getBuffMultiplier(state, 'orderBonus')
     * getCharmMultiplier(state, 'orderBonus')
+    * getTalentMultiplier(state, 'orderBonus')
   );
   const exp = Math.round(getCommissionExp(job) * getBuffMultiplier(state, 'expBonus'));
 

@@ -2048,3 +2048,83 @@
 .seed-name .season-badge {
   margin-left: 4px;
 }
+
+/* ===== 天赋树（第七轮） ===== */
+
+.talent-points {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+}
+
+.talent-points-num {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--green-strong);
+}
+
+.talent-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.talent-branch {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff8e9;
+}
+
+.talent-branch h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+}
+
+.talent-branch h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.talent-branch > .muted-text {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.talent-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.talent-node.unlocked {
+  border-color: var(--green);
+  background: #eef6e8;
+}
+
+.talent-node.available {
+  border-style: dashed;
+  border-color: var(--yellow);
+}
+
+.talent-node-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.talent-node-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}

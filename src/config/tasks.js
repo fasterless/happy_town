@@ -9,6 +9,7 @@ export const dailyTasks = [
   { id: "fishing", name: "湖畔钓鱼 3 次", type: "fishing", target: 3, active: 15, rewards: { coin: 40 } },
   { id: "mine", name: "后山下矿 3 次", type: "mine", target: 3, active: 15, rewards: { coin: 60 } },
   { id: "charm", name: "装备一枚宝石护符", type: "charm", target: 1, active: 15, rewards: { coin: 100, exp: 10 } },
+  { id: "talent", name: "点亮一个天赋", type: "talent", target: 1, active: 15, rewards: { coin: 80, exp: 15 } },
   { id: "craft", name: "完成加工 1 次", type: "craft", target: 1, active: 15, rewards: { coin: 60 } },
   { id: "donate", name: "捐献社区资源 1 次", type: "donate", target: 1, active: 10, rewards: { communityContribution: 30 } },
   { id: "buyFurniture", name: "购买家具 1 次", type: "buyFurniture", target: 1, active: 10, rewards: { coin: 50 } },

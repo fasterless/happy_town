@@ -10,6 +10,7 @@ import { todayKey } from '../utils/time.js';
 import { applyPetToMiningLuck } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
 import { getCharmMultiplier } from './charms.js';
+import { getTalentMultiplier } from './talents.js';
 import {
   MINE_MIN_LEVEL, EXTRA_DIG_COST, oreValues, mineLoot, mineTrove,
   pickaxes, getPickaxe, isMaxPick,
@@ -62,14 +63,15 @@ export function canDig(state) {
 }
 
 /**
- * 幸运倍率：镐越好基础越高，叠加宠物 miningLuck、料理增益与装备的护符。
+ * 幸运倍率：镐越好基础越高，叠加宠物 miningLuck、料理增益、装备的护符与矿洞天赋。
  * 只影响掉落表里 lucky 项的权重。
  */
 function getLuckMultiplier(state) {
   const pickBonus = 1 + (getPickLevel(state) - 1) * 0.12;
   return applyPetToMiningLuck(pickBonus, state)
     * getBuffMultiplier(state, 'miningLuck')
-    * getCharmMultiplier(state, 'miningLuck');
+    * getCharmMultiplier(state, 'miningLuck')
+    * getTalentMultiplier(state, 'miningLuck');
 }
 
 /**

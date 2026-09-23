@@ -86,6 +86,7 @@ function getEventDisplayName(eventName) {
     ingot_smelt: "熔炼矿锭",
     charm_craft: "制作护符",
     charm_equip: "装备护符",
+    talent_unlock: "点亮天赋",
   };
 
   return names[eventName] || eventName;

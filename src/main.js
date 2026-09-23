@@ -44,6 +44,7 @@ import * as CommissionSystem from './systems/commissions.js';
 import * as WishSystem from './systems/wishes.js';
 import * as HelpSystem from './systems/helpBoard.js';
 import * as CharmSystem from './systems/charms.js';
+import * as TalentSystem from './systems/talents.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -504,6 +505,10 @@ function renderWishView() {
   setHtml('wishContent', Renderer.renderWishView(state));
 }
 
+function renderTalentsView() {
+  setHtml('talentsContent', Renderer.renderTalentsView(state));
+}
+
 function renderAdminView() {
   setHtml('statsPanel', Renderer.renderAdminView(state));
 }
@@ -531,6 +536,7 @@ const VIEW_RENDERERS = {
   dishesView: renderDishesView,
   commissionView: renderCommissionView,
   wishView: renderWishView,
+  talentsView: renderTalentsView,
   adminView: renderAdminView,
 };
 
@@ -823,6 +829,9 @@ window.sellOreAllHandler = () => runAction(() => MineSystem.sellAllOre(state), '
 window.craftCharmHandler = (charmId) => runAction(() => CharmSystem.craftCharm(state, charmId), 'levelup');
 window.equipCharmHandler = (charmId) => runAction(() => CharmSystem.equipCharm(state, charmId), 'success');
 window.unequipCharmHandler = () => runAction(() => CharmSystem.unequipCharm(state), 'click');
+
+// 天赋树
+window.unlockTalentHandler = (nodeId) => runAction(() => TalentSystem.unlockTalent(state, nodeId), 'levelup');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {

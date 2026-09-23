@@ -49,6 +49,7 @@ import * as CommissionSystem from '../systems/commissions.js';
 import * as WishSystem from '../systems/wishes.js';
 import * as HelpSystem from '../systems/helpBoard.js';
 import * as CharmSystem from '../systems/charms.js';
+import * as TalentSystem from '../systems/talents.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { commissionJobs } from '../config/commissions.js';
 import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
@@ -1570,6 +1571,56 @@ export function renderCharmsPanel(state) {
     .join('');
 
   return `${active}<div class="charm-grid">${list}</div>`;
+}
+
+/**
+ * 渲染天赋树视图
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderTalentsView(state) {
+  if (!TalentSystem.isTalentsUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${TalentSystem.TALENT_MIN_LEVEL} 解锁天赋树</p>`;
+  }
+
+  const pointsLeft = TalentSystem.getTalentPointsLeft(state);
+  const header = `<div class="talent-points">
+    <span class="talent-points-num">${pointsLeft}</span>
+    <span>点天赋可分配 · 升级就能再拿一点，点亮了永久生效</span>
+  </div>`;
+
+  const branches = TalentSystem.getTalentBoard(state)
+    .map(({ branch, nodes }) => {
+      const lit = nodes.filter((entry) => entry.unlocked).length;
+      const cards = nodes.map(({ node, unlocked, available }) => {
+        let action;
+        if (unlocked) {
+          action = '<span class="season-badge">已点亮</span>';
+        } else if (!available) {
+          action = `<span class="seed-lock">${node.cost} 点</span>`;
+        } else {
+          action = `<button class="small-action" onclick="window.unlockTalentHandler('${node.id}')">
+            点亮 · ${node.cost} 点
+          </button>`;
+        }
+        return `<div class="talent-node ${unlocked ? 'unlocked' : ''} ${available && !unlocked ? 'available' : ''}">
+          <div class="talent-node-info">
+            <h4>${escapeHtml(node.name)}</h4>
+            <p class="muted-text">${escapeHtml(node.desc)}</p>
+          </div>
+          <div class="talent-node-action">${action}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="talent-branch">
+        <h3>${branch.icon} ${escapeHtml(branch.name)} <small>${lit}/${nodes.length}</small></h3>
+        <p class="muted-text">${escapeHtml(branch.desc)} · 按顺序点亮</p>
+        ${cards}
+      </div>`;
+    })
+    .join('');
+
+  return `${header}<div class="talent-board">${branches}</div>`;
 }
 
 /**
