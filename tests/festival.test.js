@@ -1,0 +1,54 @@
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { createDefaultState, mergeState, CURRENT_VERSION } from "../src/core/state.js";
+import { migrateState } from "../src/core/migrations.js";
+import { seasonalEvents } from "../src/config/seasons.js";
+import { getFestivalTasks, claimFestivalTask } from "../src/systems/seasons.js";
+import { getCount } from "../src/core/inventory.js";
+
+afterEach(() => vi.useRealTimers());
+
+function stateAt(month) {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, month - 1, 15, 12));
+  const state = createDefaultState();
+  state.wallet.level = 10;
+  return state;
+}
+
+describe("季节庆典任务", () => {
+  it("活动开始前的历史次数不计入进度", () => {
+    const state = stateAt(9);
+    state.analytics.harvest_crop = 20;
+    const event = seasonalEvents.find((item) => item.id === "autumn_harvest");
+    const task = getFestivalTasks(state, event).find((item) => item.id === "harvest");
+    expect(task.progress).toBe(0);
+    state.analytics.harvest_crop += 5;
+    const done = getFestivalTasks(state, event).find((item) => item.id === "harvest");
+    expect(done.done).toBe(true);
+  });
+
+  it("完成后只能领取一次，未开放活动不能领取", () => {
+    const state = stateAt(9);
+    const before = getCount(state, "coin");
+    getFestivalTasks(state, seasonalEvents.find((item) => item.id === "autumn_harvest"));
+    state.analytics.harvest_crop = 5;
+    const first = claimFestivalTask(state, "autumn_harvest", "harvest");
+    expect(first.success).toBe(true);
+    expect(getCount(state, "coin")).toBe(before + 150);
+    expect(claimFestivalTask(state, "autumn_harvest", "harvest").success).toBe(false);
+    expect(claimFestivalTask(state, "spring_bloom", "plant").success).toBe(false);
+  });
+
+  it("v22 存档补上庆典进度且不改变已领礼物", () => {
+    const saved = createDefaultState();
+    saved.version = 22;
+    saved.seasons = { claimedEventId: "autumn_harvest" };
+    const merged = mergeState(createDefaultState(), saved);
+    merged.version = 22;
+    delete merged.seasons.festivals;
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.seasons.claimedEventId).toBe("autumn_harvest");
+    expect(merged.seasons.festivals).toEqual({});
+  });
+});

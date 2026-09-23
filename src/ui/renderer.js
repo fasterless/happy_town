@@ -1871,6 +1871,11 @@ export function renderSeasonsView(state) {
           ].join("、")}</p>`
         : "";
 
+      const tasks = event.status === "inactive" ? "" : SeasonsSystem.getFestivalTasks(state, event).map((task) => `
+        <div class="festival-task ${task.claimed ? "claimed" : ""}">
+          <span>${escapeHtml(task.name)} ${task.progress}/${task.target}</span>
+          <button class="small-action" onclick="window.claimFestivalTaskHandler('${event.id}', '${task.id}')" ${task.claimed || !task.done ? "disabled" : ""}>${task.claimed ? "已领取" : task.done ? "领取" : "进行中"}</button>
+        </div>`).join("");
       return `<div class="season-card ${event.status}">
         <span class="season-icon">${event.icon}</span>
         <div class="season-info">
@@ -1878,6 +1883,7 @@ export function renderSeasonsView(state) {
           <p class="muted-text">${escapeHtml(event.description)}</p>
           <p class="muted-text">开放时间：${event.startMonth}月 - ${event.endMonth}月 · 礼物：${escapeHtml(formatRewards(event.rewards))}</p>
           ${limited}
+          <div class="festival-tasks">${tasks}</div>
         </div>
         <button class="primary-action" onclick="window.claimSeasonalHandler('${event.id}')" ${!canClaim ? 'disabled' : ''}>
           ${event.status === 'claimed' ? '已领取' : '领取礼物'}

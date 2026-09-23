@@ -15,6 +15,11 @@ export const seasonalEvents = [
     startMonth: 3,
     endMonth: 5,
     description: "小镇开满了鲜花，来领一份春日礼物吧！",
+    tasks: [
+      { id: "plant", name: "种植 3 次", stat: "plant_crop", target: 3, rewards: { coin: 120 } },
+      { id: "visit", name: "拜访邻居 3 次", stat: "friend_visit", target: 3, rewards: { friendPoint: 30 } },
+      { id: "memory", name: "倾听 1 段回忆", stat: "relationship_memory", target: 1, rewards: { diamond: 5 } },
+    ],
     rewards: { crop_1003: 5, crop_1008: 3, diamond: 20 },
     seasonal: {
       crops: [
@@ -36,6 +41,11 @@ export const seasonalEvents = [
     startMonth: 6,
     endMonth: 8,
     description: "湖边挤满了乘凉的居民，还有冰镇西瓜分享！",
+    tasks: [
+      { id: "fish", name: "钓鱼 3 次", stat: "fishing_cast", target: 3, rewards: { coin: 120 } },
+      { id: "cafe", name: "招待 2 位客人", stat: "cafe_serve", target: 2, rewards: { coin: 180 } },
+      { id: "dish", name: "做出 1 道料理", stat: "dish_cook", target: 1, rewards: { diamond: 5 } },
+    ],
     rewards: { crop_1002: 6, fish_1: 3, coin: 300 },
     seasonal: {
       crops: [
@@ -57,6 +67,11 @@ export const seasonalEvents = [
     startMonth: 9,
     endMonth: 10,
     description: "收获的季节到了，镇长给每位居民准备了谢礼。",
+    tasks: [
+      { id: "harvest", name: "收获 5 次", stat: "harvest_crop", target: 5, rewards: { coin: 150 } },
+      { id: "order", name: "完成 2 个订单", stat: "order_complete", target: 2, rewards: { coin: 160 } },
+      { id: "greenhouse", name: "温室种植 1 次", stat: "greenhouse_plant", target: 1, rewards: { diamond: 5 } },
+    ],
     rewards: { crop_1005: 2, crop_1009: 3, wood: 30 },
     seasonal: {
       crops: [
@@ -78,6 +93,11 @@ export const seasonalEvents = [
     startMonth: 11,
     endMonth: 12,
     description: "雪花落在屋顶上，家家户户飘出烘焙的香气。",
+    tasks: [
+      { id: "craft", name: "完成加工 1 次", stat: "craft_finish", target: 1, rewards: { coin: 140 } },
+      { id: "dish", name: "做出 2 道料理", stat: "dish_cook", target: 2, rewards: { coin: 180 } },
+      { id: "visit", name: "拜访邻居 2 次", stat: "friend_visit", target: 2, rewards: { diamond: 5 } },
+    ],
     rewards: { goods_5001: 2, diamond: 30, cloth: 10 },
     seasonal: {
       crops: [
@@ -99,6 +119,11 @@ export const seasonalEvents = [
     startMonth: 1,
     endMonth: 2,
     description: "新的一年，小镇挂起了红灯笼，见面都说吉祥话！",
+    tasks: [
+      { id: "wish", name: "许愿 1 次", stat: "wish_make", target: 1, rewards: { coin: 160 } },
+      { id: "help", name: "帮助邻居 2 次", stat: "help_fulfill", target: 2, rewards: { friendPoint: 40 } },
+      { id: "memory", name: "倾听 1 段回忆", stat: "relationship_memory", target: 1, rewards: { diamond: 8 } },
+    ],
     rewards: { coin: 500, diamond: 50, lottery_ticket: 2 },
     seasonal: {
       crops: [

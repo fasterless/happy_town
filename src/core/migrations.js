@@ -37,6 +37,7 @@ const MIGRATIONS = [
   { fromVersion: 19, migrate: toV20 },
   { fromVersion: 20, migrate: toV21 },
   { fromVersion: 21, migrate: toV22 },
+  { fromVersion: 22, migrate: toV23 },
 ];
 
 /**
@@ -224,6 +225,12 @@ function toV22(state) {          // v21 → v22：邻居专属回忆
   if (!state.relationships || typeof state.relationships !== 'object') state.relationships = { points: {}, claimed: {}, memories: {} };
   if (!state.relationships.memories || typeof state.relationships.memories !== 'object') state.relationships.memories = {};
   state.version = 22;
+}
+
+function toV23(state) {
+  if (!state.seasons || typeof state.seasons !== "object") state.seasons = { claimedEventId: "", festivals: {} };
+  if (!state.seasons.festivals || typeof state.seasons.festivals !== "object") state.seasons.festivals = {};
+  state.version = 23;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

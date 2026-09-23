@@ -1530,7 +1530,10 @@
     text-align: center;
   }
 
-  .season-card {
+  .festival-tasks { display: grid; gap: 6px; margin-top: 8px; }
+.festival-task { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+
+.season-card {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;

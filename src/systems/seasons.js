@@ -47,3 +47,40 @@ export function claimSeasonalReward(state, eventId) {
     state,
   };
 }
+
+export function ensureFestivalBaseline(state, event, date = new Date()) {
+  if (!event?.tasks?.length) return null;
+  if (!state.seasons.festivals || typeof state.seasons.festivals !== "object") state.seasons.festivals = {};
+  const period = `${event.id}:${date.getFullYear()}`;
+  if (!state.seasons.festivals[period]) state.seasons.festivals[period] = { baseline: {}, claimed: [] };
+  const record = state.seasons.festivals[period];
+  if (!record.baseline || typeof record.baseline !== "object") record.baseline = {};
+  if (!Array.isArray(record.claimed)) record.claimed = [];
+  event.tasks.forEach((task) => {
+    if (!(task.id in record.baseline)) record.baseline[task.id] = state.analytics?.[task.stat] || 0;
+  });
+  return record;
+}
+
+export function getFestivalTasks(state, event) {
+  const record = ensureFestivalBaseline(state, event) || { baseline: {}, claimed: [] };
+  return (event.tasks || []).map((task) => {
+    const current = state.analytics?.[task.stat] || 0;
+    const progress = Math.max(0, current - (Number(record.baseline?.[task.id]) || 0));
+    return { ...task, progress: Math.min(progress, task.target), done: progress >= task.target, claimed: record.claimed.includes(task.id) };
+  });
+}
+
+export function claimFestivalTask(state, eventId, taskId) {
+  const event = seasonalEvents.find((item) => item.id === eventId);
+  if (!event || getCurrentSeasonalEvent()?.id !== eventId) return { success: false, message: "当前没有这场庆典" };
+  const record = ensureFestivalBaseline(state, event);
+  const row = getFestivalTasks(state, event).find((task) => task.id === taskId);
+  if (!row) return { success: false, message: "没有这项庆典任务" };
+  if (row.claimed) return { success: false, message: "这项心意已经领过了" };
+  if (!row.done) return { success: false, message: `还差 ${row.target - row.progress} 次` };
+  addRewards(state, row.rewards);
+  record.claimed.push(taskId);
+  logEvent(state, "festival_task");
+  return { success: true, message: `完成庆典任务「${row.name}」，获得${formatRewards(row.rewards)}`, state };
+}
