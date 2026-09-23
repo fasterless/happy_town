@@ -1885,12 +1885,29 @@ function renderYearbookVolumes(state) {
       ${volume.bound
         ? `<span class="explore-souvenir claimed">已装订</span>`
         : `<button class="small-action" onclick="window.bindYearbookHandler('${volume.year}')">装订这一年</button>`}
+      ${ExploreSystem.getYearbookBackfill(state, volume.year).length
+        ? `<button class="small-action" onclick="window.backfillYearbookHandler('${volume.year}')">补记已有收藏</button>`
+        : ""}
     </article>`).join("")}
+    ${renderYearbookCovers(state)}
     <div class="explore-yearbook-milestones">${rewards.map((reward) => reward.claimed
       ? `<span class="explore-souvenir claimed">已领取 ${reward.need} 册</span>`
       : reward.ready
         ? `<button class="small-action" onclick="window.claimYearbookVolumeHandler('${reward.id}')">领取装订奖励 ${reward.need} 册</button>`
         : `<span class="explore-souvenir">${reward.bound}/${reward.need} 册</span>`).join("")}</div>
+  </div>`;
+}
+
+function renderYearbookCovers(state) {
+  const covers = ExploreSystem.getYearbookCovers(state);
+  const current = ExploreSystem.getYearbookCover(state);
+  if (!current) return "";
+  return `<div class="explore-covers">
+    <h4>${current.icon} ${escapeHtml(current.name)}</h4>
+    <p class="explore-album-cover">${escapeHtml(current.line)}</p>
+    <p>${covers.map((cover) => cover.unlocked
+      ? `${cover.icon}${escapeHtml(cover.name)}`
+      : `<span class="muted-text">${cover.icon} ${cover.bound}/${cover.need} 册</span>`).join(" ")}</p>
   </div>`;
 }
 

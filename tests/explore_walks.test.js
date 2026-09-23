@@ -5,7 +5,7 @@ import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
 import { renderExploreView } from '../src/ui/renderer.js';
 import { checkAchievements } from '../src/systems/achievements.js';
-import { claimSouvenirGift, claimWalkSouvenir, bindYearbookVolume, claimYearbookMilestone, claimYearbookVolumeReward,  explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, getYearbookVolume, getYearbookVolumes, recordYearbookEntry,  recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
+import { backfillYearbookVolume, claimSouvenirGift, claimWalkSouvenir, bindYearbookVolume, claimYearbookMilestone, claimYearbookVolumeReward,  explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, getYearbookCover, getYearbookVolume, getYearbookVolumes, recordYearbookEntry,  recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
 import { visitFriend } from '../src/systems/friends.js';
 import { renderHomeView } from '../src/ui/renderer.js';
 
@@ -300,6 +300,34 @@ describe('邻居同行散步', () => {
     expect(claimYearbookVolumeReward(state, "vol_3").success).toBe(false);
     checkAchievements(state);
     expect(state.achievements.unlocked).toContain("yearbook_volume_1");
+    expect(getYearbookCover(state).id).toBe("cover_1");
+  });
+
+  it("补记只补收藏进已有分册，不补发奖励，也补不进没有分册的年份", () => {
+    const state = finishedState();
+    state.story.seenEndings = ["lantern", "garden"];
+    recordYearbookEntry(state, 2024, "souvenirs", { id: "souvenir_grove", name: "林间书签", icon: "🍃" });
+    const coin = state.wallet.coin;
+    const result = backfillYearbookVolume(state, 2024);
+    expect(result.success).toBe(true);
+    expect(result.added).toBe(2);
+    expect(state.wallet.coin).toBe(coin);
+    expect(getYearbookVolume(state, 2024).count).toBe(3);
+    expect(backfillYearbookVolume(state, 2024).success).toBe(false);
+    expect(backfillYearbookVolume(state, 2020).success).toBe(false);
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain("yearbook_backfill_1");
+  });
+
+  it("装订满册数解锁年鉴封面，封面纯展示", () => {
+    const state = finishedState();
+    [2022, 2023, 2024, 2025, 2026].forEach((year) => {
+      recordYearbookEntry(state, year, "endings", { id: "lantern", name: "灯会", icon: "🏮" });
+      expect(bindYearbookVolume(state, year).success).toBe(true);
+    });
+    expect(getYearbookCover(state).id).toBe("cover_5");
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain("yearbook_cover_3");
   });
 
   it("v33 老存档迁移会补齐年鉴分册", () => {

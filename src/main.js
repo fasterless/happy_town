@@ -949,6 +949,7 @@ window.toggleSouvenirDisplayHandler = (souvenirId) => runAction(() => ExploreSys
 window.claimSouvenirGiftHandler = (souvenirId) => runAction(() => ExploreSystem.claimSouvenirGift(state, souvenirId));
 window.claimYearbookHandler = (milestoneId) => runAction(() => ExploreSystem.claimYearbookMilestone(state, milestoneId));
 window.bindYearbookHandler = (year) => runAction(() => ExploreSystem.bindYearbookVolume(state, year));
+window.backfillYearbookHandler = (year) => runAction(() => ExploreSystem.backfillYearbookVolume(state, year));
 window.claimYearbookVolumeHandler = (rewardId) => runAction(() => ExploreSystem.claimYearbookVolumeReward(state, rewardId));
 
 // 养殖栏

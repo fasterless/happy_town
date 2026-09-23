@@ -490,3 +490,46 @@ export function getYearbookVolumeRewards(state) {
     ready: bound >= reward.need && !state.explore.volumes.claimed.includes(reward.id),
   }));
 }
+
+// ---------- round 18 2/3: backfill a past year ----------
+
+export function getYearbookBackfill(state, year) {
+  const volume = getYearbookVolume(state, year);
+  if (!volume) return [];
+  const recorded = new Set(volume.sections.flatMap((section) => section.entries.map((entry) => section.id + ":" + entry.id)));
+  return getYearbook(state).flatMap((section) => section.entries
+    .filter((entry) => !recorded.has(section.id + ":" + entry.id))
+    .map((entry) => ({ sectionId: section.id, entry })));
+}
+
+export function backfillYearbookVolume(state, year) {
+  const volume = getYearbookVolume(state, year);
+  if (!volume) return { success: false, message: year + " 年还没有分册，先记入一条记录", added: 0 };
+  const missing = getYearbookBackfill(state, year);
+  if (!missing.length) return { success: false, message: year + " 年的分册已经记下了所有收藏", added: 0 };
+  missing.forEach(({ sectionId, entry }) => recordYearbookEntry(state, year, sectionId, entry));
+  missing.forEach(() => logEvent(state, "yearbook_backfill"));
+  return { success: true, message: "补记了 " + missing.length + " 条收藏到 " + year + " 年，不补发奖励", added: missing.length, state };
+}
+
+// ---------- round 18 3/3: yearbook covers ----------
+
+export const YEARBOOK_COVERS = [
+  { id: "cover_1", need: 1, icon: "📒", name: "素笺封面", line: "第一册装订好的时候，封面还是空白的。" },
+  { id: "cover_3", need: 3, icon: "📕", name: "三载封面", line: "三年的记录叠在一起，封面也厚了起来。" },
+  { id: "cover_5", need: 5, icon: "📗", name: "长卷封面", line: "五年过去，翻开哪一册都能找到那年的事。" },
+];
+
+function boundVolumeCount(state) {
+  return getYearbookVolumes(state).filter((volume) => volume.bound).length;
+}
+
+export function getYearbookCovers(state) {
+  initExplore(state);
+  const bound = boundVolumeCount(state);
+  return YEARBOOK_COVERS.map((cover) => ({ ...cover, bound, unlocked: bound >= cover.need }));
+}
+
+export function getYearbookCover(state) {
+  return getYearbookCovers(state).filter((cover) => cover.unlocked).slice(-1)[0] || null;
+}

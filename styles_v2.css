@@ -2986,3 +2986,19 @@
   margin: 4px 0;
   font-size: 13px;
 }
+
+.explore-covers {
+  padding: 8px 10px;
+  border: 1px solid var(--green-strong);
+  border-radius: 10px;
+}
+
+.explore-covers h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.explore-covers p {
+  margin: 4px 0;
+  font-size: 13px;
+}
