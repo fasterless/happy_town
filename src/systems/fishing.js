@@ -8,6 +8,7 @@ import { todayKey } from '../utils/time.js';
 import { applyPetToFishingLuck } from './pets.js';
 import { recordFish } from './codex.js';
 import { getBuffMultiplier } from './dishes.js';
+import { getCharmMultiplier } from './charms.js';
 
 // 每日免费钓鱼次数
 const FREE_CASTS_PER_DAY = 5;
@@ -106,8 +107,10 @@ export function castRod(state) {
     spendItem(state, "coin", BAIT_PRICE);
   }
 
-  // 掷鱼（小狐狸在场 + 吃过海鲜浓汤时，稀有鱼权重都会提升）
-  const luck = applyPetToFishingLuck(1, state) * getBuffMultiplier(state, 'fishingLuck');
+  // 掷鱼（小狐狸在场 + 吃过海鲜浓汤 + 装备幻彩护符时，稀有鱼权重都会提升）
+  const luck = applyPetToFishingLuck(1, state)
+    * getBuffMultiplier(state, 'fishingLuck')
+    * getCharmMultiplier(state, 'fishingLuck');
   const fish = weightedPick(fishes, luck);
   addItem(state, `fish_${fish.id}`, 1);
   recordFish(state, fish.id);

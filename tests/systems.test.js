@@ -1,7 +1,7 @@
 // v2 新系统冒烟测试
 //
 // 用 vitest 直接驱动各系统模块，验证核心玩法闭环不报错、规则不冲突。
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createDefaultState, normalizeState } from '../src/core/state.js';
 import * as CraftingSystem from '../src/systems/crafting.js';
 import * as FishingSystem from '../src/systems/fishing.js';
@@ -117,16 +117,22 @@ describe('湖畔钓鱼', () => {
     const state = freshState();
     const coinBefore = state.wallet.coin;
 
-    for (let i = 0; i < 5; i++) {
-      expect(FishingSystem.castRod(state).success).toBe(true);
-    }
-    expect(state.wallet.coin).toBe(coinBefore); // 免费次数内不扣钱
-    expect(FishingSystem.getFreeCastsLeft(state)).toBe(0);
+    // 固定随机：鱼种落在普通鱼上，惊喜概率不触发（惊喜里有金币掉落会干扰断言）
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+    try {
+      for (let i = 0; i < 5; i++) {
+        expect(FishingSystem.castRod(state).success).toBe(true);
+      }
+      expect(state.wallet.coin).toBe(coinBefore); // 免费次数内不扣钱
+      expect(FishingSystem.getFreeCastsLeft(state)).toBe(0);
 
-    // 第6次开始扣 5 金币
-    const sixth = FishingSystem.castRod(state);
-    expect(sixth.success).toBe(true);
-    expect(state.wallet.coin).toBe(coinBefore - 5);
+      // 第6次开始扣 5 金币
+      const sixth = FishingSystem.castRod(state);
+      expect(sixth.success).toBe(true);
+      expect(state.wallet.coin).toBe(coinBefore - 5);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it('钓鱼会入包并可卖出', () => {

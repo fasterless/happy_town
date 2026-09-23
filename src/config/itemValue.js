@@ -20,6 +20,14 @@ const RAW_VALUES = {
   milk: 15,
   speed_ticket: 8,
   lottery_ticket: 12,
+  // 矿石按矿洞卖价估值（与 oreValues 保持一致，避免循环依赖不直接引用）
+  ore_copper: 12,
+  ore_iron: 28,
+  ore_silver: 60,
+  gem_topaz: 120,
+  gem_amethyst: 240,
+  gem_emerald: 480,
+  gem_crystal: 1000,
 };
 
 // 递归计算时的防环标记
@@ -40,8 +48,9 @@ export function itemValue(key) {
     if (crop) return cropMatch[1] === 'gold' ? crop.sellPrice * 3 : crop.sellPrice;
   }
 
-  // 加工成品：原料价值之和（配方之间可能互相引用，如南瓜派要用面包）
-  if (/^goods_\d+$/.test(key || '')) {
+  // 加工成品：原料价值之和（配方之间可能互相引用，如南瓜派要用面包）。
+  // 矿锭也是加工成品，只是结果键是 ingot_ 前缀，和 goods_ 走同一条递归。
+  if (/^(goods_\d+|ingot_\w+)$/.test(key || '')) {
     const recipe = craftingRecipes.find((r) => r.result.key === key);
     if (recipe) {
       if (RESOLVING.has(key)) return 1; // 环保护

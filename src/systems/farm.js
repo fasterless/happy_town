@@ -9,6 +9,7 @@ import { recordCropHarvest } from './codex.js';
 import { hybridRecipes } from '../config/hybrid.js';
 import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
+import { getCharmMultiplier } from './charms.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
 const GOLD_CHANCE = 0.05;
@@ -228,8 +229,12 @@ export function plantCrop(state, plotIndex, cropId) {
  * @returns {Object} { message, exp, goldCount, harvested }
  */
 function harvestPlotInto(state, crop) {
-  // 料理「丰收盛宴」：同样一次收获多拿几成
-  const harvested = Math.max(1, Math.round(crop.harvestCount * getBuffMultiplier(state, "harvestBonus")));
+  // 料理「丰收盛宴」与黄水晶护符：同样一次收获多拿几成（两者叠乘）
+  const harvested = Math.max(1, Math.round(
+    crop.harvestCount
+    * getBuffMultiplier(state, "harvestBonus")
+    * getCharmMultiplier(state, "harvestBonus")
+  ));
   addItem(state, `crop_${crop.id}`, harvested);
   recordCropHarvest(state, crop.id);
   if (isHybridCrop(crop.id)) {

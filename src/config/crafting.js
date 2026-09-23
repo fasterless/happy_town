@@ -75,6 +75,35 @@ export const craftingRecipes = [
     requires: [{ item: "wool", count: 2 }, { item: "cloth", count: 1 }],
     result: { key: "goods_5008", count: 1 },
   },
+  // 矿石熔炼（第六轮 2/3）：矿洞产出的下游出口。
+  // 熔炼时间偏长，但一次出一锭，锭的用途（镐升级/家具/料理）比直接卖掉矿石划算。
+  {
+    id: 5009,
+    name: "铜锭",
+    icon: "🟠",
+    unlockLevel: 10,
+    time: 900,
+    requires: [{ item: "ore_copper", count: 4 }, { item: "stone", count: 2 }],
+    result: { key: "ingot_copper", count: 1 },
+  },
+  {
+    id: 5010,
+    name: "铁锭",
+    icon: "⚪",
+    unlockLevel: 10,
+    time: 1500,
+    requires: [{ item: "ore_iron", count: 4 }, { item: "stone", count: 3 }],
+    result: { key: "ingot_iron", count: 1 },
+  },
+  {
+    id: 5011,
+    name: "银锭",
+    icon: "✨",
+    unlockLevel: 12,
+    time: 2400,
+    requires: [{ item: "ore_silver", count: 3 }, { item: "stone", count: 4 }],
+    result: { key: "ingot_silver", count: 1 },
+  },
 ];
 
 // 配方查询辅助函数

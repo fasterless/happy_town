@@ -91,6 +91,15 @@ export const dishes = [
     buff: { type: "expBonus", value: 1.4, durationSec: 1800 },
     desc: "30 分钟内获得经验 +40%",
   },
+  {
+    id: 7010,
+    name: "矿工便当",
+    icon: "🍱",
+    unlockLevel: 10,
+    requires: [{ item: "ingot_copper", count: 1 }, { item: "goods_5001", count: 1 }, { item: "crop_1002", count: 2 }],
+    buff: { type: "miningLuck", value: 2, durationSec: 1800 },
+    desc: "30 分钟内挖矿稀有掉落权重翻倍",
+  },
 ];
 
 dishes.forEach((dish) => {

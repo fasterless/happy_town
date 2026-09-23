@@ -236,15 +236,16 @@ describe('成就与展示', () => {
 });
 
 describe('存档迁移与形状', () => {
-  it('v12 旧存档迁移到 v13 会补上 mine 字段', () => {
+  it('v12 旧存档迁移后会补上 mine 与 charms 字段', () => {
     const legacy = createDefaultState();
     delete legacy.mine;
     legacy.version = 12;
     const migrated = migrateState(legacy);
-    expect(migrated.version).toBe(13);
+    expect(migrated.version).toBeGreaterThanOrEqual(13);
     expect(migrated.mine).toBeTruthy();
     expect(migrated.mine.pickLevel).toBe(1);
     expect(Array.isArray(migrated.mine.found)).toBe(true);
+    expect(Array.isArray(migrated.charms.owned)).toBe(true);
   });
 
   it('normalizeState 修复损坏的 mine 结构', () => {

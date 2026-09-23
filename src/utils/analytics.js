@@ -83,6 +83,9 @@ function getEventDisplayName(eventName) {
     mine_dig: "后山下矿",
     ore_sell: "卖出矿藏",
     pickaxe_upgrade: "升级镐子",
+    ingot_smelt: "熔炼矿锭",
+    charm_craft: "制作护符",
+    charm_equip: "装备护符",
   };
 
   return names[eventName] || eventName;

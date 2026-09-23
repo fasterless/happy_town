@@ -10,7 +10,7 @@ import { requiresValue } from './itemValue.js';
 
 export const commissionJobs = [
   {
-    id: 8001,
+    id: 9001,
     name: "校车早餐铺",
     icon: "🚌",
     unlockLevel: 5,
@@ -19,7 +19,7 @@ export const commissionJobs = [
     requires: [{ item: "goods_5001", count: 2 }, { item: "crop_1002", count: 3 }],
   },
   {
-    id: 8002,
+    id: 9002,
     name: "花艺工作室",
     icon: "💐",
     unlockLevel: 7,
@@ -28,7 +28,7 @@ export const commissionJobs = [
     requires: [{ item: "crop_1008", count: 4 }, { item: "crop_1003", count: 3 }],
   },
   {
-    id: 8003,
+    id: 9003,
     name: "湖边烧烤摊",
     icon: "🏕️",
     unlockLevel: 9,
@@ -37,7 +37,7 @@ export const commissionJobs = [
     requires: [{ item: "fish_1", count: 4 }, { item: "crop_1004", count: 2 }],
   },
   {
-    id: 8004,
+    id: 9004,
     name: "面包师年度大单",
     icon: "🥖",
     unlockLevel: 11,
@@ -46,7 +46,7 @@ export const commissionJobs = [
     requires: [{ item: "goods_5001", count: 4 }, { item: "goods_5002", count: 2 }, { item: "crop_1006", count: 4 }],
   },
   {
-    id: 8005,
+    id: 9005,
     name: "镇长家宴备料",
     icon: "🎊",
     unlockLevel: 13,
@@ -55,13 +55,22 @@ export const commissionJobs = [
     requires: [{ item: "goods_5005", count: 1 }, { item: "goods_5007", count: 2 }, { item: "crop_1005", count: 2 }],
   },
   {
-    id: 8006,
+    id: 9006,
     name: "剧团巡演便当",
     icon: "🎭",
     unlockLevel: 15,
     payFactor: 2.2,
     fixedCoin: 400,
     requires: [{ item: "goods_5004", count: 3 }, { item: "goods_5008", count: 1 }, { item: "egg", count: 4 }],
+  },
+  {
+    id: 9007,
+    name: "铁匠铺进货",
+    icon: "🔨",
+    unlockLevel: 12,
+    payFactor: 2.0,
+    fixedCoin: 260,
+    requires: [{ item: "ingot_iron", count: 2 }, { item: "ingot_copper", count: 2 }],
   },
 ];
 

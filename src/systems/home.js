@@ -23,6 +23,11 @@ export function buyFurniture(state, furnitureId) {
     return { success: false, message: `需要Lv.${fur.unlockLevel}解锁` };
   }
 
+  // 价格为 0 的家具不在商店出售（如矿锭打造的摆件，走加工坊）
+  if (!fur.price) {
+    return { success: false, message: `${fur.name}不能直接购买，去加工坊打造吧` };
+  }
+
   // 检查货币
   if (!canAfford(state, fur.priceType, fur.price)) {
     const currency = fur.priceType === "coin" ? "金币" : "钻石";

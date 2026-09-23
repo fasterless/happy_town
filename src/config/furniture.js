@@ -14,6 +14,10 @@ export const furniture = [
   { id: 3012, name: "烤炉", icon: "🔥", category: "桌子", priceType: "diamond", price: 60, unlockLevel: 10 },
   { id: 3013, name: "钢琴", icon: "🎹", category: "装饰", priceType: "diamond", price: 110, unlockLevel: 12 },
   { id: 3014, name: "秋千椅", icon: "🪁", category: "椅子", priceType: "diamond", price: 95, unlockLevel: 14 },
+  // 矿锭打造的摆件（第六轮 2/3）：不在商店出售，只能在加工坊用锭打造
+  { id: 3015, name: "铜烛台", icon: "🕯️", category: "装饰", priceType: "coin", price: 0, unlockLevel: 8 },
+  { id: 3016, name: "铁火盆", icon: "🔥", category: "装饰", priceType: "coin", price: 0, unlockLevel: 10 },
+  { id: 3017, name: "银镜", icon: "🪞", category: "装饰", priceType: "coin", price: 0, unlockLevel: 12 },
 ];
 
 // 家具查询辅助函数

@@ -77,6 +77,9 @@ export const achievements = [
   { id: "ore_sell_20", name: "矿石商人", desc: "在矿洞卖出20次矿藏", icon: "💰", category: "矿洞", target: 20, trackKey: "ore_sell", rewards: { coin: 1200 } },
   { id: "pick_max", name: "神装矿镐",   desc: "把镐子升到满级（银镐）", icon: "⛏️", category: "矿洞", target: 4, trackKey: "pickaxe_upgrade", rewards: { diamond: 120, coin: 2500 } },
   { id: "trove_all", name: "矿藏收藏家", desc: "集齐全部7种矿石与宝石", icon: "💠", category: "矿洞", target: 7, trackKey: "mine_trove", rewards: { diamond: 200, coin: 5000 } },
+  { id: "ingot_10", name: "熔炉新火", desc: "熔炼出10块矿锭", icon: "🔥", category: "矿洞", target: 10, trackKey: "ingot_smelt", rewards: { coin: 800, diamond: 20 } },
+  { id: "charm_first", name: "第一枚护符", desc: "做成第一枚宝石护符", icon: "🔶", category: "矿洞", target: 1, trackKey: "charm_craft", rewards: { diamond: 40, coin: 600 } },
+  { id: "charm_all", name: "护符大师", desc: "集齐全部4枚宝石护符", icon: "💠", category: "矿洞", target: 4, trackKey: "charm_all", rewards: { diamond: 200, coin: 4000 } },
 
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
@@ -89,7 +92,7 @@ export const achievements = [
   { id: "commission_all", name: "有求必应", desc: "一天内交完全部委托", icon: "🏆", category: "委托", target: 4,  trackKey: "commission_daily", rewards: { diamond: 80, coin: 1500 } },
   { id: "dish_cook_10", name: "小试牛刀", desc: "做出10道料理",      icon: "🍳", category: "料理", target: 10,  trackKey: "dish_cook", rewards: { coin: 500 } },
   { id: "dish_serve_20", name: "上菜高手", desc: "上菜20次",         icon: "🍽️", category: "料理", target: 20,  trackKey: "dish_serve", rewards: { diamond: 60, coin: 1200 } },
-  { id: "dish_all", name: "料理大师",   desc: "做出过全部 9 道料理", icon: "👨‍🍳", category: "料理", target: 9,   trackKey: "dish_types", rewards: { diamond: 150, coin: 3000 } },
+  { id: "dish_all", name: "料理大师",   desc: "做出过全部 10 道料理", icon: "👨‍🍳", category: "料理", target: 10,  trackKey: "dish_types", rewards: { diamond: 150, coin: 3000 } },
   { id: "wish_7", name: "心诚则灵",   desc: "累计许愿7次",         icon: "⛲", category: "许愿池", target: 7,  trackKey: "wish_make", rewards: { coin: 700, diamond: 15 } },
   { id: "wish_30", name: "池边常客",   desc: "累计许愿30次",        icon: "✨", category: "许愿池", target: 30, trackKey: "wish_make", rewards: { diamond: 80, coin: 2000 } },
   { id: "wish_high", name: "大吉大利", desc: "许愿结算出 1 次「超大吉」", icon: "🎋", category: "许愿池", target: 1, trackKey: "wish_high", rewards: { diamond: 50, lottery_ticket: 2 } },
@@ -272,6 +275,13 @@ function getAchievementProgress(state, achievement) {
 
     case "mine_trove":
       return (state.mine?.found || []).length;
+
+    case "ingot_smelt":
+      // 熔炼次数只统计锭配方（5009-5011），普通加工不算
+      return state.analytics.ingot_smelt || 0;
+
+    case "charm_all":
+      return (state.charms?.owned || []).length;
 
     default:
       return 0;

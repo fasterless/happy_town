@@ -31,6 +31,9 @@ const BASIC_LABELS = {
   gem_amethyst: "紫水晶",
   gem_emerald: "祖母绿",
   gem_crystal: "幻彩水晶",
+  ingot_copper: "铜锭",
+  ingot_iron: "铁锭",
+  ingot_silver: "银锭",
 };
 
 const BASIC_ICONS = {
@@ -54,6 +57,9 @@ const BASIC_ICONS = {
   gem_amethyst: "💜",
   gem_emerald: "💚",
   gem_crystal: "💠",
+  ingot_copper: "🟠",
+  ingot_iron: "⚪",
+  ingot_silver: "✨",
 };
 
 /**

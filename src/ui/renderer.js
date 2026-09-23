@@ -48,6 +48,7 @@ import * as DishSystem from '../systems/dishes.js';
 import * as CommissionSystem from '../systems/commissions.js';
 import * as WishSystem from '../systems/wishes.js';
 import * as HelpSystem from '../systems/helpBoard.js';
+import * as CharmSystem from '../systems/charms.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { commissionJobs } from '../config/commissions.js';
 import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
@@ -55,6 +56,9 @@ import { HELP_REROLL_COST, FAVOR_FOR_BONUS } from '../config/helpBoard.js';
 import { isCloudEnabled as cloudOn, getLastSyncText } from '../core/sync.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { createProgressBar } from './components.js';
+
+// 锭配方领取时附赠的摆件（与 systems/crafting.js 的 FURNISHING_BY_RECIPE 保持一致）
+const FURNISHING_BY_RECIPE = { 5009: 3015, 5010: 3016, 5011: 3017 };
 
 /**
  * 渲染顶部栏
@@ -522,13 +526,15 @@ export function renderHomeView(state, selectedFurnitureId = null) {
       <span class="furniture-icon">${fur.icon}</span>
       <div class="furniture-info">
         <h5>${escapeHtml(fur.name)} ${isSeasonal ? '<small class="season-badge">限定</small>' : ''}</h5>
-        <p class="muted-text">${escapeHtml(fur.category)} · ${moneyLabel(fur.priceType, fur.price)}</p>
+        <p class="muted-text">${escapeHtml(fur.category)} · ${fur.price ? moneyLabel(fur.priceType, fur.price) : '加工坊打造'}</p>
       </div>
       <div class="furniture-count">背包 ${inBag}</div>
       <div class="furniture-buttons">
-        <button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
-          ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
-        </button>
+        ${fur.price
+          ? `<button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
+              ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
+             </button>`
+          : `<span class="seed-lock">熔炼获得</span>`}
         <button class="small-action" onclick="window.selectFurnitureHandler(${fur.id})" ${inBag < 1 ? 'disabled' : ''}>
           ${selected ? '已选中' : '摆放'}
         </button>
@@ -1293,12 +1299,19 @@ export function renderCraftingView(state) {
         })
         .join(" ");
 
+      // 锭配方领取时附赠一件摆件（只送一次），在配方上标注出来
+      const furnishing = FURNISHING_BY_RECIPE[recipe.id];
+      const furnishingNote = furnishing
+        ? `<p class="muted-text">🎁 首次领取附赠摆件 ${getFurniture(furnishing)?.icon || ''}${escapeHtml(getFurniture(furnishing)?.name || '')}</p>`
+        : '';
+
       return `<div class="recipe-item ${!unlocked ? 'locked' : ''}">
         <span class="recipe-icon">${recipe.icon}</span>
         <div class="recipe-info">
           <h4>${escapeHtml(recipe.name)}</h4>
           <div class="order-requires">${requiresHtml}</div>
           <p class="muted-text">⏱ ${formatTime(recipe.time)} → 产出 ${escapeHtml(getItemName(recipe.result.key))}×${recipe.result.count}</p>
+          ${furnishingNote}
         </div>
         <div class="recipe-actions">
           ${unlocked
@@ -1497,6 +1510,66 @@ export function renderMineView(state) {
   `;
 
   return { pit, trove, upgrade };
+}
+
+/**
+ * 渲染宝石护符面板（挂在矿洞视图底部）
+ * @param {Object} state - 游戏状态
+ * @returns {string} HTML字符串
+ */
+export function renderCharmsPanel(state) {
+  if (!CharmSystem.isCharmsUnlocked(state)) {
+    return `<p class="lock-banner">🔒 需要 Lv.${CharmSystem.CHARM_MIN_LEVEL} 解锁宝石护符</p>`;
+  }
+
+  const equipped = CharmSystem.getEquippedCharm(state);
+  const active = equipped
+    ? `<div class="charm-active">
+        <span class="charm-icon">${equipped.icon}</span>
+        <div>
+          <h4>装备中：${escapeHtml(equipped.name)}</h4>
+          <p class="muted-text">${escapeHtml(equipped.desc)}（一直生效，和料理加成叠乘）</p>
+          <button class="ghost-action" onclick="window.unequipCharmHandler()">卸下</button>
+        </div>
+       </div>`
+    : `<p class="muted-text">还没装备护符。做成一枚戴上，就能一直给挖矿/钓鱼/收获/订单一个小加成，
+        同一时刻只能戴一枚，想换就再做一枚。</p>`;
+
+  const list = CharmSystem.getCharmList(state)
+    .map(({ charm, unlocked, owned, equipped: isEquipped, affordable }) => {
+      const requiresHtml = charm.requires.map((req) => {
+        const has = getCount(state, req.item);
+        return `<span class="req-chip ${has >= req.count ? 'enough' : 'not-enough'}">
+          ${getItemIcon(req.item)} ${escapeHtml(getItemName(req.item))} ${has}/${req.count}
+        </span>`;
+      }).join(' ');
+
+      let action;
+      if (!unlocked) {
+        action = `<span class="seed-lock">Lv.${charm.unlockLevel}</span>`;
+      } else if (isEquipped) {
+        action = '<span class="season-badge">装备中</span>';
+      } else if (owned) {
+        action = `<button class="small-action" onclick="window.equipCharmHandler(${charm.id})">装备</button>`;
+      } else {
+        action = `<button class="small-action" onclick="window.craftCharmHandler(${charm.id})" ${affordable ? '' : 'disabled'}>
+          ${affordable ? '制作' : '缺料'}
+        </button>`;
+      }
+
+      return `<div class="charm-card ${owned ? 'owned' : ''} ${!unlocked ? 'locked' : ''}">
+        <span class="charm-icon">${charm.icon}</span>
+        <div class="charm-info">
+          <h4>${escapeHtml(charm.name)}</h4>
+          <div class="order-requires">${requiresHtml}</div>
+          <p class="muted-text">${escapeHtml(charm.desc)}</p>
+        </div>
+        <div class="charm-actions">${action}</div>
+      </div>`;
+    })
+    .join('');
+
+  return `${active}<div class="charm-grid">${list}</div>`;
 }
 
 /**

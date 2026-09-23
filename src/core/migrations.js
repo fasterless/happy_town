@@ -28,6 +28,7 @@ const MIGRATIONS = [
   { fromVersion: 10, migrate: toV11 },
   { fromVersion: 11, migrate: toV12 },
   { fromVersion: 12, migrate: toV13 },
+  { fromVersion: 13, migrate: toV14 },
 ];
 
 /**
@@ -142,6 +143,15 @@ function toV13(state) {          // v12 → v13：后山矿洞
   if (typeof state.mine.pickLevel !== 'number' || state.mine.pickLevel < 1) state.mine.pickLevel = 1;
   if (!Array.isArray(state.mine.found)) state.mine.found = [];
   state.version = 13;
+}
+
+function toV14(state) {          // v13 → v14：宝石护符
+  if (!state.charms || typeof state.charms !== 'object') {
+    state.charms = { owned: [], equipped: null };
+  }
+  if (!Array.isArray(state.charms.owned)) state.charms.owned = [];
+  if (typeof state.charms.equipped !== 'number') state.charms.equipped = null;
+  state.version = 14;
 }
 
 /**

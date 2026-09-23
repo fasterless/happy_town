@@ -8,9 +8,14 @@ import { getCount, addItem, spendItem, hasEnough } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { applyPetToCraftTime } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
+import { furnitureKey } from '../utils/format.js';
+import { recordFurniture } from './codex.js';
 
 // 同时最多进行的加工批次数
 const MAX_QUEUE = 2;
+
+// 锭配方领取时附赠的摆件（矿锭的「摆出来」出口，家具不在商店出售）
+const FURNISHING_BY_RECIPE = { 5009: 3015, 5010: 3016, 5011: 3017 };
 
 /**
  * 加工坊是否解锁（Lv.10，跟随 levels.js 的「作物加工」档位）
@@ -95,13 +100,16 @@ export function claimCrafting(state, queueIndex) {
   state.crafting.queue.splice(queueIndex, 1);
   addItem(state, recipe.result.key, recipe.result.count);
   addItem(state, "exp", 3);
+  const furnishingId = grantFurnishing(state, recipe);
 
   logEvent(state, "craft_finish");
+  if (FURNISHING_BY_RECIPE[recipe.id]) logEvent(state, "ingot_smelt");
   trackDaily(state, "craft", 1);
 
+  const gift = furnishingId ? "，顺手打造了一件摆件放进背包" : "";
   return {
     success: true,
-    message: `加工完成：${recipe.icon}${recipe.name}×${recipe.result.count}，获得3经验`,
+    message: `加工完成：${recipe.icon}${recipe.name}×${recipe.result.count}，获得3经验${gift}`,
     state,
   };
 }
@@ -112,6 +120,7 @@ export function claimCrafting(state, queueIndex) {
 export function claimAllCrafting(state) {
   let claimed = 0;
   let exp = 0;
+  let furnishings = 0;
   const doneNames = [];
 
   // 从后往前遍历，边删边安全
@@ -125,19 +134,22 @@ export function claimAllCrafting(state) {
     state.crafting.queue.splice(i, 1);
     addItem(state, recipe.result.key, recipe.result.count);
     addItem(state, "exp", 3);
+    if (grantFurnishing(state, recipe)) furnishings++;
     claimed++;
     exp += 3;
     doneNames.push(`${recipe.name}×${recipe.result.count}`);
 
     logEvent(state, "craft_finish");
+    if (FURNISHING_BY_RECIPE[recipe.id]) logEvent(state, "ingot_smelt");
     trackDaily(state, "craft", 1);
   }
 
   if (!claimed) return { success: false, message: "没有加工好的成品" };
 
+  const gift = furnishings ? `，顺手打造了${furnishings}件摆件` : "";
   return {
     success: true,
-    message: `领取了${doneNames.join("、")}，获得${exp}经验`,
+    message: `领取了${doneNames.join("、")}，获得${exp}经验${gift}`,
     state,
   };
 }
@@ -177,4 +189,27 @@ export function getRecipeAffordableCount(state, recipe) {
  */
 export function getAllRecipes() {
   return craftingRecipes;
+}
+
+/**
+ * 熔炼配方的附赠：锭配方领取出锭之外，还送一件对应的装饰摆件进背包。
+ * 摆件是「拥有过」语义的收藏，所以只在玩家还没有这件家具时送一次。
+ * @param {Object} state
+ * @param {Object} recipe
+ * @returns {number|null} 送出的家具 id，没有则 null
+ */
+function grantFurnishing(state, recipe) {
+  const furnitureId = FURNISHING_BY_RECIPE[recipe.id];
+  if (!furnitureId) return null;
+  if (getCount(state, furnitureKey(furnitureId)) > 0) return null;
+  if (ownsFurnishingInRoom(state, furnitureId)) return null;
+
+  addItem(state, furnitureKey(furnitureId), 1);
+  recordFurniture(state, furnitureId);
+  return furnitureId;
+}
+
+/** 房间里是否已经摆着这件家具 */
+function ownsFurnishingInRoom(state, furnitureId) {
+  return (state.home?.layout || []).some((item) => item && item.id === furnitureId);
 }

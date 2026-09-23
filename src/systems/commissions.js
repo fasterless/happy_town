@@ -18,6 +18,7 @@ import { emit, Events } from '../core/events.js';
 import { applyWeatherToReward } from './weather.js';
 import { applyPetToOrderReward } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
+import { getCharmMultiplier } from './charms.js';
 
 // 换一批委托的价钱
 export const REROLL_COST = 50;
@@ -126,11 +127,12 @@ export function completeCommission(state, jobId) {
 
   job.requires.forEach((req) => spendItem(state, req.item, req.count));
 
-  // 报酬：基准 × 天气 × 宠物 × 料理加成
+  // 报酬：基准 × 天气 × 宠物 × 料理加成 × 护符加成
   const base = getCommissionCoin(job);
   const coin = Math.round(
     applyPetToOrderReward(applyWeatherToReward(base, state), state)
     * getBuffMultiplier(state, 'orderBonus')
+    * getCharmMultiplier(state, 'orderBonus')
   );
   const exp = Math.round(getCommissionExp(job) * getBuffMultiplier(state, 'expBonus'));
 

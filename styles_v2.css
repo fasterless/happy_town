@@ -1502,6 +1502,73 @@
   line-height: 1;
 }
 
+/* --- 宝石护符 -------------------------------------------------------------- */
+
+.charm-content {
+  margin-bottom: 20px;
+}
+
+.charm-active {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: #fff6df;
+}
+
+.charm-active h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.charm-active p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+.charm-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.charm-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.charm-card.owned {
+  border-color: var(--yellow);
+}
+
+.charm-card.locked {
+  opacity: 0.6;
+}
+
+.charm-icon {
+  font-size: 30px;
+  line-height: 1;
+  text-align: center;
+}
+
+.charm-info h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.charm-info p {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
 /* --- 幸运转盘 ------------------------------------------------------------ */
 
 .lottery-panel {

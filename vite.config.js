@@ -3,6 +3,11 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   root: '.',
   publicDir: 'assets',
+  // 测试文件直接使用 describe/it/expect 全局，不逐个导入。
+  // vitest 1.6 起默认不注入全局，这里显式打开，保证 npm test 在任何环境下一致。
+  test: {
+    globals: true,
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

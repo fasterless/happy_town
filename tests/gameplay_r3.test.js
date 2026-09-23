@@ -68,7 +68,8 @@ describe('料理铺配置', () => {
         const isCrop = /^(crop|gold)_\d+$/.test(req.item);
         const isGoods = /^goods_\d+$/.test(req.item);
         const isFish = /^fish_\d+$/.test(req.item);
-        expect(isCrop || isGoods || isFish || knownKeys.has(req.item)).toBe(true);
+        const isIngot = /^ingot_\w+$/.test(req.item);
+        expect(isCrop || isGoods || isFish || isIngot || knownKeys.has(req.item)).toBe(true);
       });
       expect(d.value).toBeGreaterThan(0);
     });
@@ -291,10 +292,10 @@ describe('小镇委托榜', () => {
   });
 
   it('等级不够的委托不在榜上', () => {
-    const state = freshState(5); // 只有 8001（Lv.5）可见
+    const state = freshState(5); // 只有「校车早餐铺」（Lv.5）可见
     const board = getCommissionBoard(state);
     expect(board).toHaveLength(1);
-    expect(board[0].job.id).toBe(8001);
+    expect(board[0].job.name).toBe('校车早餐铺');
   });
 
   it('换一批要花 50 金币，钱不够被拒', () => {

@@ -43,6 +43,7 @@ import * as DishSystem from './systems/dishes.js';
 import * as CommissionSystem from './systems/commissions.js';
 import * as WishSystem from './systems/wishes.js';
 import * as HelpSystem from './systems/helpBoard.js';
+import * as CharmSystem from './systems/charms.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -470,6 +471,7 @@ function renderMineView() {
   setHtml('minePit', mine.pit);
   setHtml('mineTrove', mine.trove);
   setHtml('mineUpgrade', mine.upgrade);
+  setHtml('charmPanel', Renderer.renderCharmsPanel(state));
 }
 
 function renderLotteryView() {
@@ -816,6 +818,11 @@ window.sellOreHandler = (key) => {
   }
 };
 window.sellOreAllHandler = () => runAction(() => MineSystem.sellAllOre(state), 'coin');
+
+// 宝石护符
+window.craftCharmHandler = (charmId) => runAction(() => CharmSystem.craftCharm(state, charmId), 'levelup');
+window.equipCharmHandler = (charmId) => runAction(() => CharmSystem.equipCharm(state, charmId), 'success');
+window.unequipCharmHandler = () => runAction(() => CharmSystem.unequipCharm(state), 'click');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {

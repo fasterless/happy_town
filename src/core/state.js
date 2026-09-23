@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 13;
+export const CURRENT_VERSION = 14;
 
 /**
  * 创建默认游戏状态
@@ -110,6 +110,11 @@ export function createDefaultState() {
       staminaUsed: 0,      // 今天已消耗的体力
       totalDigs: 0,        // 累计下矿次数
       found: [],           // 挖到过的矿石/宝石键（曾经拥有语义，收藏册用）
+    },
+    // 宝石护符：owned 是已做成的护符 id，equipped 是当前装备的那一枚
+    charms: {
+      owned: [],
+      equipped: null,
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -238,6 +243,7 @@ export function mergeState(base, saved) {
     crafting: { ...base.crafting, ...(saved.crafting || {}) },
     fishing: { ...base.fishing, ...(saved.fishing || {}) },
     mine: { ...base.mine, ...(saved.mine || {}) },
+    charms: { ...base.charms, ...(saved.charms || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -372,6 +378,13 @@ export function normalizeState(state) {
   if (typeof state.mine.staminaUsed !== "number") state.mine.staminaUsed = 0;
   if (typeof state.mine.totalDigs !== "number") state.mine.totalDigs = 0;
   if (!Array.isArray(state.mine.found)) state.mine.found = [];
+
+  // 宝石护符（v14）
+  if (!state.charms || typeof state.charms !== "object") {
+    state.charms = { owned: [], equipped: null };
+  }
+  if (!Array.isArray(state.charms.owned)) state.charms.owned = [];
+  if (typeof state.charms.equipped !== "number") state.charms.equipped = null;
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

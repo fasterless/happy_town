@@ -10,16 +10,17 @@ import { GAME_CONFIG } from '../config/constants.js';
 import { getSeasonalOrders } from '../config/seasons.js';
 import { todayKey } from '../utils/time.js';
 import { getBuffMultiplier } from './dishes.js';
+import { getCharmMultiplier } from './charms.js';
 
 /**
- * 计算订单的实际金币奖励（含天气、宠物与料理加成）
+ * 计算订单的实际金币奖励（含天气、宠物、料理与护符加成）
  * @param {Object} state - 游戏状态
  * @param {Object} order - 订单配置
  * @returns {number} 实际金币
  */
 export function getOrderCoinReward(state, order) {
   const base = applyPetToOrderReward(applyWeatherToReward(order.coin, state), state);
-  return Math.round(base * getBuffMultiplier(state, 'orderBonus'));
+  return Math.round(base * getBuffMultiplier(state, 'orderBonus') * getCharmMultiplier(state, 'orderBonus'));
 }
 
 /**
