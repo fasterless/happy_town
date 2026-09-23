@@ -6,6 +6,7 @@ import { talentNodes } from '../config/talents.js';
 import { titles, frames } from '../config/cosmetics.js';
 import { storyChapters } from '../config/story.js';
 import { getUnlockedCosmeticCount } from './cosmetics.js';
+import { townProjects } from '../config/townProjects.js';
 
 // 成就配置
 //
@@ -112,6 +113,8 @@ export const achievements = [
   { id: "story_first", name: "故事开场", desc: "完成第一章剧情", icon: "📖", category: "剧情", target: 1, trackKey: "story_chapter", rewards: { coin: 200, diamond: 5 } },
   { id: "story_endings", name: "三种风景", desc: "看过全部 3 种剧情装饰结局", icon: "🏞️", category: "剧情", target: 3, trackKey: "story_seen_endings", rewards: { diamond: 30, coin: 600 } },
   { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: storyChapters.length, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
+  { id: "town_project_first", name: "第一份共建", desc: "完成一条小镇共建路线", icon: "🧱", category: "社区", target: 1, trackKey: "town_project_complete", rewards: { coin: 500, diamond: 10 } },
+  { id: "town_projects_all", name: "小镇新风貌", desc: "完成全部小镇共建路线", icon: "🏘️", category: "社区", target: townProjects.length, trackKey: "town_project_complete", rewards: { diamond: 60, coin: 1500 } },
 
   // ============ 🎖️ 收藏 ============
   { id: "cosmetic_first", name: "有点面子", desc: "装备一个称号或头像框", icon: "🎖️", category: "收藏", target: 1, trackKey: "cosmetic_equip", rewards: { coin: 200 } },
@@ -227,6 +230,7 @@ function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
   if (achievement.trackKey === "story_seen_endings") return state.story?.seenEndings?.length || 0;
+  if (achievement.trackKey === "town_project_complete") return state.community?.projects?.completed?.length || 0;
   if (achievement.trackKey === "explore_found") return state.explore?.found?.length || 0;
   if (achievement.trackKey === "relationship_close") {
     const claimed = state.relationships?.claimed || {};

@@ -18,6 +18,9 @@ export const furniture = [
   { id: 3015, name: "铜烛台", icon: "🕯️", category: "装饰", priceType: "coin", price: 0, unlockLevel: 8 },
   { id: 3016, name: "铁火盆", icon: "🔥", category: "装饰", priceType: "coin", price: 0, unlockLevel: 10 },
   { id: 3017, name: "银镜", icon: "🪞", category: "装饰", priceType: "coin", price: 0, unlockLevel: 12 },
+  { id: 3018, name: "广场花圃模型", icon: "🌼", category: "共建纪念", priceType: "coin", price: 0, unlockLevel: 1, source: "小镇共建" },
+  { id: 3019, name: "车站新钟模型", icon: "🕰️", category: "共建纪念", priceType: "coin", price: 0, unlockLevel: 1, source: "小镇共建" },
+  { id: 3020, name: "湖岸长椅模型", icon: "🌊", category: "共建纪念", priceType: "coin", price: 0, unlockLevel: 1, source: "小镇共建" },
 ];
 
 // 家具查询辅助函数

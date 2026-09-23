@@ -57,6 +57,8 @@ import * as CafeSystem from '../systems/cafe.js';
 import * as StorySystem from '../systems/story.js';
 import * as ExploreSystem from '../systems/explore.js';
 import * as CosmeticSystem from '../systems/cosmetics.js';
+import * as TownProjectsSystem from '../systems/townProjects.js';
+import { townProjects } from '../config/townProjects.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { getCafePrice } from '../config/cafe.js';
 import { commissionJobs } from '../config/commissions.js';
@@ -589,7 +591,7 @@ export function renderHomeView(state, selectedFurnitureId = null) {
       <span class="furniture-icon">${fur.icon}</span>
       <div class="furniture-info">
         <h5>${escapeHtml(fur.name)} ${isSeasonal ? '<small class="season-badge">限定</small>' : ''}</h5>
-        <p class="muted-text">${escapeHtml(fur.category)} · ${fur.price ? moneyLabel(fur.priceType, fur.price) : '加工坊打造'}</p>
+        <p class="muted-text">${escapeHtml(fur.category)} · ${fur.price ? moneyLabel(fur.priceType, fur.price) : escapeHtml(fur.source || '加工坊打造')}</p>
       </div>
       <div class="furniture-count">背包 ${inBag}</div>
       <div class="furniture-buttons">
@@ -597,7 +599,7 @@ export function renderHomeView(state, selectedFurnitureId = null) {
           ? `<button class="small-action" onclick="window.buyFurnitureHandler(${fur.id})" ${!unlocked ? 'disabled' : ''}>
               ${unlocked ? '购买' : `Lv.${fur.unlockLevel}`}
              </button>`
-          : `<span class="seed-lock">熔炼获得</span>`}
+          : `<span class="seed-lock">${escapeHtml(fur.source || '熔炼获得')}</span>`}
         <button class="small-action" onclick="window.selectFurnitureHandler(${fur.id})" ${inBag < 1 ? 'disabled' : ''}>
           ${selected ? '已选中' : '摆放'}
         </button>
@@ -780,6 +782,7 @@ export function renderCommunityView(state) {
         <p>和邻居一起把广场的喷泉修起来吧。</p>
         <button class="primary-action" onclick="window.joinCommunityHandler()">加入社区</button>
       </div>
+      ${renderTownProjectsPanel(state)}
     `;
   }
 
@@ -856,7 +859,51 @@ export function renderCommunityView(state) {
       </div>
       ${weeklyPanel}
     </div>
+    ${renderTownProjectsPanel(state)}
   `;
+}
+
+function renderTownProjectsPanel(state) {
+  if (!TownProjectsSystem.areTownProjectsUnlocked(state)) return '';
+
+  const cards = townProjects.map((project) => {
+    const status = TownProjectsSystem.getTownProjectProgress(state, project.id);
+    if (status.completed) {
+      const rewardKey = Object.keys(project.stages.at(-1).reward).find((key) => key.startsWith('f_'));
+      const keepsake = rewardKey ? getFurniture(Number(rewardKey.slice(2))) : null;
+      return `<article class="town-project completed">
+        <div class="town-project-heading"><span>${project.icon}</span><div><h4>${escapeHtml(project.name)}</h4><p>${escapeHtml(project.description)}</p></div></div>
+        <p class="town-project-done">✓ 已完工 · ${keepsake ? `${keepsake.icon} ${escapeHtml(keepsake.name)}已收入图鉴` : '建设纪念已收录'}</p>
+        <div class="build-track"><span style="width:100%"></span></div>
+      </article>`;
+    }
+
+    const stage = status.currentStage;
+    const materials = stage.accepts.map((accept) => {
+      const owned = getCount(state, accept.item);
+      const needed = Math.ceil((stage.target - status.points) / accept.value);
+      const amount = Math.min(owned, needed, 10) || 1;
+      return `<div class="town-project-donate-row">
+        <span>${getItemIcon(accept.item)} ${escapeHtml(getItemName(accept.item))}<small>${owned}持有 · ${accept.value}进度/份</small></span>
+        <input type="number" min="1" max="${Math.min(owned, needed)}" value="${amount}" id="project-${project.id}-${accept.item}" ${owned < 1 ? 'disabled' : ''}>
+        <button type="button" class="small-action" onclick="window.contributeTownProjectHandler('${project.id}','${accept.item}')" ${owned < 1 ? 'disabled' : ''}>提交</button>
+      </div>`;
+    }).join('');
+
+    return `<article class="town-project">
+      <div class="town-project-heading"><span>${project.icon}</span><div><h4>${escapeHtml(project.name)}</h4><p>${escapeHtml(project.description)}</p></div></div>
+      <h5>阶段 ${status.stage + 1}/${status.totalStages} · ${escapeHtml(stage.label)}</h5>
+      <div class="build-track"><span style="width:${status.percent}%"></span></div>
+      <p class="muted-text">${status.points}/${stage.target} · 阶段完成：${escapeHtml(formatRewards(stage.reward))}</p>
+      <div class="town-project-materials">${materials}</div>
+    </article>`;
+  }).join('');
+
+  return `<section class="town-projects">
+    <div class="town-projects-header"><div><h3>🧱 小镇共建计划</h3><p class="muted-text">第二季后的长期建设 · 三条路线可同时推进，进度永久保留</p></div>
+      <span>${(Array.isArray(state.community.projects?.completed) ? state.community.projects.completed.length : 0)}/${townProjects.length} 完工</span></div>
+    <div class="town-project-grid">${cards}</div>
+  </section>`;
 }
 
 /**

@@ -51,6 +51,7 @@ import * as CafeSystem from './systems/cafe.js';
 import * as StorySystem from './systems/story.js';
 import * as ExploreSystem from './systems/explore.js';
 import * as CosmeticSystem from './systems/cosmetics.js';
+import * as TownProjectsSystem from './systems/townProjects.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -796,6 +797,12 @@ window.donateHandler = (itemKey) => {
     playSound('levelup');
     showToast(`⛲ 第${stageBefore}阶段完工！奖励已发放`, 'success', 3200);
   }
+};
+
+window.contributeTownProjectHandler = (projectId, itemKey) => {
+  const input = $(`project-${projectId}-${itemKey}`);
+  const amount = Math.floor(Number(input?.value));
+  runAction(() => TownProjectsSystem.contributeToTownProject(state, projectId, itemKey, amount), 'coin');
 };
 
 // 商城

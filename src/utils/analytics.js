@@ -99,6 +99,8 @@ function getEventDisplayName(eventName) {
     cafe_tip: "收到小费",
     story_chapter: "完成剧情章节",
     story_ending: "选择剧情结局",
+    town_project_donate: "参与小镇共建",
+    town_project_complete: "完成小镇共建",
     cosmetic_equip: "装备称号或头像框",
   };
 
