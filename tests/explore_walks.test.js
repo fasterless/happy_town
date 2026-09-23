@@ -5,7 +5,7 @@ import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
 import { renderExploreView } from '../src/ui/renderer.js';
 import { checkAchievements } from '../src/systems/achievements.js';
-import { backfillYearbookVolume, claimSouvenirGift, claimWalkSouvenir, bindYearbookVolume, claimYearbookMilestone, claimYearbookVolumeReward,  explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, getYearbookCover, getYearbookVolume, getYearbookVolumes, recordYearbookEntry,  recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
+import { backfillYearbookVolume, claimSouvenirGift, claimWalkSouvenir, bindYearbookVolume, claimYearbookMilestone, claimYearbookVolumeReward,  explorePlace, getClaimedWalkSouvenirs, getExploreWalkJournal, getSeasonRoutes, getSouvenirDisplay, getSouvenirRecognition, getWalkAlbum, getWalkSeason, getYearbook, getYearbookCount, getYearbookCover, getYearbookRecall, getYearbookRecallLine, getYearbookVolume, getYearbookVolumes, recordYearbookEntry,  recordSeasonWalk, toggleSouvenirDisplay, walkWithNeighbor } from '../src/systems/explore.js';
 import { visitFriend } from '../src/systems/friends.js';
 import { renderHomeView } from '../src/ui/renderer.js';
 
@@ -328,6 +328,29 @@ describe('邻居同行散步', () => {
     expect(getYearbookCover(state).id).toBe("cover_5");
     checkAchievements(state);
     expect(state.achievements.unlocked).toContain("yearbook_cover_3");
+  });
+
+  it("翻看往年已装订的分册时邻居多一句回忆，当年不算，也不加数值", () => {
+    const state = finishedState();
+    befriendAll(state);
+    state.story.seenEndings = ["lantern"];
+    recordYearbookEntry(state, 2024, "endings", { id: "lantern", name: "灯会", icon: "🏮" });
+    expect(getYearbookRecall(state)).toBe("");
+    expect(bindYearbookVolume(state, 2024).success).toBe(true);
+    recordYearbookEntry(state, new Date().getFullYear(), "endings", { id: "garden", name: "花园", icon: "🌷" });
+    bindYearbookVolume(state, new Date().getFullYear());
+    expect(getYearbookRecallLine(state, 2024)).toContain("2024 年的年鉴");
+    expect(getYearbookRecallLine(state, new Date().getFullYear())).toBe("");
+    const points = state.wallet.friendPoint;
+    const coin = state.wallet.coin;
+    const result = visitFriend(state, "npc_mayor");
+    expect(result.message).toContain("2024 年的年鉴");
+    expect(result.message).not.toContain(new Date().getFullYear() + " 年的年鉴");
+    expect(state.wallet.friendPoint - points).toBeLessThan(20);
+    expect(state.wallet.coin).toBe(coin);
+    checkAchievements(state);
+    expect(state.achievements.unlocked).toContain("yearbook_recall_1");
+    expect(renderExploreView(state)).toContain("2024 年的年鉴");
   });
 
   it("v33 老存档迁移会补齐年鉴分册", () => {

@@ -75,6 +75,7 @@ function getEventDisplayName(eventName) {
     yearbook_bind: "装订年鉴分册",
     yearbook_volume: "领取年鉴装订奖励",
     yearbook_backfill: "年鉴补记",
+    yearbook_recall: "翻看往年年鉴",
     neighbor_gift: "邻居回礼",
     schedule_visit: "按日程拜访",
     relationship_gain: "提升邻居熟悉度",

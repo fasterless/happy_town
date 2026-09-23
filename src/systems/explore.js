@@ -533,3 +533,32 @@ export function getYearbookCovers(state) {
 export function getYearbookCover(state) {
   return getYearbookCovers(state).filter((cover) => cover.unlocked).slice(-1)[0] || null;
 }
+
+// ---------- round 19 1/3: rereading a past volume ----------
+
+const VOLUME_RECALLS = [
+  "说翻开那一册时，像回到了那年的傍晚",
+  "把那一年的事又讲了一遍，语气比从前慢",
+  "指着分册里的一页，说还记得那天的天气",
+  "笑着说那一册比记忆里厚了不少",
+  "轻声念出分册上的一行字，然后停了停",
+];
+
+function boundPastVolumes(state) {
+  return getYearbookVolumes(state).filter((volume) => volume.bound && volume.year < String(new Date().getFullYear()));
+}
+
+export function getYearbookRecallLine(state, year) {
+  const past = boundPastVolumes(state);
+  const index = past.findIndex((volume) => volume.year === String(year));
+  if (index < 0) return "";
+  return past[index].year + " 年的年鉴，" + VOLUME_RECALLS[index % VOLUME_RECALLS.length];
+}
+
+export function getYearbookRecall(state) {
+  initExplore(state);
+  const lines = boundPastVolumes(state).map((volume) => getYearbookRecallLine(state, volume.year)).filter(Boolean);
+  if (!lines.length) return "";
+  logEvent(state, "yearbook_recall");
+  return "邻居翻看往年分册：" + lines.join("；");
+}

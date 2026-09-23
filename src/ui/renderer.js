@@ -1893,7 +1893,7 @@ function renderYearbookVolumes(state) {
       <h5>${escapeHtml(volume.year)} 年 <small>${volume.count} 条</small></h5>
       ${volume.sections.filter((section) => section.entries.length).map((section) => `<p>${section.icon} ${section.entries.map((entry) => escapeHtml(entry.name)).join("、")}</p>`).join("")}
       ${volume.bound
-        ? `<span class="explore-souvenir claimed">已装订</span>`
+        ? `<span class="explore-souvenir claimed">已装订</span>${ExploreSystem.getYearbookRecallLine(state, volume.year) ? `<p class="explore-recall">${escapeHtml(ExploreSystem.getYearbookRecallLine(state, volume.year))}</p>` : ""}`
         : `<button class="small-action" onclick="window.bindYearbookHandler('${volume.year}')">装订这一年</button>`}
       ${ExploreSystem.getYearbookBackfill(state, volume.year).length
         ? `<button class="small-action" onclick="window.backfillYearbookHandler('${volume.year}')">补记已有收藏</button>`

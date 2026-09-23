@@ -70,6 +70,7 @@ export const achievements = [
   { id: "yearbook_volume_1", name: "第一册年鉴", desc: "装订 1 册年鉴分册", icon: "📚", category: "收藏", target: 1, trackKey: "yearbook_bind", rewards: { coin: 400 } },
   { id: "yearbook_backfill_1", name: "旧年补记", desc: "把已有收藏补记进年鉴分册", icon: "📝", category: "收藏", target: 1, trackKey: "yearbook_backfill", rewards: { coin: 200 } },
   { id: "yearbook_cover_3", name: "三载封面", desc: "解锁 3 本年鉴封面", icon: "📕", category: "收藏", target: 3, trackKey: "yearbook_cover", rewards: { diamond: 15 } },
+  { id: "yearbook_recall_1", name: "旧年重逢", desc: "拜访时听邻居翻看往年年鉴", icon: "📒", category: "收藏", target: 1, trackKey: "yearbook_recall", rewards: { coin: 200 } },
 
   { id: "festival_reward_1", name: "第一份纪念", desc: "兑换 1 份庆典收藏", icon: "🎁", category: "里程碑", target: 1, trackKey: "festival_reward", rewards: { diamond: 20, coin: 300 } },
   { id: "festival_3", name: "庆典常客", desc: "领取 3 次庆典任务奖励", icon: "🎊", category: "里程碑", target: 3, trackKey: "festival_task", rewards: { coin: 300, diamond: 10 } },

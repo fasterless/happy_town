@@ -2987,6 +2987,11 @@
   font-size: 13px;
 }
 
+.explore-recall {
+  color: var(--ink-soft, #6b6258);
+  font-style: italic;
+}
+
 .explore-covers {
   padding: 8px 10px;
   border: 1px solid var(--green-strong);
