@@ -32,6 +32,8 @@ function fillChapter(state) {
     if (check.served) state.cafe.totalServed = check.need;
     if (check.charms) state.charms.owned = Array.from({ length: check.need }, (_, i) => 8000 + i);
     if (check.talents) state.talents.unlocked = Array.from({ length: check.need }, (_, i) => `n${i}`);
+    if (check.explore) state.explore.found = Array.from({ length: check.need }, (_, i) => `find${i}`);
+    if (check.festivalRewards) state.seasons.festivalRewards = Array.from({ length: check.need }, (_, i) => `festival${i}`);
   });
 }
 
@@ -92,7 +94,7 @@ describe('小镇剧情', () => {
     expect(result.message).toContain('Lv.3');
   });
 
-  it('七章全部完成后进入通关状态', () => {
+  it('全部章节完成后进入通关状态', () => {
     const state = freshState(20);
     storyChapters.forEach(() => {
       fillChapter(state);
@@ -111,7 +113,7 @@ describe('小镇剧情', () => {
   });
 
   it('章节配置完整：任务目标为正，奖励非空', () => {
-    expect(storyChapters.length).toBe(7);
+    expect(storyChapters.length).toBeGreaterThanOrEqual(10);
     const ids = new Set();
     storyChapters.forEach((chapter) => {
       expect(chapter.tasks.length).toBeGreaterThan(0);
@@ -149,5 +151,21 @@ describe('存档迁移 v18', () => {
     state.story = { chapterIndex: '坏掉了' };
     normalizeState(state);
     expect(state.story.chapterIndex).toBe(0);
+  });
+});
+
+describe("第二季剧情", () => {
+  it("通关第一章季后进入第二季，历史探索进度直接计入", () => {
+    const state = createDefaultState();
+    state.wallet.level = 16;
+    state.story.chapterIndex = 7;
+    state.analytics.explore_visit = 3;
+    state.explore.found = ["twig", "pebble", "ticket"];
+    const current = getCurrentChapter(state);
+    expect(current.chapter.id).toBe("s2ch1");
+    expect(current.tasks.every((task) => task.done)).toBe(true);
+    expect(claimChapter(state).success).toBe(true);
+    expect(state.story.chapterIndex).toBe(8);
+    expect(storyChapters).toHaveLength(10);
   });
 });

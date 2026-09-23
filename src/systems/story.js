@@ -42,6 +42,8 @@ function taskProgress(state, task) {
   if (check.served) return state.cafe?.totalServed || 0;
   if (check.charms) return (state.charms?.owned || []).length;
   if (check.talents) return (state.talents?.unlocked || []).length;
+  if (check.explore) return state.explore?.found?.length || 0;
+  if (check.festivalRewards) return state.seasons?.festivalRewards?.length || 0;
   return 0;
 }
 

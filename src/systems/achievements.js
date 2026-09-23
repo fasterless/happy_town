@@ -4,6 +4,7 @@ import { emit, Events } from '../core/events.js';
 import { calculateRoomScore } from './home.js';
 import { talentNodes } from '../config/talents.js';
 import { titles, frames } from '../config/cosmetics.js';
+import { storyChapters } from '../config/story.js';
 import { getUnlockedCosmeticCount } from './cosmetics.js';
 
 // 成就配置
@@ -109,7 +110,7 @@ export const achievements = [
 
   // ============ 📖 剧情 ============
   { id: "story_first", name: "故事开场", desc: "完成第一章剧情", icon: "📖", category: "剧情", target: 1, trackKey: "story_chapter", rewards: { coin: 200, diamond: 5 } },
-  { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: 7, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
+  { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: storyChapters.length, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
 
   // ============ 🎖️ 收藏 ============
   { id: "cosmetic_first", name: "有点面子", desc: "装备一个称号或头像框", icon: "🎖️", category: "收藏", target: 1, trackKey: "cosmetic_equip", rewards: { coin: 200 } },

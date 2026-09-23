@@ -19,6 +19,8 @@ export const STORY_MIN_LEVEL = 3;
 //   { served }          —— 咖啡馆累计招待客人数
 //   { charms }          —— 已做成的护符数
 //   { talents }         —— 已点亮的天赋数
+//   { explore }         —— 已发现的探索物数量
+//   { festivalRewards } —— 已兑换的庆典收藏数量
 export const storyChapters = [
   {
     id: "ch1",
@@ -106,6 +108,25 @@ export const storyChapters = [
       { id: "ch7_level", text: "升到 16 级", check: { wallet: "level", need: 16 } },
     ],
     reward: { coin: 2000, diamond: 50 },
+  },
+
+  {
+    id: "s2ch1", title: "小镇之外", npc: "林镇长", icon: "🧭",
+    intro: "镇长合上第一本笔记：真正认识小镇，也要走出镇口看看。",
+    tasks: [ { id: "s2_explore", text: "探索周边 3 次", check: { stat: "explore_visit", need: 3 } }, { id: "s2_find", text: "发现 3 种探索物", check: { explore: true, need: 3 } } ],
+    reward: { coin: 1200, diamond: 20 },
+  },
+  {
+    id: "s2ch2", title: "带回小镇的东西", npc: "麦香面包师", icon: "🧺",
+    intro: "面包师看着你的行囊：外面的东西，也能做成家里的味道。",
+    tasks: [ { id: "s2_dish", text: "做出松脂茶", check: { stat: "dish_cook", need: 1 } }, { id: "s2_commission", text: "完成 1 个委托", check: { stat: "commission_complete", need: 1 } } ],
+    reward: { coin: 1500, diamond: 25 },
+  },
+  {
+    id: "s2ch3", title: "四季还会回来", npc: "花园阿梨", icon: "🎊",
+    intro: "阿梨把去年的花瓣夹进本子：庆典过去了，心意还会留下。",
+    tasks: [ { id: "s2_festival_task", text: "完成 1 项庆典任务", check: { stat: "festival_task", need: 1 } }, { id: "s2_festival_reward", text: "兑换 1 份庆典收藏", check: { festivalRewards: true, need: 1 } } ],
+    reward: { coin: 2500, diamond: 60 },
   },
 ];
 
