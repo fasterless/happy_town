@@ -5,7 +5,8 @@ import { migrateState } from '../src/core/migrations.js';
 import { visitFriend, waterFriendPlot } from '../src/systems/friends.js';
 import { fulfillRequest, getTodayRequests } from '../src/systems/helpBoard.js';
 import { todayKey } from '../src/utils/time.js';
-import { getRelationshipProgress } from '../src/systems/relationships.js';
+import { getRelationshipProgress, recallNeighborMemory } from '../src/systems/relationships.js';
+import { getScheduleState } from '../src/systems/schedules.js';
 import { getCount } from '../src/core/inventory.js';
 
 function freshState(level = 10) {
@@ -75,6 +76,36 @@ describe('关系存档迁移', () => {
 
     migrateState(merged);
     expect(merged.version).toBe(CURRENT_VERSION);
-    expect(merged.relationships).toEqual({ points: {}, claimed: {} });
+    expect(merged.relationships).toEqual({ points: {}, claimed: {}, memories: {} });
+  });
+});
+
+describe('邻居专属回忆', () => {
+  it('未达到阶段时不能听，达到后按当天状态领取一次', () => {
+    const state = freshState();
+    expect(recallNeighborMemory(state, 'npc_mayor').success).toBe(false);
+
+    state.relationships.points.npc_mayor = 3;
+    const status = getScheduleState(state, 'npc_mayor').id;
+    const result = recallNeighborMemory(state, 'npc_mayor');
+    expect(result.success).toBe(true);
+    expect(result.message).toContain('喷泉边的约定');
+    expect(['home', 'out', 'troubled']).toContain(status);
+    expect(recallNeighborMemory(state, 'npc_mayor').success).toBe(false);
+    expect(getCount(state, 'coin')).toBeGreaterThanOrEqual(120);
+  });
+
+  it('v21 旧档保留关系进度并补上回忆记录', () => {
+    const saved = createDefaultState();
+    saved.version = 21;
+    saved.relationships = { points: { npc_baker: 4 }, claimed: { npc_baker: ['acquainted'] } };
+    const merged = mergeState(createDefaultState(), saved);
+    merged.version = 21;
+    delete merged.relationships.memories;
+
+    migrateState(merged);
+    expect(merged.version).toBe(CURRENT_VERSION);
+    expect(merged.relationships.points.npc_baker).toBe(4);
+    expect(merged.relationships.memories).toEqual({});
   });
 });

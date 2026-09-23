@@ -8,7 +8,7 @@ import { initSchedules } from '../systems/schedules.js';
 import { initRelationships } from '../systems/relationships.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 21;
+export const CURRENT_VERSION = 22;
 
 /**
  * 创建默认游戏状态
@@ -216,6 +216,7 @@ export function createDefaultState() {
     relationships: {
       points: {},
       claimed: {},
+      memories: {},
     },
     achievements: {
       unlocked: [],

@@ -43,6 +43,7 @@ import * as DishSystem from './systems/dishes.js';
 import * as CommissionSystem from './systems/commissions.js';
 import * as WishSystem from './systems/wishes.js';
 import * as HelpSystem from './systems/helpBoard.js';
+import * as RelationshipSystem from './systems/relationships.js';
 import * as CharmSystem from './systems/charms.js';
 import * as TalentSystem from './systems/talents.js';
 import * as GreenhouseSystem from './systems/greenhouse.js';
@@ -763,6 +764,7 @@ window.addFriendHandler = (friendId) => runAction(() => FriendsSystem.addFriend(
 window.visitFriendHandler = (friendId) => runAction(() => FriendsSystem.visitFriend(state, friendId));
 window.likeFriendHandler = (friendId) => runAction(() => FriendsSystem.likeFriend(state, friendId));
 window.waterFriendHandler = (friendId) => runAction(() => FriendsSystem.waterFriendPlot(state, friendId), 'water');
+window.recallMemoryHandler = (friendId) => runAction(() => RelationshipSystem.recallNeighborMemory(state, friendId));
 
 // 邻居求助板
 window.fulfillHelpHandler = (index) => runAction(() => HelpSystem.fulfillRequest(state, index), 'buy');

@@ -54,6 +54,8 @@ export const achievements = [
   { id: "schedule_15", name: "知己知彼", desc: "赶上邻居的日程回礼15次", icon: "📅", category: "社交", target: 15, trackKey: "schedule_visit", rewards: { friendPoint: 100, diamond: 30 } },
   { id: "relationship_first", name: "初次熟识", desc: "和一位邻居的关系达到「相识」", icon: "🌱", category: "社交", target: 1, trackKey: "relationship_tier", rewards: { friendPoint: 40, coin: 200 } },
   { id: "relationship_close", name: "知心邻居", desc: "和一位邻居的关系达到「知心」", icon: "💛", category: "社交", target: 1, trackKey: "relationship_close", rewards: { diamond: 40, friendPoint: 100 } },
+  { id: "memory_first", name: "第一段回忆", desc: "听完一位邻居的回忆", icon: "📖", category: "社交", target: 1, trackKey: "relationship_memory", rewards: { coin: 200, diamond: 5 } },
+  { id: "memory_15", name: "小镇故事集", desc: "听完全部 15 段邻居回忆", icon: "📚", category: "社交", target: 15, trackKey: "relationship_memory", rewards: { diamond: 80, coin: 2000 } },
 
   // ============ 🐮 养殖 ============
   { id: "ranch_first", name: "第一位房客", desc: "买下第一只动物",    icon: "🐣", category: "养殖", target: 1,   trackKey: "ranch_buy", rewards: { coin: 300 } },

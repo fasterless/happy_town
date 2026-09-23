@@ -2,7 +2,7 @@
 //
 // 每位邻居有独立的熟悉度。达到阶段时发放一次奖励，
 // 旧进度再次触发时只补发还没领过的阶段，不会重复发放。
-import { relationshipTiers, relationshipActions } from '../config/relationships.js';
+import { relationshipTiers, relationshipActions, getNeighborMemory } from '../config/relationships.js';
 import { addRewards } from '../core/inventory.js';
 import { logEvent } from '../utils/analytics.js';
 import { formatRewards } from '../utils/format.js';
@@ -17,7 +17,25 @@ export function initRelationships(state) {
   if (!state.relationships.claimed || typeof state.relationships.claimed !== 'object') {
     state.relationships.claimed = {};
   }
+  if (!state.relationships.memories || typeof state.relationships.memories !== 'object') {
+    state.relationships.memories = {};
+  }
   return state;
+}
+
+function rememberedTiers(state, friendId) {
+  const value = state.relationships.memories[friendId];
+  return Array.isArray(value) ? value : [];
+}
+
+export function getAvailableMemory(state, friendId) {
+  initRelationships(state);
+  const reached = getReachedTiers(getRelationshipPoints(state, friendId));
+  const remembered = rememberedTiers(state, friendId);
+  const tier = reached.find((item) => !remembered.includes(item.id));
+  if (!tier) return null;
+  const memory = getNeighborMemory(friendId, tier.id);
+  return memory ? { tier, memory } : null;
 }
 
 export function getRelationshipPoints(state, friendId) {
@@ -70,5 +88,25 @@ export function gainRelationship(state, friendId, action) {
     gained,
     tiers: newlyReached,
     rewardText: newlyReached.length ? formatRewards(rewards) : '',
+  };
+}
+
+/**
+ * 听一位邻居当前可解锁的一段回忆，奖励只领一次。
+ */
+export function recallNeighborMemory(state, friendId) {
+  const available = getAvailableMemory(state, friendId);
+  if (!available) return { success: false, message: '现在还没有新的回忆' };
+
+  addRewards(state, available.memory.rewards);
+  const remembered = rememberedTiers(state, friendId);
+  remembered.push(available.tier.id);
+  state.relationships.memories[friendId] = remembered;
+  logEvent(state, 'relationship_memory');
+
+  return {
+    success: true,
+    message: `听完「${available.memory.title}」，获得${formatRewards(available.memory.rewards)}`,
+    state,
   };
 }

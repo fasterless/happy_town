@@ -49,7 +49,7 @@ import * as CommissionSystem from '../systems/commissions.js';
 import * as WishSystem from '../systems/wishes.js';
 import * as HelpSystem from '../systems/helpBoard.js';
 import { getScheduleState } from '../systems/schedules.js';
-import { getRelationshipProgress } from '../systems/relationships.js';
+import { getRelationshipProgress, getAvailableMemory } from '../systems/relationships.js';
 import * as CharmSystem from '../systems/charms.js';
 import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
@@ -662,6 +662,11 @@ export function renderFriendsView(state) {
 
     const schedule = getScheduleState(state, friend.id);
     const bond = isFriend ? getRelationshipProgress(state, friend.id) : null;
+    const memory = isFriend ? getAvailableMemory(state, friend.id) : null;
+    const memoryLine = memory
+      ? `<p class="memory-line">📖 ${escapeHtml(memory.memory.lines[schedule?.id] || memory.memory.lines.home)}</p>
+         <button class="small-action" onclick="window.recallMemoryHandler('${friend.id}')">听完「${escapeHtml(memory.memory.title)}」</button>`
+      : '';
     const bondLine = bond
       ? `<p class="relationship-progress">${bond.current ? escapeHtml(bond.current.name) : '初识'} · 熟悉度 ${bond.points}${bond.next ? `/${bond.next.points}` : ''}</p>`
       : '';
@@ -674,6 +679,7 @@ export function renderFriendsView(state) {
       <h4>${escapeHtml(friend.name)}</h4>
       ${statusLine}
       ${bondLine}
+      ${memoryLine}
       <p class="muted-text">${escapeHtml(friend.mood)}</p>
       <p class="person-likes">👍 ${friend.likes || 0}</p>
       <div class="item-actions">${actions}</div>
