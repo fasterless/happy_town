@@ -87,6 +87,10 @@ export const achievements = [
   { id: "talent_branch", name: "一门精通", desc: "点满一条天赋分支", icon: "🌳", category: "天赋", target: 1, trackKey: "talent_branch_full", rewards: { diamond: 60, coin: 1500 } },
   { id: "talent_all", name: "全知全能", desc: "点亮全部20个天赋", icon: "✨", category: "天赋", target: 20, trackKey: "talent_all", rewards: { diamond: 300, coin: 8000 } },
 
+  // ============ 🪟 温室 ============
+  { id: "greenhouse_first", name: "第一株温室苗", desc: "在温室种下第一株作物", icon: "🪟", category: "温室", target: 1, trackKey: "greenhouse_plant", rewards: { coin: 400, diamond: 15 } },
+  { id: "greenhouse_30", name: "四季常青", desc: "在温室累计种植30次", icon: "🌿", category: "温室", target: 30, trackKey: "greenhouse_plant", rewards: { diamond: 80, coin: 2000 } },
+
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
   { id: "hybrid_all", name: "基因大师",   desc: "点亮全部杂交图谱",  icon: "🧪", category: "杂交", target: 4,   trackKey: "hybrid_all", rewards: { diamond: 150, coin: 3000 } },

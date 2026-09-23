@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { createDefaultState, mergeState, CURRENT_VERSION } from '../src/core/state.js';
 import { migrateState } from '../src/core/migrations.js';
+import { GAME_CONFIG } from '../src/config/constants.js';
 
 // 模拟一个 v4 时期的老存档（没有 v5 的新字段）
 function v4Save() {
@@ -57,8 +58,8 @@ describe('存档版本迁移', () => {
     migrateState(merged);
 
     expect(merged.version).toBe(CURRENT_VERSION);
-    // normalizeState 在迁移中生效：地块扩到 12 块、假作物被清理并退款
-    expect(merged.farm.plots).toHaveLength(12);
+    // normalizeState 在迁移中生效：地块数组含末尾 6 块温室、假作物被清理并退款
+    expect(merged.farm.plots).toHaveLength(GAME_CONFIG.farm.maxPlots + 6);
     expect(merged.farm.plots[0]).toBeNull();
   });
 

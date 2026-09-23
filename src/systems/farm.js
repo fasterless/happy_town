@@ -11,6 +11,8 @@ import { applyPetToGrowTime, applyPetToSeedPrice } from './pets.js';
 import { getBuffMultiplier } from './dishes.js';
 import { getCharmMultiplier } from './charms.js';
 import { getTalentMultiplier } from './talents.js';
+import { isGreenhouseIndex, canPlantGreenhouse, markGreenhousePlanted } from './greenhouse.js';
+import { isGreenhouseCrop } from '../config/greenhouse.js';
 
 // 金穗变异概率：收获时小概率额外掉一个 3 倍售价的金穗作物
 const GOLD_CHANCE = 0.05;
@@ -132,8 +134,12 @@ export function buyExpansion(state) {
  * @param {Object} crop - 作物配置
  * @returns {number} 生长秒数
  */
-export function getGrowTime(state, crop) {
-  let time = applyPetToGrowTime(applyWeatherToGrowTime(crop.growTime, state), state);
+export function getGrowTime(state, crop, plotIndex = -1) {
+  // 温室恒温：天气（雨天加速、阴天减速）不进玻璃房，其余加成照常
+  const weathered = isGreenhouseIndex(plotIndex)
+    ? crop.growTime
+    : applyWeatherToGrowTime(crop.growTime, state);
+  let time = applyPetToGrowTime(weathered, state);
   // 料理增益（如田园沙拉）和田园天赋也参与生长时长
   time = time / getBuffMultiplier(state, 'growthSpeed') / getTalentMultiplier(state, 'growthSpeed');
   return Math.max(1, Math.floor(time));
@@ -171,11 +177,16 @@ export function plantCrop(state, plotIndex, cropId) {
     return { success: false, message: `需要Lv.${crop.unlockLevel}解锁` };
   }
 
-  if (plotIndex < 0 || plotIndex >= GAME_CONFIG.farm.maxPlots) {
+  if (plotIndex < 0 || plotIndex >= state.farm.plots.length) {
     return { success: false, message: "地块不存在" };
   }
 
-  if (!isPlotUnlocked(state, plotIndex)) {
+  // 温室地块：不看农田等级表，但每块一天只能种一次
+  if (isGreenhouseIndex(plotIndex)) {
+    if (!canPlantGreenhouse(state, plotIndex)) {
+      return { success: false, message: "这块温室今天已经种过了，明天再来" };
+    }
+  } else if (!isPlotUnlocked(state, plotIndex)) {
     return { success: false, message: `需要Lv.${getPlotUnlockLevel(plotIndex)}解锁这块田` };
   }
 
@@ -183,9 +194,8 @@ export function plantCrop(state, plotIndex, cropId) {
     return { success: false, message: "地块已种植作物" };
   }
 
-  // 杂交作物：优先消耗背包里的杂交种子（seed_<id>），
-  // 没种子才走金币补种（价格比杂交高，给囤种子一个价值）
-  const price = getSeedPrice(state, crop);
+  // 温室作物不卖种子：玻璃地一天一轮，本身就是代价
+  const price = isGreenhouseCrop(crop.id) ? 0 : getSeedPrice(state, crop);
   const seedKey = `seed_${crop.id}`;
   const hasSeed = isHybridCrop(crop.id) && hasEnough(state, seedKey, 1);
 
@@ -201,12 +211,18 @@ export function plantCrop(state, plotIndex, cropId) {
     spendItem(state, "coin", price);
   }
 
-  // 种植，并固化本次的生长时长
+  // 种植，并固化本次的生长时长（温室地块不吃天气）
   state.farm.plots[plotIndex] = {
     cropId: crop.id,
     plantedAt: new Date().toISOString(),
-    growTime: getGrowTime(state, crop),
+    growTime: getGrowTime(state, crop, plotIndex),
   };
+
+  if (isGreenhouseIndex(plotIndex)) {
+    markGreenhousePlanted(state, plotIndex);
+    logEvent(state, "greenhouse_plant");
+    trackDaily(state, "greenhouse", 1);
+  }
 
   if (!Array.isArray(state.farm.plantedTypes)) {
     state.farm.plantedTypes = [];

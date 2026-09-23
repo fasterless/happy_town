@@ -220,6 +220,66 @@
   background: var(--soil);
 }
 
+/* ===== 温室大棚（第七轮） ===== */
+
+.greenhouse-panel {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(120, 180, 210, 0.55);
+  border-radius: var(--radius);
+  background: rgba(214, 236, 245, 0.45);
+}
+
+.greenhouse-panel h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.greenhouse-panel h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.greenhouse-panel > .muted-text {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.greenhouse-grid {
+  margin-bottom: 12px;
+}
+
+.greenhouse-plot {
+  background: rgba(214, 236, 245, 0.8);
+  border-color: rgba(120, 180, 210, 0.7);
+}
+
+.greenhouse-plot.resting {
+  opacity: 0.6;
+}
+
+.greenhouse-crops {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.greenhouse-crop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 1px solid rgba(120, 180, 210, 0.5);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+.greenhouse-crop.locked {
+  opacity: 0.6;
+}
+
 .seed-shop,
 .furniture-shop {
   margin-top: 18px;

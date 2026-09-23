@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 15;
+export const CURRENT_VERSION = 16;
 
 /**
  * 创建默认游戏状态
@@ -38,7 +38,8 @@ export function createDefaultState() {
       [furnitureKey(3001)]: 1,
     },
     farm: {
-      plots: Array.from({ length: GAME_CONFIG.farm.basePlots }, () => null),
+      // 基础 12 块农田 + 末尾 6 块温室（下标 21-26 预留给温室，中间的扩建位先留空）
+      plots: Array.from({ length: GAME_CONFIG.farm.maxPlots + 6 }, () => null),
       plantedTypes: [],
       expansions: [],          // 土地扩建记录（v5 预留，第二阶段启用）
       goldStats: { totalGold: 0 }, // 金穗作物统计（v5 预留，第二阶段启用）
@@ -119,6 +120,12 @@ export function createDefaultState() {
     // 天赋树：unlocked 是已点亮的节点 id（天赋点由等级推导，不单独存）
     talents: {
       unlocked: [],
+    },
+    // 温室大棚：date 是每日种植额度所在的日期键，usedToday 是今天种过的地块下标
+    greenhouse: {
+      date: "",
+      usedToday: [],
+      totalPlanted: 0,
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -249,6 +256,7 @@ export function mergeState(base, saved) {
     mine: { ...base.mine, ...(saved.mine || {}) },
     charms: { ...base.charms, ...(saved.charms || {}) },
     talents: { ...base.talents, ...(saved.talents || {}) },
+    greenhouse: { ...base.greenhouse, ...(saved.greenhouse || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -274,24 +282,19 @@ export function normalizeState(state) {
   if (!Array.isArray(state.farm.expansions)) {
     state.farm.expansions = [];
   }
-  const boughtPlots = state.farm.expansions
-    .map((tier) => GAME_CONFIG.farm.expansions.find((e) => e.plots === tier)?.plots || 0)
-    .filter((plots) => plots > 0);
-  const plotCount = Math.min(
-    GAME_CONFIG.farm.maxPlots,
-    Math.max(GAME_CONFIG.farm.basePlots, boughtPlots.length ? Math.max(...boughtPlots) : 0)
-  );
+  // 温室固定占农场地块数组末尾的 6 格（下标 21-26），和农场扩建互不影响
+  const totalSlots = GAME_CONFIG.farm.maxPlots + 6;
   if (!Array.isArray(state.farm.plots)) {
-    state.farm.plots = Array.from({ length: plotCount }, () => null);
-  } else if (state.farm.plots.length < plotCount) {
+    state.farm.plots = Array.from({ length: totalSlots }, () => null);
+  } else if (state.farm.plots.length < totalSlots) {
     // 扩建或迁移时补齐新地块，保留已种作物
     state.farm.plots = [
       ...state.farm.plots,
-      ...Array.from({ length: plotCount - state.farm.plots.length }, () => null),
+      ...Array.from({ length: totalSlots - state.farm.plots.length }, () => null),
     ];
-  } else if (state.farm.plots.length > plotCount) {
+  } else if (state.farm.plots.length > totalSlots) {
     // 超出的地块一律没种东西才截断，防丢玩家作物
-    state.farm.plots = state.farm.plots.slice(0, plotCount);
+    state.farm.plots = state.farm.plots.slice(0, totalSlots);
   }
 
   if (!state.farm.goldStats) {
@@ -396,6 +399,14 @@ export function normalizeState(state) {
     state.talents = { unlocked: [] };
   }
   if (!Array.isArray(state.talents.unlocked)) state.talents.unlocked = [];
+
+  // 温室大棚（v16）
+  if (!state.greenhouse || typeof state.greenhouse !== "object") {
+    state.greenhouse = { date: "", usedToday: [], totalPlanted: 0 };
+  }
+  if (typeof state.greenhouse.date !== "string") state.greenhouse.date = "";
+  if (!Array.isArray(state.greenhouse.usedToday)) state.greenhouse.usedToday = [];
+  if (typeof state.greenhouse.totalPlanted !== "number") state.greenhouse.totalPlanted = 0;
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

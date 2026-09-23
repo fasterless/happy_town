@@ -21,17 +21,15 @@ const WHEAT = 1001; // seedPrice 2 / sellPrice 2
 describe('土地扩建', () => {
   it('默认 12 块，满级下基础地块全部解锁', () => {
     const state = freshState();
-    expect(state.farm.plots).toHaveLength(GAME_CONFIG.farm.basePlots);
     expect(getPurchasedPlotCount(state)).toBe(12);
   });
 
   it('扩建地块在购买前锁定，购买后解锁并补齐数组', () => {
     const state = freshState();
-    expect(state.farm.plots).toHaveLength(12);
+    expect(getPurchasedPlotCount(state)).toBe(12);
 
     const result = buyExpansion(state);
     expect(result.success).toBe(true);
-    expect(state.farm.plots).toHaveLength(15);
     expect(getPurchasedPlotCount(state)).toBe(15);
     // 第 13 块（索引 12）现在可以种了
     state.farm.plots[12] = null;
@@ -54,7 +52,7 @@ describe('土地扩建', () => {
     state.wallet.diamond = 1;
     const result = buyExpansion(state);
     expect(result.success).toBe(false);
-    expect(state.farm.plots).toHaveLength(12);
+    expect(getPurchasedPlotCount(state)).toBe(12);
     expect(state.wallet.coin).toBe(100);
   });
 
@@ -66,7 +64,7 @@ describe('土地扩建', () => {
     expect(getNextExpansion(state)).toBeNull();
     const result = buyExpansion(state);
     expect(result.success).toBe(false);
-    expect(state.farm.plots).toHaveLength(21);
+    expect(getPurchasedPlotCount(state)).toBe(21);
   });
 });
 
@@ -121,7 +119,9 @@ describe('批量种植', () => {
     expect(result.success).toBe(true);
     expect(result.count).toBe(12); // Lv.20 解锁全部基础地块
     expect(state.wallet.coin).toBe(100000 - 12 * 2);
-    expect(state.farm.plots.every((p) => p !== null)).toBe(true);
+    // 只铺农地，末尾的温室格子不参与一键种植
+    expect(state.farm.plots.slice(0, 12).every((p) => p !== null)).toBe(true);
+    expect(state.farm.plots.slice(GAME_CONFIG.farm.maxPlots).every((p) => p === null)).toBe(true);
   });
 
   it('金币不够时种到停，已种的不回退', () => {

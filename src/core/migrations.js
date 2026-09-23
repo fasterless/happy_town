@@ -30,6 +30,7 @@ const MIGRATIONS = [
   { fromVersion: 12, migrate: toV13 },
   { fromVersion: 13, migrate: toV14 },
   { fromVersion: 14, migrate: toV15 },
+  { fromVersion: 15, migrate: toV16 },
 ];
 
 /**
@@ -161,6 +162,16 @@ function toV15(state) {          // v14 → v15：天赋树
   }
   if (!Array.isArray(state.talents.unlocked)) state.talents.unlocked = [];
   state.version = 15;
+}
+
+function toV16(state) {          // v15 → v16：温室大棚
+  if (!state.greenhouse || typeof state.greenhouse !== 'object') {
+    state.greenhouse = { date: '', usedToday: [], totalPlanted: 0 };
+  }
+  if (typeof state.greenhouse.date !== 'string') state.greenhouse.date = '';
+  if (!Array.isArray(state.greenhouse.usedToday)) state.greenhouse.usedToday = [];
+  if (typeof state.greenhouse.totalPlanted !== 'number') state.greenhouse.totalPlanted = 0;
+  state.version = 16;
 }
 
 /**

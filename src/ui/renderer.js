@@ -50,6 +50,7 @@ import * as WishSystem from '../systems/wishes.js';
 import * as HelpSystem from '../systems/helpBoard.js';
 import * as CharmSystem from '../systems/charms.js';
 import * as TalentSystem from '../systems/talents.js';
+import * as GreenhouseSystem from '../systems/greenhouse.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { commissionJobs } from '../config/commissions.js';
 import { MAX_LUCK, WISH_REROLL_COST } from '../config/wishes.js';
@@ -246,8 +247,53 @@ export function renderFarmView(state, selectedCropId) {
   const expansion = renderExpansionPanel(state);
   const sellBarn = renderSellBarn(state);
   const market = renderMarketBoard(state);
+  const greenhouse = renderGreenhousePanel(state);
 
-  return { grid, seeds: seeds + seasonalSeeds + hybridSeeds, expansion, sellBarn, market };
+  return { grid, seeds: seeds + seasonalSeeds + hybridSeeds, expansion, sellBarn, market, greenhouse };
+}
+
+/**
+ * 温室面板：6 块玻璃地，不受天气影响，每块一天种一次
+ */
+function renderGreenhousePanel(state) {
+  if (!GreenhouseSystem.isGreenhouseUnlocked(state)) {
+    return `<p class="lock-banner">🔒 Lv.${GreenhouseSystem.GREENHOUSE_MIN_LEVEL} 解锁温室大棚：不受天气影响，任何季节的作物全年可种</p>`;
+  }
+
+  const used = GreenhouseSystem.getGreenhouseUsedToday(state);
+  const cells = Array.from({ length: GreenhouseSystem.GREENHOUSE_PLOTS }, (_, offset) => {
+    const index = GreenhouseSystem.GREENHOUSE_FIRST_INDEX + offset;
+    const plot = state.farm.plots[index];
+    if (plot) {
+      return renderPlotCell(state, index, null);
+    }
+    const rested = used.includes(index);
+    return `<div class="plot greenhouse-plot ${rested ? 'resting' : 'empty'}">
+      <span class="plot-icon">${rested ? '🌙' : '🪟'}</span>
+      <span class="muted-text">${rested ? '今天已种过' : '空着'}</span>
+    </div>`;
+  }).join('');
+
+  const cropsHtml = GreenhouseSystem.greenhouseCrops.map((crop) => {
+    const unlocked = state.wallet.level >= crop.unlockLevel;
+    const growTime = FarmSystem.getGrowTime(state, crop, GreenhouseSystem.GREENHOUSE_FIRST_INDEX);
+    return `<div class="greenhouse-crop ${unlocked ? '' : 'locked'}">
+      <span class="seed-icon">${crop.icon}</span>
+      <span class="seed-name">${escapeHtml(crop.name)}</span>
+      <span class="seed-meta"><span>⏱${formatTime(growTime)}</span><span>卖 🪙${crop.sellPrice}</span></span>
+      ${unlocked
+        ? `<button class="small-action" onclick="window.plantGreenhouseHandler(${crop.id})">种植</button>`
+        : `<span class="seed-lock">Lv.${crop.unlockLevel}</span>`}
+    </div>`;
+  }).join('');
+
+  const left = GreenhouseSystem.GREENHOUSE_PLOTS - used.length;
+  return `<div class="greenhouse-panel">
+    <h3>🪟 温室大棚 <small>今天还能种 ${left} 块 · 不受天气影响</small></h3>
+    <p class="muted-text">玻璃房里恒温恒湿，作物不看天气；每块地一天一轮，种什么要挑。</p>
+    <div class="farm-grid greenhouse-grid">${cells}</div>
+    <div class="greenhouse-crops">${cropsHtml}</div>
+  </div>`;
 }
 
 /**
@@ -337,7 +383,8 @@ function renderSellBarn(state) {
  * @returns {string}
  */
 export function renderPlotCell(state, index, selectedCropId) {
-  if (!FarmSystem.isPlotUnlocked(state, index)) {
+  const greenhouse = GreenhouseSystem.isGreenhouseIndex(index);
+  if (!greenhouse && !FarmSystem.isPlotUnlocked(state, index)) {
     return `<div class="plot locked" data-plot="${index}">
       <div class="crop-icon">🔒</div>
       <div class="crop-status">Lv.${FarmSystem.getPlotUnlockLevel(index)} 解锁</div>

@@ -87,6 +87,7 @@ function getEventDisplayName(eventName) {
     charm_craft: "制作护符",
     charm_equip: "装备护符",
     talent_unlock: "点亮天赋",
+    greenhouse_plant: "温室种植",
   };
 
   return names[eventName] || eventName;

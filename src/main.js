@@ -45,6 +45,7 @@ import * as WishSystem from './systems/wishes.js';
 import * as HelpSystem from './systems/helpBoard.js';
 import * as CharmSystem from './systems/charms.js';
 import * as TalentSystem from './systems/talents.js';
+import * as GreenhouseSystem from './systems/greenhouse.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -407,6 +408,7 @@ function renderFarmView() {
   setHtml('seedList', farm.seeds);
   setHtml('sellBarnList', farm.sellBarn);
   setHtml('marketBoard', farm.market);
+  setHtml('greenhousePanel', farm.greenhouse);
 }
 
 function renderOrdersView() {
@@ -638,6 +640,20 @@ function collectAllMature() {
 function plantAllSelected() {
   runAction(() => FarmSystem.plantAll(state, selectedCropId), 'plant');
 }
+
+// 温室：种到今天还空着的第一块玻璃地
+window.plantGreenhouseHandler = (cropId) => {
+  const used = new Set(GreenhouseSystem.getGreenhouseUsedToday(state));
+  const index = Array.from({ length: GreenhouseSystem.GREENHOUSE_PLOTS }, (_, offset) => (
+    GreenhouseSystem.GREENHOUSE_FIRST_INDEX + offset
+  )).find((slot) => state.farm.plots[slot] === null && !used.has(slot));
+  if (index === undefined) {
+    showToast('温室今天的地都种过了，明天再来', 'error');
+    playSound('error');
+    return;
+  }
+  runAction(() => FarmSystem.plantCrop(state, index, cropId), 'plant');
+};
 
 // 扩建 / 卖仓 / 加速券
 window.buyExpansionHandler = () => runAction(() => FarmSystem.buyExpansion(state), 'levelup');

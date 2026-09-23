@@ -21,9 +21,11 @@ export const crops = [
 // 种子铺只展示当前活动开放的（见 getSeasonalCrops 的调用方）。
 import { getAllSeasonalCrops } from './seasons.js';
 import { hybridRecipes } from './hybrid.js';
+import { greenhouseCrops } from './greenhouse.js';
 
 export function getCrop(id) {
   return crops.find((c) => c.id === id)
     || getAllSeasonalCrops().find((c) => c.id === id)
-    || hybridRecipes.find((c) => c.id === id);
+    || hybridRecipes.find((c) => c.id === id)
+    || greenhouseCrops.find((c) => c.id === id);
 }
