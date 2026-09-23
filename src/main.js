@@ -179,13 +179,15 @@ function startGame() {
  * 绑定事件监听器
  */
 function attachEvents() {
-  // 导航事件
+  // 导航事件。「更多」只负责展开分组面板，不切视图
   document.querySelectorAll('.nav-button').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (!btn.dataset.view) return;
       playSound('click');
       showView(btn.dataset.view);
     });
   });
+  attachMoreNav();
 
   // 通用操作按钮
   $('collectAllButton')?.addEventListener('click', collectAllMature);
@@ -248,6 +250,39 @@ function markActiveNav(viewId) {
   document.querySelectorAll('.nav-button').forEach((btn) => {
     btn.classList.toggle('active-nav', btn.dataset.view === viewId);
   });
+  // 当前页藏在「更多」里时，把「更多」也点亮，并收起面板
+  const inMore = !!document.querySelector(`#moreNavPanel .nav-button[data-view="${viewId}"]`);
+  $('moreNavButton')?.classList.toggle('active-nav', inMore);
+  setMoreNavOpen(false);
+}
+
+/** 「更多」分组面板：点击展开，点外面或切页后收起 */
+function attachMoreNav() {
+  const button = $('moreNavButton');
+  const panel = $('moreNavPanel');
+  if (!button || !panel || button.dataset.bound === 'true') return;
+
+  button.dataset.bound = 'true';
+  button.addEventListener('click', () => {
+    playSound('click');
+    setMoreNavOpen(panel.hidden);
+  });
+  document.addEventListener('click', (event) => {
+    if (panel.hidden) return;
+    if (event.target.closest('#moreNavPanel, #moreNavButton')) return;
+    setMoreNavOpen(false);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setMoreNavOpen(false);
+  });
+}
+
+function setMoreNavOpen(open) {
+  const button = $('moreNavButton');
+  const panel = $('moreNavPanel');
+  if (!panel) return;
+  panel.hidden = !open;
+  button?.setAttribute('aria-expanded', String(open));
 }
 
 /** 当前是否停留在农场页 */

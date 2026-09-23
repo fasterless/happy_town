@@ -57,7 +57,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: 1280px;
+  max-width: 1680px;
   margin: 0 auto 16px;
   padding: 12px 14px;
   background: rgba(255, 250, 240, 0.88);
@@ -138,7 +138,7 @@ button {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 16px;
-  max-width: 1280px;
+  max-width: 1680px;
   margin: 0 auto;
 }
 
@@ -601,12 +601,13 @@ h2 {
   left: 50%;
   bottom: 14px;
   z-index: 25;
-  /* 20 个入口一行放不下，改成单行横向滚动：flex + 溢出滚动，
-     再也不会掉到第二三行盖住页面内容 */
+  /* 常用入口常驻一行；其余收进「更多」面板，不再横滑找功能 */
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
-  width: min(1180px, calc(100vw - 28px));
+  align-items: stretch;
+  justify-content: center;
+  gap: 6px;
+  width: min(1680px, calc(100vw - 28px));
   padding: 8px 10px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -630,12 +631,13 @@ h2 {
 }
 
 .nav-button {
-  flex: 0 0 auto;
+  flex: 1 1 0;
   display: grid;
   place-items: center;
   gap: 2px;
-  width: 60px;
-  min-height: 54px;
+  min-width: 72px;
+  max-width: 140px;
+  min-height: 58px;
   padding: 4px 2px;
   border: 0;
   border-radius: 7px;
@@ -851,7 +853,7 @@ h2 {
   }
 
   .nav-button {
-    width: 54px;
+    min-width: 0;
     min-height: 48px;
     font-size: 16px;
   }

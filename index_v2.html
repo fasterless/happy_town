@@ -265,31 +265,46 @@
       </section>
     </main>
 
-    <!-- 底部导航 -->
+    <!-- 底部导航：常用项常驻，其余收入「更多」分组面板，避免 23 个入口横滑 -->
     <nav class="bottom-nav">
       <button class="nav-button" data-view="farmView">🌾<br><small>农场</small></button>
       <button class="nav-button" data-view="ordersView">📋<br><small>订单</small></button>
       <button class="nav-button" data-view="homeView">🏠<br><small>家园</small></button>
       <button class="nav-button" data-view="friendsView">👥<br><small>好友</small></button>
-      <button class="nav-button" data-view="communityView">🏘️<br><small>社区</small></button>
-      <button class="nav-button" data-view="shopView">🛍️<br><small>商城</small></button>
       <button class="nav-button" data-view="tasksView">✅<br><small>任务</small></button>
-      <button class="nav-button" data-view="achievementsView">🏆<br><small>成就</small></button>
-      <button class="nav-button" data-view="petsView">🐾<br><small>宠物</small></button>
-      <button class="nav-button" data-view="ranchView">🐮<br><small>养殖栏</small></button>
-      <button class="nav-button" data-view="craftingView">🥖<br><small>加工坊</small></button>
-      <button class="nav-button" data-view="hybridView">🧬<br><small>杂交工坊</small></button>
-      <button class="nav-button" data-view="dishesView">🍳<br><small>料理铺</small></button>
-      <button class="nav-button" data-view="commissionView">📜<br><small>委托榜</small></button>
-      <button class="nav-button" data-view="fishingView">🎣<br><small>湖畔</small></button>
-      <button class="nav-button" data-view="mineView">⛏️<br><small>矿洞</small></button>
-      <button class="nav-button" data-view="lotteryView">🎡<br><small>转盘</small></button>
-      <button class="nav-button" data-view="wishView">⛲<br><small>许愿池</small></button>
-      <button class="nav-button" data-view="talentsView">🌟<br><small>天赋</small></button>
-      <button class="nav-button" data-view="storyView">📖<br><small>剧情</small></button>
-      <button class="nav-button" data-view="seasonsView">🌸<br><small>季节</small></button>
-      <button class="nav-button" data-view="codexView">📖<br><small>图鉴</small></button>
-      <button class="nav-button" data-view="adminView">📊<br><small>后台</small></button>
+      <button class="nav-button" data-view="shopView">🛍️<br><small>商城</small></button>
+      <button id="moreNavButton" class="nav-button nav-more" type="button" aria-expanded="false" aria-controls="moreNavPanel">☰<br><small>更多</small></button>
+      <div id="moreNavPanel" class="more-nav-panel" hidden>
+        <div class="more-nav-group">
+          <p class="more-nav-label">生产</p>
+          <button class="nav-button" data-view="ranchView">🐮<br><small>养殖栏</small></button>
+          <button class="nav-button" data-view="craftingView">🥖<br><small>加工坊</small></button>
+          <button class="nav-button" data-view="hybridView">🧬<br><small>杂交工坊</small></button>
+          <button class="nav-button" data-view="dishesView">🍳<br><small>料理铺</small></button>
+          <button class="nav-button" data-view="fishingView">🎣<br><small>湖畔</small></button>
+          <button class="nav-button" data-view="mineView">⛏️<br><small>矿洞</small></button>
+        </div>
+        <div class="more-nav-group">
+          <p class="more-nav-label">小镇</p>
+          <button class="nav-button" data-view="communityView">🏘️<br><small>社区</small></button>
+          <button class="nav-button" data-view="commissionView">📜<br><small>委托榜</small></button>
+          <button class="nav-button" data-view="storyView">📖<br><small>剧情</small></button>
+          <button class="nav-button" data-view="seasonsView">🌸<br><small>季节</small></button>
+        </div>
+        <div class="more-nav-group">
+          <p class="more-nav-label">休闲</p>
+          <button class="nav-button" data-view="lotteryView">🎡<br><small>转盘</small></button>
+          <button class="nav-button" data-view="wishView">⛲<br><small>许愿池</small></button>
+          <button class="nav-button" data-view="petsView">🐾<br><small>宠物</small></button>
+        </div>
+        <div class="more-nav-group">
+          <p class="more-nav-label">其他</p>
+          <button class="nav-button" data-view="talentsView">🌟<br><small>天赋</small></button>
+          <button class="nav-button" data-view="achievementsView">🏆<br><small>成就</small></button>
+          <button class="nav-button" data-view="codexView">📖<br><small>图鉴</small></button>
+          <button class="nav-button" data-view="adminView">📊<br><small>后台</small></button>
+        </div>
+      </div>
     </nav>
   </div>
 

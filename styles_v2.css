@@ -9,12 +9,56 @@
 
 /* --- 布局骨架 ------------------------------------------------------------ */
 
-/* v2 底部导航有 20 个入口，统一走 styles.css 里的单行横向滚动方案，
-   这里不再用固定列数的 grid（否则会掉成多行盖住页面） */
+/* 常用入口常驻底栏，其余按分组收进「更多」面板 */
 .nav-button small {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.more-nav-panel {
+  position: absolute;
+  right: 10px;
+  bottom: calc(100% + 8px);
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 14px 22px;
+  width: max-content;
+  max-width: calc(100vw - 48px);
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 250, 240, 0.98);
+  box-shadow: var(--shadow);
+}
+
+.more-nav-panel[hidden] {
+  display: none;
+}
+
+.more-nav-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(78px, 1fr));
+  gap: 4px 6px;
+}
+
+.more-nav-label {
+  grid-column: 1 / -1;
+  margin: 0 2px 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.more-nav-panel .nav-button {
+  flex: none;
+  width: auto;
+  max-width: none;
+  min-height: 54px;
+}
+
+.more-nav-panel .nav-button:hover {
+  background: #f3e7cf;
 }
 
 /* v1 叫 .view-head，v2 渲染器输出 .view-header */
@@ -1809,6 +1853,17 @@
   border-radius: var(--radius);
   box-shadow: 0 0 0 4px rgba(244, 191, 85, 0.25);
   pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .more-nav-panel {
+    right: 0;
+    left: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: auto;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
 }
 
 /* --- 响应式 ------------------------------------------------------------- */
