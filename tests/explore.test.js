@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createDefaultState, mergeState, CURRENT_VERSION } from "../src/core/state.js";
 import { migrateState } from "../src/core/migrations.js";
-import { explorePlace } from "../src/systems/explore.js";
+import { explorePlace, getExploreBoard } from "../src/systems/explore.js";
 import { getCount } from "../src/core/inventory.js";
 function state(level=10){ const value=createDefaultState(); value.wallet.level=level; return value; }
 describe("周边探索", () => {
@@ -41,5 +41,15 @@ describe("探索物用途", () => {
     expect(craftingRecipes.find((item) => item.id === 5012).result.key).toBe("goods_5012");
     const job = commissionJobs.find((item) => item.id === 9011);
     expect(getCommissionCoin(job)).toBeGreaterThan(100);
+  });
+});
+
+describe("地点小故事", () => {
+  it("按已发现物品逐步解锁并可回看", () => {
+    const value = state();
+    value.explore.found = ["twig"];
+    expect(getExploreBoard(value).find((place) => place.id === "grove").tales).toHaveLength(1);
+    value.explore.found.push("resin");
+    expect(getExploreBoard(value).find((place) => place.id === "grove").tales).toHaveLength(2);
   });
 });

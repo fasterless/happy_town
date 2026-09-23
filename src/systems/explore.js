@@ -14,7 +14,7 @@ export function initExplore(state) {
 export function isExploreUnlocked(state) { return state.wallet.level >= EXPLORE_MIN_LEVEL; }
 export function getExploreBoard(state) {
   initExplore(state);
-  return explorePlaces.map((place) => ({ ...place, unlocked: state.wallet.level >= place.level, visited: state.explore.visited.includes(place.id), discovered: place.finds.filter((find) => state.explore.found.includes(find.id)).length }));
+  return explorePlaces.map((place) => ({ ...place, unlocked: state.wallet.level >= place.level, visited: state.explore.visited.includes(place.id), discovered: place.finds.filter((find) => state.explore.found.includes(find.id)).length, tales: place.tales.filter((_, index) => state.explore.found.includes(place.finds[index].id)) }));
 }
 export function explorePlace(state, placeId) {
   const place = getExplorePlace(placeId);

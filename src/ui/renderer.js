@@ -1662,7 +1662,7 @@ export function renderExploreView(state) {
   return `<div class="explore-list">${ExploreSystem.getExploreBoard(state).map((place) => `
     <article class="explore-card ${place.unlocked ? "" : "locked"}">
       <span>${place.icon}</span>
-      <div><h3>${escapeHtml(place.name)}</h3><p class="muted-text">${place.unlocked ? escapeHtml(place.story) : `Lv.${place.level} 开放`} · 已发现 ${place.discovered}/${place.finds.length}</p></div>
+      <div><h3>${escapeHtml(place.name)}</h3><p class="muted-text">${place.unlocked ? escapeHtml(place.story) : `Lv.${place.level} 开放`} · 已发现 ${place.discovered}/${place.finds.length}</p>${place.tales.map((tale) => `<p class="explore-tale">${escapeHtml(tale)}</p>`).join("")}</div>
       <button class="small-action" onclick="window.explorePlaceHandler('${place.id}')" ${!place.unlocked || place.visited ? "disabled" : ""}>${place.visited ? "今天去过" : "探索"}</button>
     </article>`).join("")}</div>`;
 }

@@ -1538,6 +1538,7 @@
 .explore-card { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fffaf0; }
 .explore-card.locked { opacity: .65; }
 .explore-card h3, .explore-card p { margin: 0; }
+.explore-tale { color: #6d5338; }
 
 .season-card {
     grid-template-columns: 1fr;
