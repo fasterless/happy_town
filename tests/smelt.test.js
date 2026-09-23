@@ -1,6 +1,6 @@
 // 第六轮玩法 2/3、3/3：矿石熔炼 + 宝石护符
 import { describe, it, expect } from 'vitest';
-import { createDefaultState, mergeState, normalizeState } from '../src/core/state.js';
+import { createDefaultState, mergeState, normalizeState, CURRENT_VERSION } from '../src/core/state.js';
 import { migrateState } from '../src/core/migrations.js';
 import { checkAchievements } from '../src/systems/achievements.js';
 import { getItemName, getItemIcon } from '../src/utils/format.js';
@@ -235,7 +235,7 @@ describe('存档迁移 v14', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(19);
+    expect(merged.version).toBe(CURRENT_VERSION);
     expect(merged.mine.pickLevel).toBe(3);
     expect(Array.isArray(merged.charms.owned)).toBe(true);
     expect(merged.charms.equipped).toBeNull();

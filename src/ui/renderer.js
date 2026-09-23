@@ -48,6 +48,7 @@ import * as DishSystem from '../systems/dishes.js';
 import * as CommissionSystem from '../systems/commissions.js';
 import * as WishSystem from '../systems/wishes.js';
 import * as HelpSystem from '../systems/helpBoard.js';
+import { getScheduleState } from '../systems/schedules.js';
 import * as CharmSystem from '../systems/charms.js';
 import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
@@ -658,9 +659,15 @@ export function renderFriendsView(state) {
            </button>` : ''}`
       : `<button class="small-action" onclick="window.addFriendHandler('${friend.id}')">加好友</button>`;
 
+    const schedule = getScheduleState(state, friend.id);
+    const statusLine = schedule
+      ? `<p class="schedule-state state-${schedule.id}">${schedule.icon} 今天${escapeHtml(schedule.label)}</p>`
+      : '';
+
     return `<div class="person-card">
       <span class="person-avatar">${escapeHtml(friend.avatar)}</span>
       <h4>${escapeHtml(friend.name)}</h4>
+      ${statusLine}
       <p class="muted-text">${escapeHtml(friend.mood)}</p>
       <p class="person-likes">👍 ${friend.likes || 0}</p>
       <div class="item-actions">${actions}</div>

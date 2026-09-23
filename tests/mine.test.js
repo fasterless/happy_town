@@ -67,7 +67,9 @@ describe('体力与下矿', () => {
     const coinBefore = state.wallet.coin;
     const paid = mineDig(state);
     expect(paid.success).toBe(true);
-    expect(state.wallet.coin).toBe(coinBefore - 8);
+    // 付费多挖固定扣 8 金币，但这次挖到的若是碎金会立刻加回来
+    const droppedCoin = paid.drop.key === 'coin' ? paid.drop.count : 0;
+    expect(state.wallet.coin).toBe(coinBefore - 8 + droppedCoin);
 
     // 金币不足时挖不动
     state.wallet.coin = 0;

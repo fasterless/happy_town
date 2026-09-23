@@ -4,9 +4,10 @@ import { defaultFriends } from '../config/npcs.js';
 import { todayKey } from '../utils/time.js';
 import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
+import { initSchedules } from '../systems/schedules.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 19;
+export const CURRENT_VERSION = 20;
 
 /**
  * 创建默认游戏状态
@@ -205,6 +206,11 @@ export function createDefaultState() {
     npcEvents: {
       claimedToday: {},
     },
+    // 邻居每日日程：date 是排班所在的日期键，today 是今天每位邻居的状态
+    schedules: {
+      date: "",
+      today: {},
+    },
     achievements: {
       unlocked: [],
       progress: {},
@@ -279,6 +285,7 @@ export function mergeState(base, saved) {
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
+    schedules: { ...base.schedules, ...(saved.schedules || {}) },
     achievements: { ...base.achievements, ...(saved.achievements || {}) },
     pets: { ...base.pets, ...(saved.pets || {}) },
     weather: { ...base.weather, ...(saved.weather || {}) },
@@ -491,6 +498,9 @@ export function normalizeState(state) {
   if (!state.help.favors || typeof state.help.favors !== "object") state.help.favors = {};
 
   initNeighborEvents(state);
+
+  // 邻居每日日程（v20）
+  initSchedules(state);
 
   state.version = CURRENT_VERSION;
   return state;

@@ -1,6 +1,6 @@
 // 第八轮玩法 2/3：称号与头像框
 import { describe, it, expect } from 'vitest';
-import { createDefaultState, mergeState, normalizeState } from '../src/core/state.js';
+import { createDefaultState, mergeState, normalizeState, CURRENT_VERSION } from '../src/core/state.js';
 import { migrateState } from '../src/core/migrations.js';
 import { checkAchievements } from '../src/systems/achievements.js';
 import { levels } from '../src/config/levels.js';
@@ -129,7 +129,7 @@ describe('存档迁移 v19', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(19);
+    expect(merged.version).toBe(CURRENT_VERSION);
     expect(merged.story.chapterIndex).toBe(3);
     expect(merged.cosmetics.equippedTitle).toBeNull();
     expect(merged.cosmetics.equippedFrame).toBeNull();

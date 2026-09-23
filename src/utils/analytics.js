@@ -63,6 +63,7 @@ function getEventDisplayName(eventName) {
     lottery_spin: "幸运抽奖",
     seasonal_claim: "季节活动领奖",
     neighbor_gift: "邻居回礼",
+    schedule_visit: "按日程拜访",
     pet_feed: "喂养宠物",
     hybrid_crossbreed: "杂交合成",
     hybrid_discover: "发现新图谱",

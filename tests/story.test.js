@@ -1,6 +1,6 @@
 // 第八轮玩法 1/3：小镇剧情
 import { describe, it, expect } from 'vitest';
-import { createDefaultState, mergeState, normalizeState } from '../src/core/state.js';
+import { createDefaultState, mergeState, normalizeState, CURRENT_VERSION } from '../src/core/state.js';
 import { migrateState } from '../src/core/migrations.js';
 import { checkAchievements } from '../src/systems/achievements.js';
 import { levels } from '../src/config/levels.js';
@@ -135,7 +135,7 @@ describe('存档迁移 v18', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(19);
+    expect(merged.version).toBe(CURRENT_VERSION);
     expect(merged.cafe.totalServed).toBe(4);
     expect(merged.story.chapterIndex).toBe(0);
   });

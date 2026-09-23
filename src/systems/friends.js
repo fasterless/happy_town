@@ -3,7 +3,7 @@ import { addItem } from '../core/inventory.js';
 import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
-import { tryNeighborGift } from './events.js';
+import { tryScheduleGift } from './schedules.js';
 import { getBuffMultiplier } from './dishes.js';
 import { GAME_CONFIG } from '../config/constants.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
@@ -88,8 +88,8 @@ export function visitFriend(state, friendId) {
   trackDaily(state, "visit", 1);
   emit(Events.FRIEND_VISITED, { friendId });
 
-  // 惊喜回礼：邻居今天心情好就塞点东西给你（每日每人限一次）
-  const gift = tryNeighborGift(state, friendId);
+  // 惊喜回礼：按邻居今天的日程状态给不同的东西（每日每人限一次）
+  const gift = tryScheduleGift(state, friendId);
 
   const giftText = gift ? ` ${gift.line}（获得${gift.rewardText}）` : "";
   const streakText = streakBonus > 0 ? `（连续拜访${social.visitStreak}天，+${streakBonus}）` : "";

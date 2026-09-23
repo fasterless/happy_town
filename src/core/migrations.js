@@ -34,6 +34,7 @@ const MIGRATIONS = [
   { fromVersion: 16, migrate: toV17 },
   { fromVersion: 17, migrate: toV18 },
   { fromVersion: 18, migrate: toV19 },
+  { fromVersion: 19, migrate: toV20 },
 ];
 
 /**
@@ -196,6 +197,15 @@ function toV18(state) {          // v17 → v18：小镇剧情
     state.story.chapterIndex = 0;
   }
   state.version = 18;
+}
+
+function toV20(state) {          // v19 → v20：邻居每日日程
+  if (!state.schedules || typeof state.schedules !== 'object') {
+    state.schedules = { date: '', today: {} };
+  }
+  if (typeof state.schedules.date !== 'string') state.schedules.date = '';
+  if (!state.schedules.today || typeof state.schedules.today !== 'object') state.schedules.today = {};
+  state.version = 20;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

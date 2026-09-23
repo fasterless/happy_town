@@ -51,6 +51,7 @@ export const achievements = [
   { id: "help_20", name: "热心肠",      desc: "回应邻居求助20次",  icon: "🧺", category: "社交", target: 20,  trackKey: "help_fulfill", rewards: { friendPoint: 150, diamond: 40 } },
   { id: "help_all_day", name: "全员搞定", desc: "一天内回应全部求助", icon: "📬", category: "社交", target: 3,  trackKey: "help_daily", rewards: { diamond: 60, coin: 1000 } },
   { id: "favor_10", name: "自己人",     desc: "单日让 1 位邻居人情满格", icon: "🤝", category: "社交", target: 1, trackKey: "favor_full", rewards: { friendPoint: 120, diamond: 30 } },
+  { id: "schedule_15", name: "知己知彼", desc: "赶上邻居的日程回礼15次", icon: "📅", category: "社交", target: 15, trackKey: "schedule_visit", rewards: { friendPoint: 100, diamond: 30 } },
 
   // ============ 🐮 养殖 ============
   { id: "ranch_first", name: "第一位房客", desc: "买下第一只动物",    icon: "🐣", category: "养殖", target: 1,   trackKey: "ranch_buy", rewards: { coin: 300 } },

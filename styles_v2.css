@@ -862,6 +862,30 @@
   font-weight: 800;
 }
 
+.schedule-state {
+  display: inline-block;
+  margin: 2px 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.schedule-state.state-home {
+  background: rgba(120, 190, 110, 0.25);
+  color: #2f6b2a;
+}
+
+.schedule-state.state-out {
+  background: rgba(150, 160, 175, 0.28);
+  color: #4a5568;
+}
+
+.schedule-state.state-troubled {
+  background: rgba(240, 180, 90, 0.3);
+  color: #8a5a10;
+}
+
 /* --- 社区 ---------------------------------------------------------------- */
 
 .community-layout {
