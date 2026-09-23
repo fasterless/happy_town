@@ -6,7 +6,7 @@ import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 18;
+export const CURRENT_VERSION = 19;
 
 /**
  * 创建默认游戏状态
@@ -137,6 +137,11 @@ export function createDefaultState() {
     // 小镇剧情：chapterIndex 是当前进行的章节（等于章节总数表示通关）
     story: {
       chapterIndex: 0,
+    },
+    // 称号与头像框：只存当前装备的那一个，解锁状态由计数现算
+    cosmetics: {
+      equippedTitle: null,
+      equippedFrame: null,
     },
     // 幸运转盘：保底计数与累计抽数
     lottery: {
@@ -270,6 +275,7 @@ export function mergeState(base, saved) {
     greenhouse: { ...base.greenhouse, ...(saved.greenhouse || {}) },
     cafe: { ...base.cafe, ...(saved.cafe || {}) },
     story: { ...base.story, ...(saved.story || {}) },
+    cosmetics: { ...base.cosmetics, ...(saved.cosmetics || {}) },
     lottery: { ...base.lottery, ...(saved.lottery || {}) },
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
@@ -437,6 +443,13 @@ export function normalizeState(state) {
   if (typeof state.story.chapterIndex !== "number" || state.story.chapterIndex < 0) {
     state.story.chapterIndex = 0;
   }
+
+  // 称号与头像框（v19）
+  if (!state.cosmetics || typeof state.cosmetics !== "object") {
+    state.cosmetics = { equippedTitle: null, equippedFrame: null };
+  }
+  if (typeof state.cosmetics.equippedTitle !== "string") state.cosmetics.equippedTitle = null;
+  if (typeof state.cosmetics.equippedFrame !== "string") state.cosmetics.equippedFrame = null;
   if (typeof state.lottery.pity !== "number") state.lottery.pity = 0;
   if (typeof state.lottery.spins !== "number") state.lottery.spins = 0;
   if (typeof state.seasons.claimedEventId !== "string") state.seasons.claimedEventId = "";

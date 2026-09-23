@@ -135,7 +135,7 @@ describe('存档迁移 v18', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(18);
+    expect(merged.version).toBe(19);
     expect(merged.cafe.totalServed).toBe(4);
     expect(merged.story.chapterIndex).toBe(0);
   });

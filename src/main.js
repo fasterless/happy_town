@@ -48,6 +48,7 @@ import * as TalentSystem from './systems/talents.js';
 import * as GreenhouseSystem from './systems/greenhouse.js';
 import * as CafeSystem from './systems/cafe.js';
 import * as StorySystem from './systems/story.js';
+import * as CosmeticSystem from './systems/cosmetics.js';
 
 // 导入 UI 层
 import * as Renderer from './ui/renderer.js';
@@ -858,6 +859,11 @@ window.unlockTalentHandler = (nodeId) => runAction(() => TalentSystem.unlockTale
 
 // 小镇剧情
 window.claimChapterHandler = () => runAction(() => StorySystem.claimChapter(state), 'levelup');
+
+// 称号与头像框
+window.equipTitleHandler = (titleId) => runAction(() => CosmeticSystem.equipTitle(state, titleId), 'success');
+window.clearTitleHandler = () => runAction(() => CosmeticSystem.clearTitle(state), 'click');
+window.equipFrameHandler = (frameId) => runAction(() => CosmeticSystem.equipFrame(state, frameId), 'success');
 
 // 幸运转盘
 window.spinLotteryHandler = () => {

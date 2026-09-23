@@ -53,6 +53,7 @@ import * as TalentSystem from '../systems/talents.js';
 import * as GreenhouseSystem from '../systems/greenhouse.js';
 import * as CafeSystem from '../systems/cafe.js';
 import * as StorySystem from '../systems/story.js';
+import * as CosmeticSystem from '../systems/cosmetics.js';
 import { dishes, getDish } from '../config/dishes.js';
 import { getCafePrice } from '../config/cafe.js';
 import { commissionJobs } from '../config/commissions.js';
@@ -80,10 +81,18 @@ export function renderTopbar(state) {
   const span = nextLevel ? nextLevel.needExp - base : 0;
   const expProgress = span > 0 ? Math.min(100, ((wallet.exp - base) / span) * 100).toFixed(1) : 100;
 
+  const equippedTitle = CosmeticSystem.getEquippedTitle(state);
+  const equippedFrame = CosmeticSystem.getEquippedFrame(state);
+  const frameClass = equippedFrame ? equippedFrame.css : '';
+  const titleTag = equippedTitle
+    ? `<span class="player-title">${equippedTitle.icon} ${escapeHtml(equippedTitle.name)}</span>`
+    : '';
+
   return `
     <div class="player-info">
-      <span class="player-avatar">${escapeHtml(user.avatar)}</span>
+      <span class="player-avatar ${frameClass}">${escapeHtml(user.avatar)}</span>
       <span class="player-name">${escapeHtml(user.nickname)}</span>
+      ${titleTag}
       <span class="player-level">Lv.${wallet.level}</span>
     </div>
     <div class="wallet">
@@ -1630,7 +1639,7 @@ export function renderCharmsPanel(state) {
  */
 export function renderStoryView(state) {
   if (!StorySystem.isStoryUnlocked(state)) {
-    return `<p class="lock-banner">🔒 需要 Lv.${StorySystem.STORY_MIN_LEVEL} 解锁小镇剧情</p>`;
+    return `<p class="lock-banner">🔒 需要 Lv.${StorySystem.STORY_MIN_LEVEL} 解锁小镇剧情</p>${renderCosmeticsPanel(state)}`;
   }
 
   const index = StorySystem.getChapterIndex(state);
@@ -1641,7 +1650,7 @@ export function renderStoryView(state) {
       <span class="story-done-icon">📖</span>
       <h3>故事告一段落</h3>
       <p class="muted-text">七章委托全部完成，小镇的居民都记住你了。</p>
-    </div>`;
+    </div>${renderCosmeticsPanel(state)}`;
   }
 
   const { chapter, tasks } = StorySystem.getCurrentChapter(state);
@@ -1666,6 +1675,58 @@ export function renderStoryView(state) {
         ${allDone ? '交付委托' : `还差 ${tasks.length - doneCount} 件`}
       </button>
     </div>
+  </div>${renderCosmeticsPanel(state)}`;
+}
+
+/**
+ * 称号与头像框面板（挂在剧情页底部）
+ */
+function renderCosmeticsPanel(state) {
+  if (!CosmeticSystem.isCosmeticsUnlocked(state)) {
+    return `<p class="lock-banner">🔒 Lv.${CosmeticSystem.COSMETICS_MIN_LEVEL} 解锁称号与头像框</p>`;
+  }
+
+  const { titles: titleRows, frames: frameRows } = CosmeticSystem.getCosmeticBoard(state);
+
+  const titleCards = titleRows.map(({ item, unlocked, equipped }) => {
+    let action;
+    if (!unlocked) action = `<span class="seed-lock">${escapeHtml(item.desc)}</span>`;
+    else if (equipped) action = `<button class="ghost-action" onclick="window.clearTitleHandler()">卸下</button>`;
+    else action = `<button class="small-action" onclick="window.equipTitleHandler('${item.id}')">装备</button>`;
+    return `<div class="cosmetic-card ${unlocked ? '' : 'locked'} ${equipped ? 'equipped' : ''}">
+      <span class="cosmetic-icon">${item.icon}</span>
+      <div class="cosmetic-info">
+        <h4>${escapeHtml(item.name)}</h4>
+        <p class="muted-text">${escapeHtml(item.desc)}</p>
+      </div>
+      <div class="cosmetic-action">${action}</div>
+    </div>`;
+  }).join('');
+
+  const frameCards = frameRows.map(({ item, unlocked, equipped }) => {
+    const action = !unlocked
+      ? `<span class="seed-lock">${escapeHtml(item.desc)}</span>`
+      : equipped
+        ? '<span class="season-badge">使用中</span>'
+        : `<button class="small-action" onclick="window.equipFrameHandler('${item.id}')">使用</button>`;
+    return `<div class="cosmetic-card ${unlocked ? '' : 'locked'} ${equipped ? 'equipped' : ''}">
+      <span class="player-avatar ${item.css}">🙂</span>
+      <div class="cosmetic-info">
+        <h4>${escapeHtml(item.name)}</h4>
+        <p class="muted-text">${escapeHtml(item.desc)}</p>
+      </div>
+      <div class="cosmetic-action">${action}</div>
+    </div>`;
+  }).join('');
+
+  const unlockedCount = CosmeticSystem.getUnlockedCosmeticCount(state);
+  return `<div class="cosmetics-panel">
+    <h3>🎖️ 称号与头像框 <small>已解锁 ${unlockedCount} 项 · 纯展示</small></h3>
+    <p class="muted-text">做到对应的事就解锁，装备后显示在顶栏。没有数值加成，收集本身就是乐趣。</p>
+    <h4>称号</h4>
+    <div class="cosmetic-grid">${titleCards}</div>
+    <h4>头像框</h4>
+    <div class="cosmetic-grid">${frameCards}</div>
   </div>`;
 }
 

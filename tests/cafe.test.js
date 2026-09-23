@@ -136,7 +136,7 @@ describe('存档迁移 v17', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(18);
+    expect(merged.version).toBe(19);
     expect(merged.greenhouse.totalPlanted).toBe(5);
     expect(Array.isArray(merged.cafe.guests)).toBe(true);
     expect(merged.cafe.totalServed).toBe(0);

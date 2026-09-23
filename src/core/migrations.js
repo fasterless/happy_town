@@ -33,6 +33,7 @@ const MIGRATIONS = [
   { fromVersion: 15, migrate: toV16 },
   { fromVersion: 16, migrate: toV17 },
   { fromVersion: 17, migrate: toV18 },
+  { fromVersion: 18, migrate: toV19 },
 ];
 
 /**
@@ -195,6 +196,15 @@ function toV18(state) {          // v17 → v18：小镇剧情
     state.story.chapterIndex = 0;
   }
   state.version = 18;
+}
+
+function toV19(state) {          // v18 → v19：称号与头像框
+  if (!state.cosmetics || typeof state.cosmetics !== 'object') {
+    state.cosmetics = { equippedTitle: null, equippedFrame: null };
+  }
+  if (typeof state.cosmetics.equippedTitle !== 'string') state.cosmetics.equippedTitle = null;
+  if (typeof state.cosmetics.equippedFrame !== 'string') state.cosmetics.equippedFrame = null;
+  state.version = 19;
 }
 
 /**

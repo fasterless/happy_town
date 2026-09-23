@@ -426,6 +426,93 @@
   margin: 8px 0 4px;
 }
 
+/* ===== 称号与头像框（第八轮） ===== */
+
+.player-title {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff6df;
+  border: 1px solid var(--yellow);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.player-avatar.frame-plain { box-shadow: 0 0 0 2px #c8bda8; }
+.player-avatar.frame-leaf { box-shadow: 0 0 0 2px #6fa86a; background: #e7f3e2; }
+.player-avatar.frame-wave { box-shadow: 0 0 0 2px #6aa8c8; background: #e2f1f8; }
+.player-avatar.frame-ore { box-shadow: 0 0 0 2px #a08a6a; background: #f3ece2; }
+.player-avatar.frame-bloom { box-shadow: 0 0 0 2px #d48aa6; background: #fbe8ef; }
+.player-avatar.frame-gold { box-shadow: 0 0 0 2px #e2b43a; background: #fff4d4; }
+
+.cosmetics-panel {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 250, 235, 0.6);
+}
+
+.cosmetics-panel h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.cosmetics-panel h3 small {
+  font-weight: 400;
+  color: rgba(93, 65, 39, 0.6);
+}
+
+.cosmetics-panel h4 {
+  margin: 12px 0 8px;
+  font-size: 0.95rem;
+}
+
+.cosmetics-panel > .muted-text {
+  margin: 0;
+  font-size: 12px;
+}
+
+.cosmetic-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.cosmetic-card {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.cosmetic-card.locked {
+  opacity: 0.6;
+}
+
+.cosmetic-card.equipped {
+  border-color: var(--yellow);
+  background: #fff6df;
+}
+
+.cosmetic-icon {
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+}
+
+.cosmetic-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cosmetic-info p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
 .seed-shop,
 .furniture-shop {
   margin-top: 18px;

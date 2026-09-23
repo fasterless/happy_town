@@ -3,6 +3,8 @@ import { addRewards } from '../core/inventory.js';
 import { emit, Events } from '../core/events.js';
 import { calculateRoomScore } from './home.js';
 import { talentNodes } from '../config/talents.js';
+import { titles, frames } from '../config/cosmetics.js';
+import { getUnlockedCosmeticCount } from './cosmetics.js';
 
 // 成就配置
 //
@@ -99,6 +101,10 @@ export const achievements = [
   // ============ 📖 剧情 ============
   { id: "story_first", name: "故事开场", desc: "完成第一章剧情", icon: "📖", category: "剧情", target: 1, trackKey: "story_chapter", rewards: { coin: 200, diamond: 5 } },
   { id: "story_all", name: "小镇传说", desc: "完成全部剧情章节", icon: "📚", category: "剧情", target: 7, trackKey: "story_chapter", rewards: { diamond: 100, coin: 3000 } },
+
+  // ============ 🎖️ 收藏 ============
+  { id: "cosmetic_first", name: "有点面子", desc: "装备一个称号或头像框", icon: "🎖️", category: "收藏", target: 1, trackKey: "cosmetic_equip", rewards: { coin: 200 } },
+  { id: "cosmetic_all", name: "收藏家", desc: "解锁全部称号和头像框", icon: "🖼️", category: "收藏", target: titles.length + frames.length, trackKey: "cosmetic_all", rewards: { diamond: 80, coin: 2000 } },
 
   // ============ 🧬 杂交工坊 ============
   { id: "hybrid_first", name: "初次杂交",  desc: "首次合成杂交种子",  icon: "🧬", category: "杂交", target: 1,   trackKey: "hybrid_discover", rewards: { coin: 200 } },
@@ -317,6 +323,9 @@ function getAchievementProgress(state, achievement) {
 
     case "talent_all":
       return (state.talents?.unlocked || []).length;
+
+    case "cosmetic_all":
+      return getUnlockedCosmeticCount(state);
 
     default:
       return 0;

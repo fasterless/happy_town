@@ -206,7 +206,7 @@ describe('存档迁移 v15', () => {
     const merged = mergeState(createDefaultState(), saved);
     migrateState(merged);
 
-    expect(merged.version).toBe(18);
+    expect(merged.version).toBe(19);
     expect(merged.charms.owned).toContain(8001);
     expect(merged.charms.equipped).toBe(8001);
     expect(Array.isArray(merged.talents.unlocked)).toBe(true);
