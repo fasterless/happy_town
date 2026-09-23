@@ -52,6 +52,8 @@ export const achievements = [
   { id: "help_all_day", name: "全员搞定", desc: "一天内回应全部求助", icon: "📬", category: "社交", target: 3,  trackKey: "help_daily", rewards: { diamond: 60, coin: 1000 } },
   { id: "favor_10", name: "自己人",     desc: "单日让 1 位邻居人情满格", icon: "🤝", category: "社交", target: 1, trackKey: "favor_full", rewards: { friendPoint: 120, diamond: 30 } },
   { id: "schedule_15", name: "知己知彼", desc: "赶上邻居的日程回礼15次", icon: "📅", category: "社交", target: 15, trackKey: "schedule_visit", rewards: { friendPoint: 100, diamond: 30 } },
+  { id: "relationship_first", name: "初次熟识", desc: "和一位邻居的关系达到「相识」", icon: "🌱", category: "社交", target: 1, trackKey: "relationship_tier", rewards: { friendPoint: 40, coin: 200 } },
+  { id: "relationship_close", name: "知心邻居", desc: "和一位邻居的关系达到「知心」", icon: "💛", category: "社交", target: 1, trackKey: "relationship_close", rewards: { diamond: 40, friendPoint: 100 } },
 
   // ============ 🐮 养殖 ============
   { id: "ranch_first", name: "第一位房客", desc: "买下第一只动物",    icon: "🐣", category: "养殖", target: 1,   trackKey: "ranch_buy", rewards: { coin: 300 } },
@@ -216,6 +218,11 @@ function popcount(value) {
 function getAchievementProgress(state, achievement) {
   // 通用：绝大多数成就直接读 analytics 里累计的事件数，
   // 不再逐个列 case，新增事件键的成就零配置接入。
+  if (achievement.trackKey === "relationship_close") {
+    const claimed = state.relationships?.claimed || {};
+    return Object.values(claimed).some((tiers) => Array.isArray(tiers) && tiers.includes("close")) ? 1 : 0;
+  }
+
   if (achievement.trackKey in state.analytics) {
     return state.analytics[achievement.trackKey] || 0;
   }

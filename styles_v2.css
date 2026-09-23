@@ -886,6 +886,11 @@
   color: #8a5a10;
 }
 
+.relationship-progress {
+  color: #8a4b2a;
+  font-weight: 800;
+}
+
 /* --- 社区 ---------------------------------------------------------------- */
 
 .community-layout {

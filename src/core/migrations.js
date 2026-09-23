@@ -35,6 +35,7 @@ const MIGRATIONS = [
   { fromVersion: 17, migrate: toV18 },
   { fromVersion: 18, migrate: toV19 },
   { fromVersion: 19, migrate: toV20 },
+  { fromVersion: 20, migrate: toV21 },
 ];
 
 /**
@@ -206,6 +207,15 @@ function toV20(state) {          // v19 → v20：邻居每日日程
   if (typeof state.schedules.date !== 'string') state.schedules.date = '';
   if (!state.schedules.today || typeof state.schedules.today !== 'object') state.schedules.today = {};
   state.version = 20;
+}
+
+function toV21(state) {          // v20 → v21：邻居关系进度
+  if (!state.relationships || typeof state.relationships !== 'object') {
+    state.relationships = { points: {}, claimed: {} };
+  }
+  if (!state.relationships.points || typeof state.relationships.points !== 'object') state.relationships.points = {};
+  if (!state.relationships.claimed || typeof state.relationships.claimed !== 'object') state.relationships.claimed = {};
+  state.version = 21;
 }
 
 function toV19(state) {          // v18 → v19：称号与头像框

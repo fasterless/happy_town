@@ -5,9 +5,10 @@ import { todayKey } from '../utils/time.js';
 import { furnitureKey } from '../utils/format.js';
 import { initNeighborEvents } from '../systems/events.js';
 import { initSchedules } from '../systems/schedules.js';
+import { initRelationships } from '../systems/relationships.js';
 
 // 当前存档结构版本：每次给 state 增加新字段时 +1，并在 core/migrations.js 里补一条迁移
-export const CURRENT_VERSION = 20;
+export const CURRENT_VERSION = 21;
 
 /**
  * 创建默认游戏状态
@@ -211,6 +212,11 @@ export function createDefaultState() {
       date: "",
       today: {},
     },
+    // 邻居关系：points 是每位邻居的熟悉度，claimed 是已发放奖励的阶段
+    relationships: {
+      points: {},
+      claimed: {},
+    },
     achievements: {
       unlocked: [],
       progress: {},
@@ -286,6 +292,7 @@ export function mergeState(base, saved) {
     seasons: { ...base.seasons, ...(saved.seasons || {}) },
     npcEvents: { ...base.npcEvents, ...(saved.npcEvents || {}) },
     schedules: { ...base.schedules, ...(saved.schedules || {}) },
+    relationships: { ...base.relationships, ...(saved.relationships || {}) },
     achievements: { ...base.achievements, ...(saved.achievements || {}) },
     pets: { ...base.pets, ...(saved.pets || {}) },
     weather: { ...base.weather, ...(saved.weather || {}) },
@@ -501,6 +508,9 @@ export function normalizeState(state) {
 
   // 邻居每日日程（v20）
   initSchedules(state);
+
+  // 邻居关系（v21）
+  initRelationships(state);
 
   state.version = CURRENT_VERSION;
   return state;

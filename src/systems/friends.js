@@ -4,6 +4,7 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { emit, Events } from '../core/events.js';
 import { applyPetToFriendPoint } from './pets.js';
 import { tryScheduleGift } from './schedules.js';
+import { gainRelationship } from './relationships.js';
 import { getBuffMultiplier } from './dishes.js';
 import { GAME_CONFIG } from '../config/constants.js';
 import { todayKey, yesterdayKey } from '../utils/time.js';
@@ -90,12 +91,16 @@ export function visitFriend(state, friendId) {
 
   // 惊喜回礼：按邻居今天的日程状态给不同的东西（每日每人限一次）
   const gift = tryScheduleGift(state, friendId);
+  const bond = gainRelationship(state, friendId, 'visit');
 
   const giftText = gift ? ` ${gift.line}（获得${gift.rewardText}）` : "";
+  const bondText = bond.tiers.length
+    ? `，和${friend.name}成为「${bond.tiers.map((tier) => tier.name).join('、')}」（${bond.rewardText}）`
+    : `，熟悉度 +${bond.gained}`;
   const streakText = streakBonus > 0 ? `（连续拜访${social.visitStreak}天，+${streakBonus}）` : "";
   return {
     success: true,
-    message: `拜访了${friend.name}，获得${point}友情点${streakText}${giftText}`,
+    message: `拜访了${friend.name}，获得${point}友情点${streakText}${giftText}${bondText}`,
     state,
   };
 }
@@ -216,9 +221,14 @@ export function waterFriendPlot(state, friendId) {
   trackDaily(state, "water", 1);
   emit(Events.FRIEND_WATERED, { friendId });
 
+  const bond = gainRelationship(state, friendId, 'water');
+  const bondText = bond.tiers.length
+    ? `，关系达到「${bond.tiers.map((tier) => tier.name).join('、')}」（${bond.rewardText}）`
+    : `，熟悉度 +${bond.gained}`;
+
   return {
     success: true,
-    message: `帮${friend.name}浇了田，作物快了${Math.floor(GAME_CONFIG.social.waterBoostSec / 60)}分钟，获得${point}友情点`,
+    message: `帮${friend.name}浇了田，作物快了${Math.floor(GAME_CONFIG.social.waterBoostSec / 60)}分钟，获得${point}友情点${bondText}`,
     state,
   };
 }

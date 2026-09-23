@@ -13,6 +13,7 @@ import { logEvent, trackDaily } from '../utils/analytics.js';
 import { todayKey } from '../utils/time.js';
 import { emit, Events } from '../core/events.js';
 import { getBuffMultiplier } from './dishes.js';
+import { gainRelationship } from './relationships.js';
 
 /**
  * 求助板是否解锁（跟着好友系统走，Lv.5）
@@ -155,10 +156,14 @@ export function fulfillRequest(state, index) {
   trackDaily(state, 'help', 1);
   emit(Events.HELP_FULFILLED, { friendId: friend.id, point });
 
+  const bond = gainRelationship(state, friend.id, 'help');
+  const bondText = bond.tiers.length
+    ? `，关系达到「${bond.tiers.map((tier) => tier.name).join('、')}」（${bond.rewardText}）`
+    : `，熟悉度 +${bond.gained}`;
   const fullText = full ? '，他把你们当自己人了 🤝' : '';
   return {
     success: true,
-    message: `给${friend.name}送了${request.count}个${request.icon}${request.name}，获得${point}友情点${fullText}`,
+    message: `给${friend.name}送了${request.count}个${request.icon}${request.name}，获得${point}友情点${bondText}${fullText}`,
     state,
   };
 }
