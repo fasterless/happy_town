@@ -5,7 +5,7 @@
 // 数值全部读 src/config，这里不另定价格。
 
 import { crops } from '../config/crops.js';
-import { getCurrentSeasonalEvent } from '../config/seasons.js';
+import { getCurrentSeasonalEvent, getAllSeasonalCrops } from '../config/seasons.js';
 import { greenhouseCrops, GREENHOUSE_PLOTS } from '../config/greenhouse.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
@@ -30,6 +30,30 @@ const BAIT_PRICE = 5;
 // 生长超过 10 分钟的作物，在像素版里封顶到 10 分钟，否则一茬要等一小时。
 const MAX_GROW_MS = 10 * 60 * 1000;
 const STARTING_COIN = 200;
+// 每天首次进入小镇领的登录金币，给日常玩法一点稳定的现金流。
+const DAILY_BONUS = 60;
+
+export const FISH_TABLE = FISHES;
+export const DAILY_LIMITS = {
+  fish: FREE_CASTS_PER_DAY,
+  forage: FORAGE_LIMIT_PER_DAY,
+};
+
+// 天气按日期固定：晴 / 多云 / 雨。雨天让作物长得更快，田地视作自动湿润。
+const WEATHERS = [
+  { id: 'sunny', name: '晴天', icon: '☀️', growth: 1, note: '阳光正好' },
+  { id: 'cloudy', name: '多云', icon: '⛅', growth: 1, note: '云层不厚，和平常一样' },
+  { id: 'rainy', name: '雨天', icon: '🌧️', growth: 0.72, note: '雨水浇灌，作物长得更快，田地自动湿润' },
+];
+
+/** 今天的天气，按日期固定，刷新不变。 */
+export function weatherOf(now) {
+  const day = dayKey(now);
+  let seed = 0;
+  for (const ch of day) seed = (seed * 31 + ch.charCodeAt(0)) % 1000;
+  // 让晴天多一点：晴、多云、晴、雨 四选一。
+  return [WEATHERS[0], WEATHERS[1], WEATHERS[0], WEATHERS[2]][seed % 4];
+}
 
 export function createWorldState(now = Date.now()) {
   return {
@@ -50,7 +74,18 @@ export function createWorldState(now = Date.now()) {
     forageDay: dayKey(now),
     boardDone: false,
     boardDay: dayKey(now),
+    bonusDay: '',
+    friends: {},
+    stats: {
+      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, coinEarned: 0,
+    },
   };
+}
+
+/** 累加一个终身统计（用于成就）。缺字段时兜底成 0。 */
+function bump(state, key, amount = 1) {
+  if (!state.stats) state.stats = {};
+  state.stats[key] = (state.stats[key] || 0) + amount;
 }
 
 export function dayKey(now) {
@@ -60,22 +95,33 @@ export function dayKey(now) {
   return `${date.getFullYear()}-${m}-${d}`;
 }
 
-/** 当前季节限定作物 + 基础作物，作为种子铺 */
+/** 当前季节限定作物 + 基础作物，作为种子铺（只展示当前活动开放的） */
 export function seedList() {
   const event = getCurrentSeasonalEvent();
   const seasonal = event ? event.seasonal.crops : [];
   return [...crops, ...seasonal];
 }
 
+// 查询用的全量作物表：基础作物 + 所有季节限定作物 + 温室作物。
+// 种子铺（seedList）只给当前活动的作物；但已经种下/已经收进背包的
+// 限定作物，在活动结束后也必须能收获、能卖、能显示，所以查表不限当前活动。
+export function allCrops() {
+  return [...crops, ...getAllSeasonalCrops(), ...greenhouseCrops];
+}
+
+function findCrop(id) {
+  return allCrops().find((c) => c.id === id);
+}
+
 function growMs(crop) {
   return Math.min(crop.growTime * 1000, MAX_GROW_MS);
 }
 
-/** 0 空地，1 种子，2 幼苗，3 生长，4 成熟 */
-export function growthStage(plot, crop, now) {
+/** 0 空地，1 种子，2 幼苗，3 生长，4 成熟。weather 可选，雨天生长更快。 */
+export function growthStage(plot, crop, now, weather = null) {
   if (!plot.cropId) return 0;
   const elapsed = now - plot.plantedAt;
-  const total = growMs(crop);
+  const total = growMs(crop) * (weather?.growth ?? 1);
   if (elapsed >= total) return 4;
   if (elapsed >= total * 0.66) return 3;
   if (elapsed >= total * 0.33) return 2;
@@ -90,6 +136,8 @@ function clone(state) {
     greenhouse: state.greenhouse.map((p) => ({ ...p })),
     crafting: state.crafting ? { ...state.crafting } : null,
     cafeServed: [...state.cafeServed],
+    friends: { ...(state.friends || {}) },
+    stats: { ...(state.stats || {}) },
   };
 }
 
@@ -162,14 +210,17 @@ export function waterPlot(state, plotIndex) {
   return { ok: true, message: '浇过水了', state: next };
 }
 
-export function harvestPlot(state, plotIndex, now) {
+export function harvestPlot(state, plotIndex, now, weather = null) {
   const next = clone(state);
   const plot = next.plots[plotIndex];
-  const crop = plot && seedList().concat(crops).find((c) => c.id === plot.cropId);
+  const crop = plot && findCrop(plot.cropId);
   if (!plot || !plot.cropId || !crop) return fail(state, '这里没有作物');
-  if (growthStage(plot, crop, now) < 4) return fail(state, '还没成熟');
-  const amount = plot.watered ? crop.harvestCount : Math.max(1, crop.harvestCount - 1);
+  if (growthStage(plot, crop, now, weather) < 4) return fail(state, '还没成熟');
+  // 雨天视作已浇水，收成拉满。
+  const watered = plot.watered || weather?.id === 'rainy';
+  const amount = watered ? crop.harvestCount : Math.max(1, crop.harvestCount - 1);
   add(next, `crop_${crop.id}`, amount);
+  bump(next, 'harvests');
   plot.cropId = 0;
   plot.plantedAt = 0;
   plot.watered = false;
@@ -178,12 +229,13 @@ export function harvestPlot(state, plotIndex, now) {
 
 export function sellCrop(state, cropId, amount) {
   const next = clone(state);
-  const crop = seedList().concat(greenhouseCrops).find((c) => c.id === cropId);
+  const crop = findCrop(cropId);
   if (!crop) return fail(state, '没有这种作物');
   const key = `crop_${crop.id}`;
   if (!take(next, key, amount)) return fail(state, '背包里不够');
   const earned = crop.sellPrice * amount;
   next.coin += earned;
+  bump(next, 'coinEarned', earned);
   return { ok: true, message: `卖掉${crop.name}，+${earned} 金币`, state: next };
 }
 
@@ -210,6 +262,7 @@ export function harvestGreenhouse(state, plotIndex, now) {
   if (!plot || !crop) return fail(state, '温室里没有作物');
   if (now - plot.plantedAt < growMs(crop)) return fail(state, '还没成熟');
   add(next, `crop_${crop.id}`, crop.harvestCount);
+  bump(next, 'harvests');
   plot.cropId = 0;
   plot.plantedAt = 0;
   return { ok: true, message: `收获${crop.name}×${crop.harvestCount}`, state: next };
@@ -236,6 +289,7 @@ export function collectCraft(state, now) {
   if (now < next.crafting.readyAt) return fail(state, '还在加工');
   const recipe = craftingRecipes.find((r) => r.id === next.crafting.recipeId);
   add(next, recipe.result.key, recipe.result.count);
+  bump(next, 'crafted');
   next.crafting = null;
   return { ok: true, message: `${recipe.name}做好了`, state: next };
 }
@@ -249,6 +303,7 @@ export function cookDish(state, dishId) {
   }
   for (const req of dish.requires) take(next, req.item, req.count);
   add(next, `dish_${dish.id}`, 1);
+  bump(next, 'cooked');
   return { ok: true, message: `做出了${dish.name}`, state: next };
 }
 
@@ -268,7 +323,7 @@ function weightedPick(list, luck) {
   return list[list.length - 1];
 }
 
-export function castLine(state, now) {
+export function castLine(state, now, quality = 1) {
   const next = clone(state);
   rollDaily(next, now);
   if (next.fishCasts >= FREE_CASTS_PER_DAY) {
@@ -276,9 +331,13 @@ export function castLine(state, now) {
     next.coin -= BAIT_PRICE;
   }
   next.fishCasts += 1;
-  const fish = weightedPick(FISHES, 1);
+  bump(next, 'casts');
+  // quality 来自钓鱼小游戏：命中越准，稀有鱼（lucky）权重越高。
+  const fish = weightedPick(FISHES, Math.max(1, quality));
   add(next, `fish_${fish.id}`, 1);
-  return { ok: true, message: `钓上了${fish.name}`, state: next };
+  const left = Math.max(0, FREE_CASTS_PER_DAY - next.fishCasts);
+  const tail = left > 0 ? `（今日免费剩 ${left} 次）` : '（免费次数已用完，之后每次 5 金币鱼饵）';
+  return { ok: true, message: `钓上了${fish.name}${tail}`, state: next };
 }
 
 export function sellFish(state, fishId, amount) {
@@ -288,6 +347,7 @@ export function sellFish(state, fishId, amount) {
   if (!take(next, `fish_${fish.id}`, amount)) return fail(state, '背包里不够');
   const earned = fish.sellPrice * amount;
   next.coin += earned;
+  bump(next, 'coinEarned', earned);
   return { ok: true, message: `卖掉${fish.name}，+${earned} 金币`, state: next };
 }
 
@@ -321,7 +381,10 @@ export function forageForest(state, now) {
   }
   const amount = drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
   add(next, drop.key, amount);
-  return { ok: true, message: `在萤火林找到${drop.name}×${amount}`, state: next };
+  bump(next, 'foraged');
+  const left = Math.max(0, FORAGE_LIMIT_PER_DAY - next.forageCount);
+  const tail = left > 0 ? `（今日还能采 ${left} 次）` : '（今天的萤火林采完了）';
+  return { ok: true, message: `在萤火林找到${drop.name}×${amount}${tail}`, state: next };
 }
 
 export function completeBoardRequest(state, now) {
@@ -334,6 +397,7 @@ export function completeBoardRequest(state, now) {
   }
   next.coin += request.reward;
   next.boardDone = true;
+  bump(next, 'coinEarned', request.reward);
   return { ok: true, message: `完成${request.name}，获得${request.reward}金币`, state: next };
 }
 
@@ -344,6 +408,7 @@ export function sellForage(state, key, amount) {
   if (!take(next, key, amount)) return fail(state, '背包里不够');
   const earned = item.sellPrice * amount;
   next.coin += earned;
+  bump(next, 'coinEarned', earned);
   return { ok: true, message: `卖掉${item.name}，+${earned}金币`, state: next };
 }
 
@@ -355,12 +420,13 @@ export function digMine(state, now) {
   const pick = getPickaxe(next.pickLevel);
   if (next.stamina <= 0) return fail(state, '今天的体力用完了');
   next.stamina -= 1;
+  bump(next, 'digs');
   const pool = mineLoot.filter((item) => item.minPick <= pick.level);
   const drop = weightedPick(pool, 1 + next.pickLevel * 0.25);
   const amount = drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
-  if (drop.key === 'coin') next.coin += amount;
+  if (drop.key === 'coin') { next.coin += amount; bump(next, 'coinEarned', amount); }
   else add(next, drop.key, amount);
-  return { ok: true, message: `挖到${drop.name}×${amount}`, state: next };
+  return { ok: true, message: `挖到${drop.name}×${amount}（体力剩 ${next.stamina}）`, state: next };
 }
 
 export function upgradePick(state) {
@@ -387,6 +453,7 @@ export function sellOre(state, key, amount) {
   if (!take(next, key, amount)) return fail(state, '背包里不够');
   const earned = price * amount;
   next.coin += earned;
+  bump(next, 'coinEarned', earned);
   return { ok: true, message: `卖掉矿石，+${earned} 金币`, state: next };
 }
 
@@ -419,15 +486,17 @@ export function serveGuest(state, guestId, now) {
   const price = getCafePrice(guest.dish);
   next.coin += price;
   next.cafeServed.push(guestId);
+  bump(next, 'served');
+  bump(next, 'coinEarned', price);
   return { ok: true, message: `${guest.name}付了 ${price} 金币`, state: next };
 }
 
 // ---------- 背包展示 ----------
 
-/** 背包里每项的名字、图标与可卖价格（0 表示不单卖） */
-export function describeBag(state) {
+/** 背包/物品目录：key → { name, icon, sell, sellKind, sellId } */
+function buildCatalog() {
   const catalog = new Map();
-  for (const crop of [...seedList(), ...greenhouseCrops]) {
+  for (const crop of allCrops()) {
     catalog.set(`crop_${crop.id}`, { name: crop.name, icon: crop.icon, sell: crop.sellPrice, sellKind: 'crop', sellId: crop.id });
   }
   for (const fish of FISHES) {
@@ -446,7 +515,104 @@ export function describeBag(state) {
   for (const dish of dishes) {
     catalog.set(`dish_${dish.id}`, { name: dish.name, icon: dish.icon, sell: 0 });
   }
+  return catalog;
+}
+
+/** 某个物品 key 的「图标+名字」，找不到就回退成 key。 */
+export function itemLabel(key) {
+  const entry = buildCatalog().get(key);
+  return entry ? `${entry.icon}${entry.name}` : key;
+}
+
+/** 背包里每项的名字、图标与可卖价格（0 表示不单卖） */
+export function describeBag(state) {
+  const catalog = buildCatalog();
   return Object.entries(state.bag)
     .filter(([, amount]) => amount > 0)
     .map(([key, amount]) => ({ key, amount, ...(catalog.get(key) || { name: key, icon: '📦', sell: 0 }) }));
+}
+
+// ---------- 邻居好感度 ----------
+
+const FRIEND_MAX = 100;
+
+/** 和邻居聊天：每位邻居每天首次聊天 +5 好感（封顶 100）。 */
+export function talkFriend(state, npcId, now) {
+  const next = clone(state);
+  if (!next.friends) next.friends = {};
+  const rec = { ...(next.friends[npcId] || { points: 0, day: '' }) };
+  const day = dayKey(now);
+  let gained = 0;
+  if (rec.day !== day) {
+    gained = Math.min(5, FRIEND_MAX - rec.points);
+    rec.points = Math.min(FRIEND_MAX, rec.points + 5);
+    rec.day = day;
+    if (gained > 0) bump(next, 'talks');
+  }
+  next.friends[npcId] = rec;
+  return { ok: true, gained, points: rec.points, state: next };
+}
+
+/** 好感度 → 0~5 颗心 */
+export function friendHearts(points) {
+  return Math.max(0, Math.min(5, Math.floor((points || 0) / 20)));
+}
+
+// ---------- 每日登录奖励 ----------
+
+/** 每天首次进入小镇领登录金币；已领过返回 ok:false。 */
+export function claimDailyBonus(state, now) {
+  const day = dayKey(now);
+  if (state.bonusDay === day) return { ok: false, message: '', state };
+  const next = clone(state);
+  next.bonusDay = day;
+  next.coin += DAILY_BONUS;
+  bump(next, 'coinEarned', DAILY_BONUS);
+  const w = weatherOf(now);
+  return { ok: true, message: `今天${w.icon}${w.name} · 登录奖励 +${DAILY_BONUS} 金币`, state: next };
+}
+
+// ---------- 每日剩余额度（HUD / 提示用） ----------
+
+export function dailyRemaining(state, now) {
+  const day = dayKey(now);
+  const fishUsed = state.fishDay === day ? state.fishCasts : 0;
+  const forageUsed = state.forageDay === day ? state.forageCount : 0;
+  const stamina = state.staminaDay === day ? state.stamina : getPickaxe(state.pickLevel).maxStamina;
+  return {
+    fish: Math.max(0, FREE_CASTS_PER_DAY - fishUsed),
+    forage: Math.max(0, FORAGE_LIMIT_PER_DAY - forageUsed),
+    stamina,
+    boardDone: state.boardDay === day ? state.boardDone : false,
+  };
+}
+
+/** 今天的日常是不是都做完了（用来提示"明天再来"）。 */
+export function allDailiesDone(state, now) {
+  const r = dailyRemaining(state, now);
+  const day = dayKey(now);
+  const guests = todaysGuests(now);
+  const servedAll = state.cafeDay === day
+    ? guests.every((g) => state.cafeServed.includes(g.id))
+    : false;
+  return r.fish === 0 && r.forage === 0 && r.stamina === 0 && r.boardDone && servedAll;
+}
+
+// ---------- 成就 ----------
+
+/** 依据终身统计与当前进度算出成就列表（纯展示，不写状态）。 */
+export function achievementsOf(state) {
+  const s = state.stats || {};
+  const topFriend = Math.max(0, ...Object.values(state.friends || {}).map((f) => f.points || 0));
+  const defs = [
+    { id: 'harvest', icon: '🌾', name: '农忙好手', goal: 20, value: s.harvests || 0, desc: '收获作物 20 次' },
+    { id: 'cast', icon: '🎣', name: '钓鱼达人', goal: 20, value: s.casts || 0, desc: '抛竿 20 次' },
+    { id: 'dig', icon: '⛏️', name: '矿洞常客', goal: 30, value: s.digs || 0, desc: '下矿 30 次' },
+    { id: 'cook', icon: '🍳', name: '料理新星', goal: 5, value: s.cooked || 0, desc: '做出 5 道菜' },
+    { id: 'serve', icon: '☕', name: '金牌接待', goal: 10, value: s.served || 0, desc: '招待 10 位客人' },
+    { id: 'coin', icon: '💰', name: '小镇富翁', goal: 2000, value: s.coinEarned || 0, desc: '累计赚 2000 金币' },
+    { id: 'pick', icon: '🔨', name: '镐子行家', goal: 3, value: state.pickLevel || 1, desc: '把镐子升到 3 级' },
+    { id: 'friend', icon: '💞', name: '知心好友', goal: FRIEND_MAX, value: topFriend, desc: '把一位邻居处到满好感' },
+  ];
+  return defs.map((d) => ({ ...d, done: d.value >= d.goal }));
 }

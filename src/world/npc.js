@@ -33,13 +33,18 @@ export function scheduleOf(npcId, now) {
   return scheduleStates[0].id;
 }
 
-/** 靠近时说的话：日程台词优先，后面附上他在剧情里的开场白 */
-export function dialogueOf(npcId, now) {
+/** 靠近时说的话：日程台词随日期/好感轮换，后面附上剧情开场白与亲密度提示 */
+export function dialogueOf(npcId, now, points = 0) {
   const schedule = neighborSchedules.find((entry) => entry.npc === npcId);
   const state = scheduleOf(npcId, now);
-  const line = schedule?.states[state]?.lines[0] || '……';
+  const lines = schedule?.states[state]?.lines || ['……'];
+  const idx = hash(`${npcId}:${dayKey(now)}:${points}`) % lines.length;
+  const line = lines[idx] || lines[0] || '……';
+  const hearts = Math.min(5, Math.floor((points || 0) / 20));
+  const warm = hearts >= 3 ? '\n（你们已经是很要好的朋友了）' : hearts >= 1 ? '\n（对你露出熟悉的微笑）' : '';
   const chapter = storyChapters.find((entry) => entry.npc === friendName(npcId));
-  return chapter ? `${line}\n${chapter.intro}` : line;
+  const intro = chapter ? `\n${chapter.intro}` : '';
+  return `${line}${intro}${warm}`;
 }
 
 function friendName(npcId) {
@@ -64,8 +69,8 @@ export function createNpcs() {
   });
 }
 
-/** 推进邻居沿路径行走；返回新数组，不改入参。 */
-export function stepNpcs(npcs, stepMs, msPerTile = 900) {
+/** 推进邻居沿路径行走；返回新数组，不改入参。blocked 给了就不穿墙。 */
+export function stepNpcs(npcs, stepMs, msPerTile = 900, blocked = () => false) {
   return npcs.map((npc) => {
     const next = { ...npc };
     next.progress += stepMs;
@@ -74,10 +79,13 @@ export function stepNpcs(npcs, stepMs, msPerTile = 900) {
       const target = next.route[next.waypoint];
       if (next.tx === target.tx && next.ty === target.ty) {
         next.waypoint = (next.waypoint + 1) % next.route.length;
-      } else {
-        next.tx += Math.sign(target.tx - next.tx);
-        next.ty += Math.sign(target.ty - next.ty);
+        continue;
       }
+      const sx = Math.sign(target.tx - next.tx);
+      const sy = Math.sign(target.ty - next.ty);
+      // 优先走 x 轴，撞墙就改走 y 轴，两边都堵就原地等一拍——不穿模。
+      if (sx !== 0 && !blocked(next.tx + sx, next.ty)) next.tx += sx;
+      else if (sy !== 0 && !blocked(next.tx, next.ty + sy)) next.ty += sy;
     }
     return next;
   });

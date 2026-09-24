@@ -23,6 +23,13 @@ import {
   forageForest,
   completeBoardRequest,
   growthStage,
+  allCrops,
+  weatherOf,
+  talkFriend,
+  friendHearts,
+  claimDailyBonus,
+  dailyRemaining,
+  achievementsOf,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
 import { dialogueOf, stepNpcs, createNpcs } from '../src/world/npc.js';
@@ -277,5 +284,77 @@ describe('存档与邻居', () => {
     const travelled = moved.some((npc, i) => npc.tx !== npcs[i].tx || npc.ty !== npcs[i].ty);
     expect(travelled).toBe(true);
     expect(dialogueOf('npc_mayor', NOW).length).toBeGreaterThan(0);
+  });
+});
+
+describe('季节作物不再卡死', () => {
+  it('活动结束后种下的季节作物依然能收获与卖出', () => {
+    // 直接把一株夏日限定作物（西瓜 1103）塞进田里，模拟"活动已结束"。
+    let state = createWorldState(NOW);
+    state.plots[0] = { cropId: 1103, plantedAt: NOW - 60 * 60 * 1000, watered: true };
+    expect(allCrops().some((c) => c.id === 1103)).toBe(true);
+
+    const harvested = harvestPlot(state, 0, NOW);
+    expect(harvested.ok).toBe(true);
+    expect(harvested.state.bag.crop_1103).toBeGreaterThan(0);
+    state = harvested.state;
+
+    const sold = sellCrop(state, 1103, state.bag.crop_1103);
+    expect(sold.ok).toBe(true);
+    expect(sold.state.coin).toBeGreaterThan(200);
+  });
+});
+
+describe('天气 / 好感 / 登录奖励 / 额度', () => {
+  it('天气按日期固定，刷新不变', () => {
+    expect(weatherOf(NOW).id).toBe(weatherOf(NOW).id);
+    expect(['sunny', 'cloudy', 'rainy']).toContain(weatherOf(NOW).id);
+  });
+
+  it('雨天让作物长得更快', () => {
+    const plot = { cropId: 1001, plantedAt: NOW, watered: false };
+    const crop = { growTime: 30 };
+    const rainy = { id: 'rainy', growth: 0.72 };
+    // 在同一时刻，雨天的进度阶段 >= 晴天。
+    const t = NOW + 22 * 1000;
+    expect(growthStage(plot, crop, t, rainy)).toBeGreaterThanOrEqual(growthStage(plot, crop, t));
+  });
+
+  it('每位邻居每天首次聊天 +5 好感，同一天不重复加', () => {
+    let state = createWorldState(NOW);
+    const first = talkFriend(state, 'npc_mayor', NOW);
+    expect(first.gained).toBe(5);
+    expect(first.points).toBe(5);
+    state = first.state;
+    const again = talkFriend(state, 'npc_mayor', NOW);
+    expect(again.gained).toBe(0);
+    expect(again.points).toBe(5);
+    // 隔天再聊又能加。
+    const nextDay = talkFriend(again.state, 'npc_mayor', NOW + 24 * 60 * 60 * 1000);
+    expect(nextDay.gained).toBe(5);
+    expect(friendHearts(20)).toBe(1);
+    expect(friendHearts(100)).toBe(5);
+  });
+
+  it('每天首次进入领登录奖励，同一天只领一次', () => {
+    const state = createWorldState(NOW);
+    const claim = claimDailyBonus(state, NOW);
+    expect(claim.ok).toBe(true);
+    expect(claim.state.coin).toBe(260);
+    expect(claimDailyBonus(claim.state, NOW).ok).toBe(false);
+  });
+
+  it('每日剩余额度随行为递减', () => {
+    let state = createWorldState(NOW);
+    expect(dailyRemaining(state, NOW).fish).toBe(5);
+    state = castLine(state, NOW).state;
+    expect(dailyRemaining(state, NOW).fish).toBe(4);
+  });
+
+  it('成就按统计推进', () => {
+    const state = createWorldState(NOW);
+    const list = achievementsOf(state);
+    expect(list.length).toBeGreaterThan(0);
+    expect(list.every((a) => a.done === false)).toBe(true);
   });
 });

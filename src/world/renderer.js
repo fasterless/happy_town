@@ -6,7 +6,7 @@
 import { TILE_W, TILE_H } from './iso.js';
 import { MAP_SIZE, getGround, BUILDINGS, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
-import { seedList, growthStage } from './sim.js';
+import { allCrops, growthStage } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
@@ -403,8 +403,7 @@ function drawSpot(ctx, spot, x, y, now) {
   ctx.fillText(spot.name, x, y - 28);
 }
 
-function drawCrop(ctx, cx, cy, stage, icon, watered = false) {
-  if (stage <= 0) return;
+function drawCrop(ctx, cx, cy, stage, icon, watered = false) {  if (stage <= 0) return;
   const x = Math.round(cx);
   const y = Math.round(cy);
   ctx.fillStyle = 'rgba(34, 43, 31, 0.26)';
@@ -434,9 +433,22 @@ function drawCrop(ctx, cx, cy, stage, icon, watered = false) {
     ctx.fillText(icon, x, y - size - 7);
   }
 }
+// 邻居头顶的小红心，好感越高越多（最多 5 颗）。
+function drawHearts(ctx, cx, cy, hearts) {
+  const n = Math.max(0, Math.min(5, hearts));
+  if (!n) return;
+  const x = Math.round(cx);
+  const y = Math.round(cy) - 56;
+  ctx.font = '9px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ff5a7a';
+  ctx.fillText('❤'.repeat(n), x, y);
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
-  const { width, height, player, npcs, world, seasonId, now } = view;
+  const { width, height, player, npcs, world, seasonId, now, weather } = view;
   const cameraOffsetY = view.cameraY ?? 34;
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, width, height);
@@ -480,13 +492,14 @@ export function renderFrame(ctx, view) {
 
   for (const building of BUILDINGS) drawBuilding(ctx, building, cameraX, cameraY);
 
-  const crops = seedList();
+  const crops = allCrops();
   world.plots.forEach((plot, i) => {
     const spot = FARM_PLOTS[i];
     if (!spot) return;
     const crop = crops.find((item) => item.id === plot.cropId);
     const pos = tileCenter(spot.tx, spot.ty);
-    drawCrop(ctx, pos.x + cameraX, pos.y + cameraY, growthStage(plot, crop, now), crop ? crop.icon : '', plot.watered);
+    const watered = plot.watered || weather?.id === 'rainy';
+    drawCrop(ctx, pos.x + cameraX, pos.y + cameraY, growthStage(plot, crop, now, weather), crop ? crop.icon : '', watered);
   });
   world.greenhouse.forEach((plot, i) => {
     const spot = GREENHOUSE_PLOTS[i];
@@ -507,7 +520,9 @@ export function renderFrame(ctx, view) {
 
   // 玩家与邻居都用插值坐标，按 y 排序保证前后遮挡自然。
   const actors = [
-    ...npcs.map((npc) => ({ rx: npc.rx ?? npc.tx, ry: npc.ry ?? npc.ty, kind: 'npc', avatar: npc.avatar, name: npc.name })),
+    ...npcs.map((npc) => ({
+      rx: npc.rx ?? npc.tx, ry: npc.ry ?? npc.ty, kind: 'npc', avatar: npc.avatar, name: npc.name, hearts: npc.hearts || 0,
+    })),
     { rx: player.rx, ry: player.ry, kind: 'player' },
   ];
   actors.sort((a, b) => a.ry - b.ry);
@@ -522,14 +537,31 @@ export function renderFrame(ctx, view) {
     } else {
       drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name);
     }
+    if (actor.kind === 'npc' && actor.hearts > 0) drawHearts(ctx, x, y, actor.hearts);
   }
 
-  // Day-night tint stays subtle enough to keep paths and interaction markers legible.
-  const hour = ((now % (12 * 60 * 1000)) / (12 * 60 * 1000)) * 24;
-  const darkness = Math.max(0, Math.cos(((hour - 12) / 12) * Math.PI));
-  if (darkness > 0.02) {
-    ctx.fillStyle = `rgba(18, 28, 54, ${darkness * 0.35})`;
+  // 昼夜滤镜：午夜最暗、正午最亮（view.hour 是 0~24 的游戏小时）。
+  const hour = view.hour ?? 12;
+  const nightAmt = Math.max(0, Math.cos((hour / 24) * Math.PI * 2));
+  if (nightAmt > 0.02) {
+    ctx.fillStyle = `rgba(18, 28, 54, ${nightAmt * 0.42})`;
     ctx.fillRect(0, 0, width, height);
+  }
+
+  // 雨天：斜向雨丝加一层冷色。
+  if (weather?.id === 'rainy') {
+    ctx.fillStyle = 'rgba(120, 150, 190, 0.10)';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = 'rgba(205, 222, 240, 0.32)';
+    ctx.lineWidth = 1;
+    const drift = (now / 6) % 40;
+    ctx.beginPath();
+    for (let i = -40; i < width + 40; i += 22) {
+      const rx = i + drift;
+      ctx.moveTo(rx, 0);
+      ctx.lineTo(rx - 12, height);
+    }
+    ctx.stroke();
   }
 
   // 轻微的暗角，把视线收拢到小镇中心。

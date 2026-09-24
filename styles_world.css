@@ -66,9 +66,19 @@ html, body {
 }
 
 #worldToast { bottom: 92px; }
-#dialogue { bottom: 150px; white-space: pre-wrap; line-height: 1.6; }
-#bagPanel { top: 64px; right: 12px; left: auto; transform: none; max-height: 60vh; overflow: auto; }
+#dialogue { bottom: 150px; white-space: pre-wrap; line-height: 1.6; cursor: pointer; }
+/* 背包挪到小地图下方，不再和小地图叠在一起。 */
+#bagPanel { top: 200px; right: 12px; left: auto; transform: none; max-height: 56vh; overflow: auto; }
 #bagPanel p { margin: 4px 0; }
+#bagPanel #bagClose {
+  margin-top: 6px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px;
+  cursor: pointer;
+}
 
 /* 用 :not([hidden]) 限定，否则 display:flex 会盖过 hidden 属性，空面板一直挂在画面中央。 */
 #actionPanel:not([hidden]) {
@@ -192,4 +202,137 @@ html, body {
 
 @media (max-width: 899px) {
   #minimap { width: 92px; height: 92px; top: 52px; right: 10px; }
+  #bagPanel { top: 154px; }
+}
+
+/* HUD 里的天气/时钟/额度与右侧圆按钮 */
+.hud-daily { font-size: 13px; opacity: 0.85; }
+.world-hud #achButton,
+.world-hud #helpButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+}
+#hudCoin.hud-stat { margin-left: auto; }
+.world-hud #achButton { margin-left: 6px; }
+
+/* 走到可互动处的提示条 */
+#actionHint {
+  position: fixed;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%);
+  background: rgba(31, 42, 34, 0.82);
+  color: #fff5d9;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* 成就行 */
+.ach-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+.ach-row small { color: #6a6157; }
+
+/* 钓鱼小游戏浮层 */
+#fishingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 22, 18, 0.55);
+}
+.fish-box {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  width: min(420px, 88vw);
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.fish-title { font-weight: 700; margin-bottom: 12px; }
+.fish-track {
+  position: relative;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #cf7d6c, #e7c877 40%, #7bbf7b 50%, #e7c877 60%, #cf7d6c);
+  overflow: hidden;
+}
+.fish-zone {
+  position: absolute;
+  left: 34%;
+  width: 32%;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.28);
+}
+.fish-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-1px);
+  background: rgba(255, 255, 255, 0.85);
+}
+.fish-marker {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 6px;
+  height: 32px;
+  transform: translateX(-3px);
+  background: #2f2a25;
+  border-radius: 3px;
+}
+.fish-hint { margin-top: 12px; font-size: 12px; color: #6a6157; line-height: 1.5; }
+
+/* 帮助 / 新手引导 */
+#helpOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 22, 18, 0.72);
+  padding: 16px;
+}
+.help-frame {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  max-width: min(560px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+.help-frame h2 { margin: 0 0 12px; font-size: 20px; }
+.help-frame p { margin: 8px 0; line-height: 1.7; font-size: 14px; }
+.help-frame button {
+  margin-top: 14px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: var(--green);
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  cursor: pointer;
 }

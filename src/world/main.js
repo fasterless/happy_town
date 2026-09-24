@@ -24,6 +24,7 @@ import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
 import {
   seedList,
+  allCrops,
   growthStage,
   plantSeed,
   waterPlot,
@@ -46,21 +47,36 @@ import {
   completeBoardRequest,
   sellForage,
   describeBag,
+  itemLabel,
+  weatherOf,
+  claimDailyBonus,
+  talkFriend,
+  friendHearts,
+  dailyRemaining,
+  allDailiesDone,
+  achievementsOf,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
 // 镜头竖直偏移，让玩家略靠画面下方，看得见前方的路（渲染与点击换算共用）。
 const CAMERA_Y = 34;
+// 一整个游戏昼夜等于多少现实毫秒（24 分钟 = 一天，约 1 现实分钟 / 游戏小时）。
+const DAY_LEN_MS = 24 * 60 * 1000;
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
 const hudCoin = document.getElementById('hudCoin');
 const hudSeason = document.getElementById('hudSeason');
 const hudClock = document.getElementById('hudClock');
+const hudDaily = document.getElementById('hudDaily');
 const toast = document.getElementById('worldToast');
 const panel = document.getElementById('actionPanel');
 const dialogue = document.getElementById('dialogue');
 const bagPanel = document.getElementById('bagPanel');
+const actionHint = document.getElementById('actionHint');
+
+// 昼夜时钟从早上 8:00 起步，之后按现实时间推进（DAY_LEN_MS 一整天）。
+const startDayMs = (8 / 24) * DAY_LEN_MS;
 
 const state = {
   world: loadWorld(Date.now()),
@@ -70,34 +86,65 @@ const state = {
   npcs: createNpcs(),
   path: [],
   clock: Date.now(),
+  dayMs: startDayMs,
+  fishing: null,
 };
+
+// 当前游戏小时（0~24，含小数），供 HUD 与昼夜滤镜共用。
+function gameHour() {
+  return (state.dayMs / DAY_LEN_MS) * 24;
+}
+
+// 今天天气按现实日期固定，和每日额度的刷新边界一致。
+function currentWeather() {
+  return weatherOf(Date.now());
+}
 
 let toastTimer = 0;
 let saveTimer = 0;
+let doneHintShown = false;
 
 function say(message) {
+  if (!message) return;
   toast.textContent = message;
   toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     toast.hidden = true;
-  }, 2200);
+  }, 3000);
+}
+
+function saveSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveWorld(state.world), 1000);
 }
 
 function apply(result, sound) {
   state.world = result.state;
   say(result.message);
   if (result.ok && sound) playTone(sound);
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveWorld(state.world), 1000);
+  saveSoon();
   renderHud();
+  // 日常都清空后温柔提示一次"明天再来"。
+  if (!doneHintShown && allDailiesDone(state.world, Date.now())) {
+    doneHintShown = true;
+    setTimeout(() => say('今天的日常都做完啦，明天再来看看小镇吧～'), 1400);
+  }
 }
 function renderHud() {
   const event = getCurrentSeasonalEvent();
+  const weather = currentWeather();
   hudCoin.textContent = `${state.world.coin} 金币`;
-  hudSeason.textContent = event ? `${event.icon} ${event.name}` : '🌱 平常日子';
-  const hour = Math.floor(((state.clock % (12 * 60 * 1000)) / (12 * 60 * 1000)) * 24);
-  hudClock.textContent = `${`${hour}`.padStart(2, '0')}:00`;
+  const season = event ? `${event.icon} ${event.name}` : '🌱 平常日子';
+  hudSeason.textContent = `${season} · ${weather.icon}${weather.name}`;
+  const hour = Math.floor(gameHour());
+  const minute = Math.floor((gameHour() - hour) * 60);
+  hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
+  if (hudDaily) {
+    const r = dailyRemaining(state.world, Date.now());
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}`;
+  }
 }
 
 function resize() {
@@ -270,35 +317,47 @@ function commitMove(nx, ny) {
   state.anim = { fromX: state.player.tx, fromY: state.player.ty, startAt: state.clock };
   state.player.tx = nx;
   state.player.ty = ny;
+  // 走动就收起临时面板与对话，避免"隔空操作"离得老远的店铺/农田。
+  panel.hidden = true;
+  dialogue.hidden = true;
 }
 
-// 邻居也做平滑跟随：指数逼近各自的目标格。
+// 邻居也做平滑跟随：指数逼近各自的目标格；同时带上好感度心数供渲染。
 function easeNpcs(npcs, dt) {
   const k = 1 - Math.exp(-dt / 130);
+  const friends = state.world.friends || {};
   return npcs.map((npc) => {
     const rx = npc.rx ?? npc.tx;
     const ry = npc.ry ?? npc.ty;
-    return { ...npc, rx: rx + (npc.tx - rx) * k, ry: ry + (npc.ty - ry) * k };
+    return {
+      ...npc,
+      rx: rx + (npc.tx - rx) * k,
+      ry: ry + (npc.ty - ry) * k,
+      hearts: friendHearts(friends[npc.id]?.points),
+    };
   });
 }
 
 function update(dt) {
   state.clock += dt;
-  state.npcs = easeNpcs(stepNpcs(state.npcs, dt), dt);
+  state.dayMs = (state.dayMs + dt) % DAY_LEN_MS;
+  // 邻居沿路巡逻但不穿墙（把 isBlocked 传进去）。
+  state.npcs = easeNpcs(stepNpcs(state.npcs, dt, 900, isBlocked), dt);
 
   // 一步走完就解锁，允许迈下一步。
   if (state.anim && state.clock - state.anim.startAt >= MOVE_MS) state.anim = null;
   state.render = renderPos();
 
-  // 点击（手机点、电脑鼠标点）都换成一次寻路。
+  // 点击（手机点、电脑鼠标点）都换成一次寻路。钓鱼小游戏进行时不接受移动。
   for (const tap of input.consumeTaps()) {
+    if (state.fishing) break;
     const cam = cameraFor(state.render.x, state.render.y, window.innerWidth, window.innerHeight);
     const tile = screenToTile(tap.x - cam.x, tap.y - cam.y);
     state.path = findPath(state.player, tile, isBlocked);
   }
 
   // 没有正在走的动画时才决定下一步：键盘优先于寻路。
-  if (!state.anim) {
+  if (!state.anim && !state.fishing) {
     const dir = input.direction();
     if (dir) {
       state.path = [];
@@ -308,6 +367,8 @@ function update(dt) {
       commitMove(step.tx, step.ty);
     }
   }
+
+  updateActionHint();
 }
 
 function render() {
@@ -320,6 +381,8 @@ function render() {
     world: state.world,
     seasonId: event ? event.id : '',
     now: state.clock,
+    hour: gameHour(),
+    weather: currentWeather(),
     cameraY: CAMERA_Y,
   });
   renderHud();
@@ -370,63 +433,170 @@ function openPanel(title, buttons) {
   panel.appendChild(close);
 }
 
-function interact() {
-  const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
-  if (npc) {
-    dialogue.hidden = false;
-    dialogue.textContent = `${npc.avatar} ${npc.name}：${dialogueOf(npc.id, Date.now())}`;
-    return;
-  }
-  dialogue.hidden = true;
+// 触屏设备用「行动」按钮，桌面提示按 E。
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
-  const plotIndex = nearestPlot(FARM_PLOTS);
-  if (plotIndex >= 0) return openFarm(plotIndex);
-
-  const greenIndex = nearestPlot(GREENHOUSE_PLOTS);
-  if (greenIndex >= 0) return openGreenhouse(greenIndex);
-
+// 附近能做的第一件事（用于行动提示）。优先级和 interact 保持一致。
+function nearbyLabel() {
+  if (nearestPlot(FARM_PLOTS) >= 0) return '耕种 / 收获';
+  if (nearestPlot(GREENHOUSE_PLOTS) >= 0) return '温室';
   const spot = nearestSpot();
-  if (!spot) {
-    say('附近没有可以做的事');
+  if (spot && spot.kind !== 'npc') return spot.name;
+  const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
+  if (npc) return `和 ${npc.name} 聊天`;
+  if (spot && spot.kind === 'npc') return spot.name;
+  return '';
+}
+
+function updateActionHint() {
+  if (!actionHint) return;
+  if (state.fishing || !panel.hidden || !dialogue.hidden) {
+    actionHint.hidden = true;
     return;
   }
+  const label = nearbyLabel();
+  if (!label) {
+    actionHint.hidden = true;
+    return;
+  }
+  actionHint.hidden = false;
+  actionHint.textContent = `${isTouch ? '点「行动」' : '按 E'}：${label}`;
+}
+
+function runSpot(spot) {
   if (spot.kind === 'sell') return openStall();
   if (spot.kind === 'board') return openBoard();
-  if (spot.kind === 'forage') return apply(forageForest(state.world, state.clock), 'harvest');
+  if (spot.kind === 'forage') return apply(forageForest(state.world, Date.now()), 'harvest');
   if (spot.kind === 'lookout') {
     say('登上风车坡，能看见湖水、农田和整座小镇。');
-    return;
+    return undefined;
   }
-  if (spot.kind === 'fish') return apply(castLine(state.world, Date.now()), 'harvest');
+  if (spot.kind === 'fish') return openFishing();
   if (spot.kind === 'mine') return openMine();
   if (spot.kind === 'craft') return openCraft();
   if (spot.kind === 'cook') return openKitchen();
   if (spot.kind === 'cafe') return openCafe();
-  if (spot.kind === 'npc') {
+  if (spot.kind === 'talk') say('喷泉的水声很安静，广场上什么都不用做。');
+  return undefined;
+}
+
+function talkTo(npc) {
+  const res = talkFriend(state.world, npc.id, Date.now());
+  state.world = res.state;
+  saveSoon();
+  if (res.gained > 0) playTone('coin');
+  const hearts = friendHearts(res.points);
+  const heartStr = hearts > 0 ? '❤'.repeat(hearts) : '♡';
+  const gain = res.gained > 0 ? `（好感 +${res.gained}）` : '';
+  dialogue.hidden = false;
+  dialogue.textContent = `${npc.avatar} ${npc.name} ${heartStr}${gain}：${dialogueOf(npc.id, Date.now(), res.points)}`;
+}
+
+function interact() {
+  // 钓鱼小游戏进行中：行动键 = 收杆。
+  if (state.fishing) return lockFishing();
+  dialogue.hidden = true;
+
+  // 1) 脚下的农田 / 温室最优先，免得路过的邻居抢了互动。
+  const plotIndex = nearestPlot(FARM_PLOTS);
+  if (plotIndex >= 0) return openFarm(plotIndex);
+  const greenIndex = nearestPlot(GREENHOUSE_PLOTS);
+  if (greenIndex >= 0) return openGreenhouse(greenIndex);
+
+  // 2) 功能地标（货摊、钓鱼、矿洞……），店门口点先跳过。
+  const spot = nearestSpot();
+  if (spot && spot.kind !== 'npc') return runSpot(spot);
+
+  // 3) 正在镇上走动的邻居：聊天并涨好感。
+  const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
+  if (npc) return talkTo(npc);
+
+  // 4) 店门口：主人多半在外面逛。
+  if (spot && spot.kind === 'npc') {
     const friend = state.npcs.find((n) => n.id === spot.npc);
     say(friend ? `${friend.name}这会儿在镇上走动，去找找` : '门关着');
+    return undefined;
+  }
+  say('附近没有可以做的事');
+  return undefined;
+}
+
+// ---- 钓鱼小游戏：来回滑动的指针，越靠中心，稀有鱼几率越高 ----
+const fishOverlay = document.getElementById('fishingOverlay');
+const fishMarker = document.getElementById('fishMarker');
+
+function openFishing() {
+  const r = dailyRemaining(state.world, Date.now());
+  if (r.fish <= 0 && state.world.coin < 5) {
+    say('免费次数用完了，买鱼饵的金币也不够');
     return;
   }
-  if (spot.kind === 'talk') {
-    say('喷泉的水声很安静，广场上什么都不用做。');
+  if (!fishOverlay || !fishMarker) {
+    apply(castLine(state.world, Date.now(), 1), 'harvest');
+    return;
   }
+  fishOverlay.hidden = false;
+  const fishing = { pos: 0, dir: 1, last: performance.now(), raf: 0 };
+  state.fishing = fishing;
+  const step = (t) => {
+    if (state.fishing !== fishing) return;
+    const dt = Math.min(48, t - fishing.last);
+    fishing.last = t;
+    fishing.pos += fishing.dir * (dt / 1100);
+    if (fishing.pos >= 1) { fishing.pos = 1; fishing.dir = -1; }
+    if (fishing.pos <= 0) { fishing.pos = 0; fishing.dir = 1; }
+    fishMarker.style.left = `${fishing.pos * 100}%`;
+    fishing.raf = requestAnimationFrame(step);
+  };
+  fishing.raf = requestAnimationFrame(step);
+}
+
+function cancelFishing() {
+  if (!state.fishing) return;
+  cancelAnimationFrame(state.fishing.raf);
+  state.fishing = null;
+  if (fishOverlay) fishOverlay.hidden = true;
+}
+
+function lockFishing() {
+  const fishing = state.fishing;
+  if (!fishing) return;
+  cancelAnimationFrame(fishing.raf);
+  state.fishing = null;
+  if (fishOverlay) fishOverlay.hidden = true;
+  const dist = Math.abs(fishing.pos - 0.5);
+  let quality = 1;
+  let grade = '';
+  if (dist <= 0.06) { quality = 2.8; grade = '完美命中！'; }
+  else if (dist <= 0.16) { quality = 1.8; grade = '不错的手感！'; }
+  const result = castLine(state.world, Date.now(), quality);
+  state.world = result.state;
+  if (result.ok) playTone('harvest');
+  saveSoon();
+  renderHud();
+  say(`${grade}${result.message}`);
 }
 function openFarm(index) {
   const plot = state.world.plots[index];
-  const crop = seedList().find((c) => c.id === plot.cropId);
-  if (crop && growthStage(plot, crop, state.clock) >= 4) {
-    apply(harvestPlot(state.world, index, state.clock), 'harvest');
+  const weather = currentWeather();
+  const crop = allCrops().find((c) => c.id === plot.cropId);
+  if (crop && growthStage(plot, crop, state.clock, weather) >= 4) {
+    apply(harvestPlot(state.world, index, state.clock, weather), 'harvest');
     panel.hidden = true;
     return;
   }
   if (crop) {
-    openPanel(`${crop.name}`, [
-      { label: plot.watered ? '已经浇过水' : '浇水', run: () => apply(waterPlot(state.world, index)) },
+    const rain = weather.id === 'rainy';
+    openPanel(`${crop.icon} ${crop.name}`, [
+      {
+        label: rain ? '雨天自动浇水，静待成熟' : (plot.watered ? '已经浇过水' : '浇水（收成更好）'),
+        run: () => apply(waterPlot(state.world, index)),
+      },
     ]);
     return;
   }
   openPanel('播种', seedList().map((c) => ({
-    label: `${c.icon} ${c.name}（${c.seedPrice} 金币）`,
+    label: `${c.icon} ${c.name}（种子 ${c.seedPrice} 金币）`,
     run: () => apply(plantSeed(state.world, index, c.id, state.clock), 'plant'),
   })));
 }
@@ -455,25 +625,37 @@ function openBoard() {
   ]);
 }
 
+function sellItem(item, amount) {
+  const kind = item.sellKind;
+  const result = kind === 'crop'
+    ? sellCrop(state.world, item.sellId, amount)
+    : kind === 'fish'
+      ? sellFish(state.world, item.sellId, amount)
+      : kind === 'forage'
+        ? sellForage(state.world, item.sellId, amount)
+        : sellOre(state.world, item.sellId, amount);
+  apply(result, 'coin');
+  openStall(); // 卖完刷新货摊数量
+}
+
 function openStall() {
   const items = describeBag(state.world).filter((item) => item.sell > 0);
   if (!items.length) {
     say('没有可以卖的东西');
+    panel.hidden = true;
     return;
   }
-  openPanel('货摊', items.map((item) => ({
-    label: `${item.icon} ${item.name}×${item.amount}（每个 ${item.sell}）`,
-    run: () => {
-      const result = item.sellKind === 'crop'
-        ? sellCrop(state.world, item.sellId, item.amount)
-        : item.sellKind === 'fish'
-          ? sellFish(state.world, item.sellId, item.amount)
-          : item.sellKind === 'forage'
-            ? sellForage(state.world, item.sellId, item.amount)
-            : sellOre(state.world, item.sellId, item.amount);
-      apply(result, 'coin');
-    },
-  })));
+  const buttons = [];
+  for (const item of items) {
+    buttons.push({
+      label: `${item.icon} ${item.name}×${item.amount}（每个 ${item.sell}）— 卖 1`,
+      run: () => sellItem(item, 1),
+    });
+    if (item.amount > 1) {
+      buttons.push({ label: `↳ 全卖（+${item.sell * item.amount}）`, run: () => sellItem(item, item.amount) });
+    }
+  }
+  openPanel('货摊', buttons);
 }
 
 function openMine() {
@@ -495,21 +677,59 @@ function openCraft() {
   })));
 }
 
+function haveIngredients(dish) {
+  return dish.requires.every((req) => (state.world.bag[req.item] || 0) >= req.count);
+}
+
+function ingredientText(dish) {
+  return dish.requires.map((req) => `${itemLabel(req.item)}×${req.count}`).join('、');
+}
+
 function openKitchen() {
   openPanel('料理铺', dishes.map((dish) => ({
-    label: `${dish.icon} ${dish.name}`,
+    label: `${dish.icon} ${dish.name} — 需要 ${ingredientText(dish)}${haveIngredients(dish) ? '（可做）' : '（缺料）'}`,
     run: () => apply(cookDish(state.world, dish.id), 'plant'),
   })));
 }
 
 function openCafe() {
   const guests = todaysGuests(Date.now());
-  openPanel('今天的客人', guests.map((guest) => ({
-    label: state.world.cafeServed.includes(guest.id)
-      ? `${guest.name}（已接待）`
-      : `${guest.icon} ${guest.name}想要${guest.dish.name}`,
-    run: () => apply(serveGuest(state.world, guest.id, Date.now()), 'coin'),
-  })));
+  openPanel('今天的客人', guests.map((guest) => {
+    const served = state.world.cafeServed.includes(guest.id);
+    const dish = guest.dish;
+    const haveDish = (state.world.bag[`dish_${dish.id}`] || 0) > 0;
+    let label;
+    if (served) {
+      label = `${guest.icon} ${guest.name}（已接待）`;
+    } else if (haveDish) {
+      label = `${guest.icon} ${guest.name} 想要 ${dish.icon}${dish.name}（可上菜）`;
+    } else {
+      label = `${guest.icon} ${guest.name} 想要 ${dish.icon}${dish.name} — 去料理铺做：${ingredientText(dish)}`;
+    }
+    return { label, run: () => apply(serveGuest(state.world, guest.id, Date.now()), 'coin') };
+  }));
+}
+
+function openAchievements() {
+  const list = achievementsOf(state.world);
+  panel.hidden = false;
+  panel.innerHTML = '';
+  const heading = document.createElement('h3');
+  const doneCount = list.filter((a) => a.done).length;
+  heading.textContent = `成就（${doneCount}/${list.length}）`;
+  panel.appendChild(heading);
+  for (const a of list) {
+    const row = document.createElement('div');
+    row.className = 'ach-row';
+    const shown = Math.min(a.value, a.goal);
+    row.innerHTML = `<b>${a.done ? '✅' : a.icon} ${a.name}</b><small>${a.desc}（${shown}/${a.goal}）</small>`;
+    panel.appendChild(row);
+  }
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = '关闭';
+  close.addEventListener('click', () => { panel.hidden = true; });
+  panel.appendChild(close);
 }
 
 function toggleBag() {
@@ -519,9 +739,41 @@ function toggleBag() {
   }
   const items = describeBag(state.world);
   bagPanel.hidden = false;
-  bagPanel.innerHTML = items.length
+  const list = items.length
     ? items.map((item) => `<p>${item.icon} ${item.name} ×${item.amount}</p>`).join('')
     : '<p>背包是空的</p>';
+  bagPanel.innerHTML = `${list}<button type="button" id="bagClose">关闭</button>`;
+  const close = document.getElementById('bagClose');
+  if (close) close.addEventListener('click', () => { bagPanel.hidden = true; });
+}
+
+// ---- 帮助 / 新手引导 ----
+const helpOverlay = document.getElementById('helpOverlay');
+function openHelp() { if (helpOverlay) helpOverlay.hidden = false; }
+function closeHelp() { if (helpOverlay) helpOverlay.hidden = true; }
+
+const helpButton = document.getElementById('helpButton');
+if (helpButton) helpButton.addEventListener('click', openHelp);
+const helpCloseBtn = document.getElementById('helpClose');
+if (helpCloseBtn) helpCloseBtn.addEventListener('click', closeHelp);
+if (helpOverlay) {
+  helpOverlay.addEventListener('pointerdown', (event) => {
+    if (event.target === helpOverlay) closeHelp();
+  });
+}
+
+const achButton = document.getElementById('achButton');
+if (achButton) achButton.addEventListener('click', openAchievements);
+
+// 点对话框任意处即可收起（手机上没有 Esc）。
+dialogue.addEventListener('click', () => { dialogue.hidden = true; });
+
+// 钓鱼小游戏：点浮层任意处收杆。
+if (fishOverlay) {
+  fishOverlay.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    lockFishing();
+  });
 }
 
 window.addEventListener('keydown', (event) => {
@@ -530,14 +782,18 @@ window.addEventListener('keydown', (event) => {
     interact();
   }
   if (event.key === 'b' || event.key === 'B') toggleBag();
+  if (event.key === 'c' || event.key === 'C') openAchievements();
+  if (event.key === 'h' || event.key === 'H' || event.key === '?') openHelp();
   if (event.key === 'm' || event.key === 'M') {
     if (mapOpen) closeMap();
     else openMap();
   }
   if (event.key === 'Escape') {
+    cancelFishing();
     panel.hidden = true;
     dialogue.hidden = true;
     bagPanel.hidden = true;
+    closeHelp();
     closeMap();
   }
 });
@@ -549,6 +805,24 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveWorld(state.world);
 });
 window.addEventListener('beforeunload', () => saveWorld(state.world));
+
+// 每天首次进入领登录奖励，并顺带告诉玩家今天的天气。
+const bonus = claimDailyBonus(state.world, Date.now());
+if (bonus.ok) {
+  state.world = bonus.state;
+  saveSoon();
+  setTimeout(() => say(bonus.message), 400);
+}
+
+// 首次进入自动弹一次操作说明。
+try {
+  if (!localStorage.getItem('world-help-seen')) {
+    openHelp();
+    localStorage.setItem('world-help-seen', '1');
+  }
+} catch (error) {
+  // 隐私模式下 localStorage 不可用，忽略即可。
+}
 
 renderHud();
 startLoop(update, render);
