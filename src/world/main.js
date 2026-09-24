@@ -94,8 +94,10 @@ function renderHud() {
 }
 
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -129,9 +131,9 @@ function update(dt) {
 
   for (const tap of input.consumeTaps()) {
     const center = tileToScreen(state.player.tx, state.player.ty);
-    const sx = tap.x - window.innerWidth / 2 + center.x;
-    const sy = tap.y - window.innerHeight / 2 + 40 + center.y;
-    const tile = screenToTile(sx, sy);
+    const cameraX = window.innerWidth / 2 - center.x;
+    const cameraY = window.innerHeight / 2 - center.y + 34;
+    const tile = screenToTile(tap.x - cameraX, tap.y - cameraY);
     state.path = findPath(state.player, tile, isBlocked);
   }
 
@@ -153,8 +155,8 @@ function update(dt) {
 function render() {
   const event = getCurrentSeasonalEvent();
   renderFrame(ctx, {
-    width: canvas.width,
-    height: canvas.height,
+    width: window.innerWidth,
+    height: window.innerHeight,
     player: state.player,
     npcs: state.npcs,
     world: state.world,

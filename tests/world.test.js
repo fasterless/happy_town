@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -31,7 +31,7 @@ import { craftingRecipes } from '../src/config/crafting.js';
 
 const NOW = new Date('2026-09-24T08:00:00').getTime();
 
-describe('等距坐标', () => {
+describe('俯视坐标', () => {
   it('投影后再取整能回到原来的格子', () => {
     for (const [tx, ty] of [[0, 0], [3, 5], [14, 27], [31, 31]]) {
       const screen = tileToScreen(tx, ty);
@@ -40,12 +40,43 @@ describe('等距坐标', () => {
     }
   });
 
-  it('往右下走一格，屏幕上正好偏一个瓦片高', () => {
-    const a = tileToScreen(2, 2);
-    const b = tileToScreen(3, 3);
-    expect(b.y - a.y).toBe(TILE_H);
-    expect(b.x - a.x).toBe(0);
-    expect(TILE_W).toBeGreaterThan(TILE_H);
+  it('正交网格：右移一格偏一个瓦片宽，下移一格偏一个瓦片高', () => {
+    const origin = tileToScreen(2, 2);
+    const right = tileToScreen(3, 2);
+    const down = tileToScreen(2, 3);
+    expect(right.x - origin.x).toBe(TILE_W);
+    expect(right.y - origin.y).toBe(0);
+    expect(down.y - origin.y).toBe(TILE_H);
+    expect(down.x - origin.x).toBe(0);
+  });
+});
+
+describe('小镇地图', () => {
+  it('每一行都是 32 格宽', () => {
+    expect(ROWS).toHaveLength(MAP_SIZE);
+    expect(ROWS.every((row) => row.length === MAP_SIZE)).toBe(true);
+  });
+
+  it('出生点、交互点与门口都是可以站上去的格子', () => {
+    expect(isBlocked(SPAWN.tx, SPAWN.ty)).toBe(false);
+    for (const spot of SPOTS) {
+      const reachable = [
+        [spot.tx, spot.ty],
+        [spot.tx - 1, spot.ty],
+        [spot.tx + 1, spot.ty],
+        [spot.tx, spot.ty - 1],
+        [spot.tx, spot.ty + 1],
+      ].some(([tx, ty]) => !isBlocked(tx, ty));
+      expect(reachable).toBe(true);
+    }
+  });
+
+  it('每座建筑都能从出生点走到门前', () => {
+    for (const building of BUILDINGS) {
+      const front = { tx: building.tx, ty: building.ty + building.h };
+      const path = findPath(SPAWN, front, isBlocked);
+      expect(path.length).toBeGreaterThan(0);
+    }
   });
 });
 

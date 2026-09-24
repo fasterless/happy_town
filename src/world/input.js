@@ -34,9 +34,8 @@ export function createInput(canvas) {
   const onPointer = (event) => {
     if (event.target !== canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    taps.push({ x: (event.clientX - rect.left) * scaleX, y: (event.clientY - rect.top) * scaleY });
+    // 画布用 devicePixelRatio 放大，但绘制坐标是 CSS 像素，点击也用 CSS 像素。
+    taps.push({ x: event.clientX - rect.left, y: event.clientY - rect.top });
   };
 
   window.addEventListener('keydown', onKeyDown);
