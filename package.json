@@ -1,6 +1,6 @@
 {
   "name": "happy-town",
-  "version": "2.36.0",
+  "version": "2.37.0",
   "description": "邻里小镇 - 温馨的农场经营游戏",
   "type": "module",
   "main": "src/main.js",

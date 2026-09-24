@@ -90,6 +90,7 @@ const state = {
   world: loadWorld(Date.now()),
   player: { tx: SPAWN.tx, ty: SPAWN.ty },
   render: { x: SPAWN.tx, y: SPAWN.ty },
+  facing: 'down',
   anim: null,
   npcs: createNpcs(),
   path: [],
@@ -337,8 +338,18 @@ function renderPos() {
   };
 }
 
+// 由移动增量得出朝向名（供渲染画出转身）。
+function dirName(dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
+  if (dy !== 0) return dy < 0 ? 'up' : 'down';
+  return null;
+}
+
 // 迈出一步：记录起点开始插值，逻辑坐标立刻落到目标格；撞墙则取消寻路。
 function commitMove(nx, ny) {
+  // 无论能否走过去，都先转向目标方向——推向墙也会转身面对它。
+  const face = dirName(nx - state.player.tx, ny - state.player.ty);
+  if (face) state.facing = face;
   if (isBlocked(nx, ny)) {
     state.path = [];
     return;
@@ -385,9 +396,9 @@ function update(dt) {
     state.path = findPath(state.player, tile, isBlocked);
   }
 
-  // 没有正在走的动画时才决定下一步：键盘优先于寻路。
+  // 没有正在走的动画时才决定下一步：键盘 / 手机滑杆优先于寻路。
   if (!state.anim && !state.fishing) {
-    const dir = input.direction();
+    const dir = input.direction() || input.stickDir();
     if (dir) {
       state.path = [];
       commitMove(state.player.tx + dir[0], state.player.ty + dir[1]);
@@ -405,7 +416,7 @@ function render() {
   renderFrame(ctx, {
     width: window.innerWidth,
     height: window.innerHeight,
-    player: { rx: state.render.x, ry: state.render.y },
+    player: { rx: state.render.x, ry: state.render.y, facing: state.facing },
     npcs: state.npcs,
     world: state.world,
     seasonId: event ? event.id : '',

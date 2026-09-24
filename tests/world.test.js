@@ -293,6 +293,8 @@ describe('存档与邻居', () => {
     const moved = stepNpcs(npcs, 5000, 900);
     const travelled = moved.some((npc, i) => npc.tx !== npcs[i].tx || npc.ty !== npcs[i].ty);
     expect(travelled).toBe(true);
+    // 走动的邻居会朝移动方向转身。
+    expect(moved.every((npc) => ['up', 'down', 'left', 'right'].includes(npc.facing))).toBe(true);
     expect(dialogueOf('npc_mayor', NOW).length).toBeGreaterThan(0);
   });
 });

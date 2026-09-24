@@ -64,6 +64,7 @@ export function createNpcs() {
       ty: route[0].ty,
       rx: route[0].tx,
       ry: route[0].ty,
+      facing: 'down',
       progress: 0,
     };
   });
@@ -84,8 +85,14 @@ export function stepNpcs(npcs, stepMs, msPerTile = 900, blocked = () => false) {
       const sx = Math.sign(target.tx - next.tx);
       const sy = Math.sign(target.ty - next.ty);
       // 优先走 x 轴，撞墙就改走 y 轴，两边都堵就原地等一拍——不穿模。
-      if (sx !== 0 && !blocked(next.tx + sx, next.ty)) next.tx += sx;
-      else if (sy !== 0 && !blocked(next.tx, next.ty + sy)) next.ty += sy;
+      // 走哪个方向就朝哪个方向转身，供渲染画出侧脸/背影。
+      if (sx !== 0 && !blocked(next.tx + sx, next.ty)) {
+        next.tx += sx;
+        next.facing = sx < 0 ? 'left' : 'right';
+      } else if (sy !== 0 && !blocked(next.tx, next.ty + sy)) {
+        next.ty += sy;
+        next.facing = sy < 0 ? 'up' : 'down';
+      }
     }
     return next;
   });

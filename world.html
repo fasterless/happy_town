@@ -53,7 +53,7 @@
   <div id="helpOverlay" hidden>
     <div class="help-frame">
       <h2>欢迎来到像素小镇 🌾</h2>
-      <p><b>怎么走：</b>手机点地面自动寻路；电脑用方向键 / WASD 走，或鼠标点地。</p>
+      <p><b>怎么走：</b>手机点地面自动寻路，或用左下角<b>方向滑杆</b>走动；电脑用方向键 / WASD 走，或鼠标点地。人物会朝走动的方向转身。</p>
       <p><b>怎么做事：</b>走到高亮的地标或农田旁，电脑按 <b>E / 空格</b>、手机点 <b>行动</b>。</p>
       <p><b>快捷键：</b>E 互动 · B 背包 · M 地图 · C 成就 · H 帮助 · Esc 关闭。</p>
       <p><b>今天能做什么：</b>种田收菜、南边果园摘果、南边牧场照料动物、去湖边钓鱼、后山挖矿、萤火林采集、加工坊/料理铺做东西、咖啡馆接待客人、公告栏交委托、广场喷泉许愿、上风车坡看天气预报，卖到货摊换金币。</p>
@@ -66,6 +66,9 @@
     <button id="bagButton" type="button">背包</button>
     <button id="interactButton" type="button">行动</button>
   </div>
+
+  <!-- 手机端方向滑杆：按住拖动控制走向，人物也会转向。桌面端隐藏。 -->
+  <div id="joystick" aria-hidden="true"><div id="joyKnob"></div></div>
 
   <script type="module" src="src/world/main.js"></script>
 </body>

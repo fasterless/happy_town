@@ -337,7 +337,7 @@ function drawBuilding(ctx, building, cameraX, cameraY) {
   ctx.textBaseline = 'middle';
   ctx.fillText(building.name, x + width / 2, y - 10, width - 16);
 }
-function drawPerson(ctx, cx, cy, color, marker, name = '') {
+function drawPerson(ctx, cx, cy, color, marker, name = '', facing = 'down') {
   const x = Math.round(cx);
   const y = Math.round(cy);
   ctx.fillStyle = 'rgba(27, 43, 35, 0.3)';
@@ -355,9 +355,25 @@ function drawPerson(ctx, cx, cy, color, marker, name = '') {
   ctx.fillStyle = '#49372f';
   ctx.fillRect(x - 7, y - 14, 14, 5);
   ctx.fillRect(x - 6, y - 17, 11, 4);
-  ctx.fillStyle = '#3d302b';
-  ctx.fillRect(x - 3, y - 7, 2, 2);
-  ctx.fillRect(x + 3, y - 7, 2, 2);
+  // 眼睛 / 后脑随朝向变化，让人物"转身"：上=背对（无脸），左右=侧脸，下=正脸。
+  if (facing === 'up') {
+    ctx.fillStyle = '#49372f';
+    ctx.fillRect(x - 6, y - 11, 12, 8);
+  } else if (facing === 'left') {
+    ctx.fillStyle = '#49372f';
+    ctx.fillRect(x + 2, y - 11, 4, 9);
+    ctx.fillStyle = '#3d302b';
+    ctx.fillRect(x - 5, y - 7, 2, 2);
+  } else if (facing === 'right') {
+    ctx.fillStyle = '#49372f';
+    ctx.fillRect(x - 6, y - 11, 4, 9);
+    ctx.fillStyle = '#3d302b';
+    ctx.fillRect(x + 3, y - 7, 2, 2);
+  } else {
+    ctx.fillStyle = '#3d302b';
+    ctx.fillRect(x - 3, y - 7, 2, 2);
+    ctx.fillRect(x + 3, y - 7, 2, 2);
+  }
   if (marker) {
     ctx.font = '12px serif';
     ctx.textAlign = 'center';
@@ -377,12 +393,22 @@ function drawPerson(ctx, cx, cy, color, marker, name = '') {
 }
 
 // 图集就绪时用 Kenney 的小人贴图；画影子并把贴图脚底对齐格中心。
-function drawActorSprite(ctx, cx, cy, kind) {
+// 朝左时水平翻转贴图，简单地表现转身（上/下/右用原图）。
+function drawActorSprite(ctx, cx, cy, kind, facing = 'down') {
   const x = Math.round(cx);
   const y = Math.round(cy);
   ctx.fillStyle = 'rgba(27, 43, 35, 0.3)';
   ctx.fillRect(x - 10, y + 8, 20, 5);
-  return drawSprite(ctx, kind === 'player' ? 'player' : 'npc', x - 20, y - 30, 40);
+  const name = kind === 'player' ? 'player' : 'npc';
+  if (facing === 'left') {
+    ctx.save();
+    ctx.translate(x, 0);
+    ctx.scale(-1, 1);
+    const ok = drawSprite(ctx, name, -20, y - 30, 40);
+    ctx.restore();
+    return ok;
+  }
+  return drawSprite(ctx, name, x - 20, y - 30, 40);
 }
 
 // 邻居头顶的表情与名牌，和程序化小人共用一套样式。
@@ -889,21 +915,21 @@ export function renderFrame(ctx, view) {
   // 玩家与邻居都用插值坐标，按 y 排序保证前后遮挡自然。
   const actors = [
     ...npcs.map((npc) => ({
-      rx: npc.rx ?? npc.tx, ry: npc.ry ?? npc.ty, kind: 'npc', avatar: npc.avatar, name: npc.name, hearts: npc.hearts || 0,
+      rx: npc.rx ?? npc.tx, ry: npc.ry ?? npc.ty, kind: 'npc', avatar: npc.avatar, name: npc.name, hearts: npc.hearts || 0, facing: npc.facing || 'down',
     })),
-    { rx: player.rx, ry: player.ry, kind: 'player' },
+    { rx: player.rx, ry: player.ry, kind: 'player', facing: player.facing || 'down' },
   ];
   actors.sort((a, b) => a.ry - b.ry);
   for (const actor of actors) {
     const x = (actor.rx + 0.5) * TILE_W + cameraX;
     const y = (actor.ry + 0.5) * TILE_H + cameraY;
     if (x < -TILE_W || y < -TILE_H || x > width + TILE_W || y > height + TILE_H) continue;
-    if (atlasReady() && drawActorSprite(ctx, x, y, actor.kind)) {
+    if (atlasReady() && drawActorSprite(ctx, x, y, actor.kind, actor.facing)) {
       if (actor.kind !== 'player') drawActorLabel(ctx, x, y, actor.avatar, actor.name);
     } else if (actor.kind === 'player') {
-      drawPerson(ctx, x, y, '#4f83bd', '');
+      drawPerson(ctx, x, y, '#4f83bd', '', '', actor.facing);
     } else {
-      drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name);
+      drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name, actor.facing);
     }
     if (actor.kind === 'npc' && actor.hearts > 0) drawHearts(ctx, x, y, actor.hearts);
   }
