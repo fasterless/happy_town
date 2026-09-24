@@ -4,7 +4,7 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { allCrops, growthStage } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
@@ -446,6 +446,68 @@ function drawHearts(ctx, cx, cy, hearts) {
   ctx.fillText('❤'.repeat(n), x, y);
 }
 
+// 装饰路灯：白天是灰蓝灯柱，夜里灯头亮起暖黄（灯光的光晕另在夜间光层叠加）。
+function drawLamp(ctx, cx, cy, lit) {
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  ctx.fillStyle = 'rgba(30, 40, 34, 0.22)';
+  ctx.fillRect(x - 4, y + 8, 10, 4);
+  ctx.fillStyle = '#4a5560';
+  ctx.fillRect(x - 2, y - 18, 4, 26);
+  ctx.fillStyle = '#5c6874';
+  ctx.fillRect(x - 2, y - 18, 2, 26);
+  ctx.fillStyle = '#3c4650';
+  ctx.fillRect(x - 4, y - 26, 8, 3);
+  ctx.fillStyle = lit ? '#ffe6a0' : '#8a94a0';
+  ctx.fillRect(x - 5, y - 24, 10, 8);
+  ctx.fillStyle = lit ? '#fff6d5' : '#aab4c0';
+  ctx.fillRect(x - 3, y - 22, 6, 4);
+}
+
+// 夜晚：店铺窗口透出的暖黄灯光（在夜色滤镜之上用叠加混合绘制）。
+function drawWindowGlow(ctx, building, cameraX, cameraY, amt) {
+  const x = Math.round(building.tx * TILE_W + cameraX);
+  const y = Math.round(building.ty * TILE_H + cameraY);
+  const width = building.w * TILE_W;
+  const height = building.h * TILE_H;
+  ctx.fillStyle = `rgba(255, 210, 120, ${0.55 * amt})`;
+  ctx.fillRect(x + 14, y + height - 14, 12, 10);
+  ctx.fillRect(x + width - 26, y + height - 14, 12, 10);
+  ctx.fillStyle = `rgba(255, 226, 150, ${0.3 * amt})`;
+  ctx.fillRect(x + width / 2 - 6, y + height - 16, 12, 16);
+}
+
+// 灯柱下的暖色光池。
+function drawLampGlow(ctx, cx, cy, amt) {
+  const px = cx;
+  const py = cy - 20;
+  const r = 36;
+  const grad = ctx.createRadialGradient(px, py, 2, px, py, r);
+  grad.addColorStop(0, `rgba(255, 224, 150, ${0.5 * amt})`);
+  grad.addColorStop(1, 'rgba(255, 224, 150, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(px - r, py - r, r * 2, r * 2);
+}
+
+// 萤火林里飘动的萤火，夜色越浓越亮。
+function drawFireflies(ctx, tx, ty, x, y, t, amt) {
+  const base = hash(tx, ty, 20);
+  if (base < 0.55) return;
+  const count = base > 0.85 ? 3 : base > 0.7 ? 2 : 1;
+  for (let i = 0; i < count; i += 1) {
+    const ph = hash(tx, ty, 21 + i);
+    const twinkle = 0.4 + 0.6 * Math.sin(t / 600 + ph * 6.283);
+    if (twinkle <= 0) continue;
+    const fx = x + 6 + hash(tx, ty, 30 + i) * 28 + Math.sin(t / 900 + ph * 6.283) * 4;
+    const fy = y + 6 + hash(tx, ty, 40 + i) * 26 + Math.cos(t / 1100 + ph * 6.283) * 4;
+    const alpha = amt * twinkle;
+    ctx.fillStyle = `rgba(198, 240, 120, ${0.3 * alpha})`;
+    ctx.fillRect(Math.round(fx) - 1, Math.round(fy) - 1, 4, 4);
+    ctx.fillStyle = `rgba(230, 255, 150, ${0.9 * alpha})`;
+    ctx.fillRect(Math.round(fx), Math.round(fy), 2, 2);
+  }
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now, weather } = view;
@@ -518,6 +580,16 @@ export function renderFrame(ctx, view) {
     drawSpot(ctx, spot, x, y, now);
   }
 
+  // 装饰路灯（灯柱），画在角色之前，让角色可以从灯前走过。
+  const lampsLit = (view.hour ?? 12) < 6.5 || (view.hour ?? 12) > 18;
+  for (const lamp of LAMPS) {
+    const pos = tileCenter(lamp.tx, lamp.ty);
+    const lx = pos.x + cameraX;
+    const ly = pos.y + cameraY;
+    if (lx < -TILE_W || ly < -TILE_H || lx > width + TILE_W || ly > height + TILE_H) continue;
+    drawLamp(ctx, lx, ly, lampsLit);
+  }
+
   // 玩家与邻居都用插值坐标，按 y 排序保证前后遮挡自然。
   const actors = [
     ...npcs.map((npc) => ({
@@ -548,6 +620,24 @@ export function renderFrame(ctx, view) {
     ctx.fillRect(0, 0, width, height);
   }
 
+  // 夜色下的灯火与萤火：用叠加混合让暖光"透"出黑暗。
+  if (nightAmt > 0.12) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const building of BUILDINGS) drawWindowGlow(ctx, building, cameraX, cameraY, nightAmt);
+    for (const lamp of LAMPS) {
+      const pos = tileCenter(lamp.tx, lamp.ty);
+      drawLampGlow(ctx, pos.x + cameraX, pos.y + cameraY, nightAmt);
+    }
+    for (let ty = minY; ty <= maxY; ty += 1) {
+      for (let tx = minX; tx <= maxX; tx += 1) {
+        if (getGround(tx, ty) !== 'forest') continue;
+        drawFireflies(ctx, tx, ty, tx * TILE_W + cameraX, ty * TILE_H + cameraY, now, nightAmt);
+      }
+    }
+    ctx.restore();
+  }
+
   // 雨天：斜向雨丝加一层冷色。
   if (weather?.id === 'rainy') {
     ctx.fillStyle = 'rgba(120, 150, 190, 0.10)';
@@ -562,6 +652,19 @@ export function renderFrame(ctx, view) {
       ctx.lineTo(rx - 12, height);
     }
     ctx.stroke();
+  }
+
+  // 冬季：柔和的落雪，斜斜飘下。
+  if (seasonId === 'winter_feast') {
+    ctx.fillStyle = 'rgba(228, 238, 255, 0.06)';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
+    for (let i = 0; i < 70; i += 1) {
+      const sx = ((i * 137.5 + now / 42 + Math.sin(now / 700 + i) * 14) % (width + 20)) - 10;
+      const sy = ((i * 89.3 + now / 24) % (height + 20)) - 10;
+      const size = i % 3 === 0 ? 2 : 1;
+      ctx.fillRect(Math.round(sx), Math.round(sy), size, size);
+    }
   }
 
   // 轻微的暗角，把视线收拢到小镇中心。

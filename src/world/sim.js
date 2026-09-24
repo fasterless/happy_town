@@ -75,9 +75,10 @@ export function createWorldState(now = Date.now()) {
     boardDone: false,
     boardDay: dayKey(now),
     bonusDay: '',
+    wishDay: '',
     friends: {},
     stats: {
-      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, coinEarned: 0,
+      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, coinEarned: 0,
     },
   };
 }
@@ -572,6 +573,40 @@ export function claimDailyBonus(state, now) {
   return { ok: true, message: `今天${w.icon}${w.name} · 登录奖励 +${DAILY_BONUS} 金币`, state: next };
 }
 
+// ---------- 许愿喷泉 ----------
+
+// 广场中央的喷泉每天可以许一次愿，换一份温柔的小礼物。当天的礼物由
+// 日期决定（刷新页面不变），不惩罚缺席，纯粹是每天进城的一个小仪式。
+const WISH_GIFTS = [
+  { coin: 30, note: '水面泛起金光，你在池底捡到 30 金币' },
+  { item: 'forage_berry', count: 2, note: '一只小鸟衔来 2 颗野莓放在池边' },
+  { item: 'forage_herb', count: 2, note: '晚风送来 2 束清香的香草' },
+  { coin: 22, note: '喷泉低声回应了你的心愿，+22 金币' },
+  { item: 'forage_mushroom', count: 1, note: '池底悄悄浮上 1 朵林地蘑菇' },
+  { coin: 40, note: '硬币叮当落水，回响里多了 40 金币的好运' },
+];
+
+/** 今天喷泉给的礼物（按日期固定，供 UI 预告与许愿共用）。 */
+export function wishGiftOf(now) {
+  return WISH_GIFTS[stableHash(`wish:${dayKey(now)}`) % WISH_GIFTS.length];
+}
+
+/** 每天首次在喷泉许愿领取小礼物；已许过返回 ok:false。 */
+export function makeWish(state, now) {
+  const day = dayKey(now);
+  if (state.wishDay === day) return fail(state, '今天已经许过愿了，明天再来吧');
+  const next = clone(state);
+  next.wishDay = day;
+  const gift = wishGiftOf(now);
+  if (gift.coin) {
+    next.coin += gift.coin;
+    bump(next, 'coinEarned', gift.coin);
+  }
+  if (gift.item) add(next, gift.item, gift.count);
+  bump(next, 'wishes');
+  return { ok: true, message: `🌟 ${gift.note}`, state: next };
+}
+
 // ---------- 每日剩余额度（HUD / 提示用） ----------
 
 export function dailyRemaining(state, now) {
@@ -584,6 +619,7 @@ export function dailyRemaining(state, now) {
     forage: Math.max(0, FORAGE_LIMIT_PER_DAY - forageUsed),
     stamina,
     boardDone: state.boardDay === day ? state.boardDone : false,
+    wished: state.wishDay === day,
   };
 }
 
@@ -613,6 +649,7 @@ export function achievementsOf(state) {
     { id: 'coin', icon: '💰', name: '小镇富翁', goal: 2000, value: s.coinEarned || 0, desc: '累计赚 2000 金币' },
     { id: 'pick', icon: '🔨', name: '镐子行家', goal: 3, value: state.pickLevel || 1, desc: '把镐子升到 3 级' },
     { id: 'friend', icon: '💞', name: '知心好友', goal: FRIEND_MAX, value: topFriend, desc: '把一位邻居处到满好感' },
+    { id: 'wish', icon: '🌟', name: '心愿收集', goal: 15, value: s.wishes || 0, desc: '在喷泉许愿 15 次' },
   ];
   return defs.map((d) => ({ ...d, done: d.value >= d.goal }));
 }

@@ -30,6 +30,8 @@ import {
   claimDailyBonus,
   dailyRemaining,
   achievementsOf,
+  makeWish,
+  wishGiftOf,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
 import { dialogueOf, stepNpcs, createNpcs } from '../src/world/npc.js';
@@ -356,5 +358,39 @@ describe('天气 / 好感 / 登录奖励 / 额度', () => {
     const list = achievementsOf(state);
     expect(list.length).toBeGreaterThan(0);
     expect(list.every((a) => a.done === false)).toBe(true);
+  });
+});
+
+describe('许愿喷泉', () => {
+  it('每天可许一次愿并拿到礼物，同一天不重复', () => {
+    const state = createWorldState(NOW);
+    const first = makeWish(state, NOW);
+    expect(first.ok).toBe(true);
+    // 礼物要么给金币，要么给一件采集物，总之背包/金币会变多。
+    const gotCoin = first.state.coin > state.coin;
+    const gotItem = Object.keys(first.state.bag).length > 0;
+    expect(gotCoin || gotItem).toBe(true);
+    expect(typeof first.state.wishDay).toBe('string');
+    expect(first.state.wishDay.length).toBeGreaterThan(0);
+    expect(dailyRemaining(first.state, NOW).wished).toBe(true);
+    const again = makeWish(first.state, NOW);
+    expect(again.ok).toBe(false);
+  });
+
+  it('隔天可以再次许愿', () => {
+    const state = makeWish(createWorldState(NOW), NOW).state;
+    const nextDay = makeWish(state, NOW + 24 * 60 * 60 * 1000);
+    expect(nextDay.ok).toBe(true);
+  });
+
+  it('当天的礼物按日期固定，刷新不变', () => {
+    expect(wishGiftOf(NOW)).toEqual(wishGiftOf(NOW));
+  });
+
+  it('许愿计入成就进度', () => {
+    const state = makeWish(createWorldState(NOW), NOW).state;
+    const wishAch = achievementsOf(state).find((a) => a.id === 'wish');
+    expect(wishAch).toBeTruthy();
+    expect(wishAch.value).toBe(1);
   });
 });

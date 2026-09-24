@@ -28,6 +28,7 @@ export function loadWorld(now = Date.now()) {
       boardDone: Boolean(saved.boardDone),
       boardDay: typeof saved.boardDay === 'string' ? saved.boardDay : base.boardDay,
       bonusDay: typeof saved.bonusDay === 'string' ? saved.bonusDay : base.bonusDay,
+      wishDay: typeof saved.wishDay === 'string' ? saved.wishDay : base.wishDay,
       friends: saved.friends && typeof saved.friends === 'object' ? saved.friends : base.friends,
       stats: { ...base.stats, ...(saved.stats && typeof saved.stats === 'object' ? saved.stats : {}) },
     };

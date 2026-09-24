@@ -55,6 +55,7 @@ import {
   dailyRemaining,
   allDailiesDone,
   achievementsOf,
+  makeWish,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -100,6 +101,14 @@ function currentWeather() {
   return weatherOf(Date.now());
 }
 
+// 现实日期的 day key，用来判断喷泉今天是否已许愿（与 sim 内 dayKey 一致）。
+function dayKeyToday() {
+  const d = new Date();
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 let toastTimer = 0;
 let saveTimer = 0;
 let doneHintShown = false;
@@ -142,8 +151,8 @@ function renderHud() {
   hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
   if (hudDaily) {
     const r = dailyRemaining(state.world, Date.now());
-    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}`;
-    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}`;
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
 }
 
@@ -463,6 +472,20 @@ function updateActionHint() {
   actionHint.textContent = `${isTouch ? '点「行动」' : '按 E'}：${label}`;
 }
 
+function openWish() {
+  if (state.world.wishDay === dayKeyToday()) {
+    say('今天已经许过愿了，明天再来吧');
+    return undefined;
+  }
+  openPanel('许愿喷泉 ⛲', [
+    {
+      label: '投一枚硬币许个愿 🌟',
+      run: () => { apply(makeWish(state.world, Date.now()), 'coin'); panel.hidden = true; },
+    },
+  ]);
+  return undefined;
+}
+
 function runSpot(spot) {
   if (spot.kind === 'sell') return openStall();
   if (spot.kind === 'board') return openBoard();
@@ -476,6 +499,7 @@ function runSpot(spot) {
   if (spot.kind === 'craft') return openCraft();
   if (spot.kind === 'cook') return openKitchen();
   if (spot.kind === 'cafe') return openCafe();
+  if (spot.kind === 'wish') return openWish();
   if (spot.kind === 'talk') say('喷泉的水声很安静，广场上什么都不用做。');
   return undefined;
 }

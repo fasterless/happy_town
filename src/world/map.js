@@ -129,7 +129,7 @@ export const BUILDINGS = [
 // 交互点：走到相邻格按键触发。
 export const SPOTS = [
   { id: 'stall', name: '货摊', kind: 'sell', tx: 14, ty: 28, icon: '🧺' },
-  { id: 'fountain', name: '喷泉', kind: 'talk', tx: 13, ty: 15, icon: '⛲' },
+  { id: 'fountain', name: '许愿喷泉', kind: 'wish', tx: 13, ty: 15, icon: '⛲' },
   { id: 'noticeBoard', name: '公告栏', kind: 'board', tx: 18, ty: 12, icon: '📌' },
   { id: 'pier', name: '湖畔', kind: 'fish', tx: 21, ty: 15, icon: '🎣' },
   { id: 'mine', name: '后山矿洞', kind: 'mine', tx: 12, ty: 4, icon: '⛏️' },
@@ -163,6 +163,12 @@ export function getGround(tx, ty) {
 
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
 export const SPAWN = { tx: 15, ty: 22 };
+
+// 装饰路灯：只用于渲染，夜里会亮起暖黄的灯光，不参与寻路与阻挡。
+export const LAMPS = [
+  { tx: 11, ty: 12 }, { tx: 20, ty: 12 }, { tx: 11, ty: 19 }, { tx: 20, ty: 19 },
+  { tx: 9, ty: 9 }, { tx: 22, ty: 9 }, { tx: 15, ty: 25 }, { tx: 16, ty: 25 },
+];
 
 /** 与某格相邻（含自身）。 */
 export function isAdjacent(ax, ay, bx, by) {
