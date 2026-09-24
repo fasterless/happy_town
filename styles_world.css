@@ -111,6 +111,85 @@ html, body {
   cursor: pointer;
 }
 
+#minimap {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  width: 128px;
+  height: 128px;
+  border: 2px solid rgba(255, 250, 240, 0.85);
+  border-radius: 8px;
+  background: rgba(31, 42, 34, 0.55);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  image-rendering: pixelated;
+  z-index: 5;
+}
+
+#mapOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 22, 18, 0.72);
+}
+
+.map-frame {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  max-width: 94vw;
+  max-height: 92vh;
+}
+
+.map-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+#bigMap {
+  display: block;
+  border-radius: 8px;
+  background: #2f4a3a;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: grab;
+}
+
+#bigMap:active {
+  cursor: grabbing;
+}
+
+.map-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.map-controls button {
+  min-width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (min-width: 900px) {
   .mobile-actions { display: none; }
+}
+
+@media (max-width: 899px) {
+  #minimap { width: 92px; height: 92px; top: 52px; right: 10px; }
 }

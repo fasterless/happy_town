@@ -21,6 +21,19 @@
   <div id="actionPanel" hidden></div>
   <div id="bagPanel" hidden></div>
 
+  <canvas id="minimap" title="小地图（点击放大 / 按 M 键）"></canvas>
+  <div id="mapOverlay" hidden>
+    <div class="map-frame">
+      <div class="map-title">小镇全图</div>
+      <canvas id="bigMap"></canvas>
+      <div class="map-controls">
+        <button id="mapZoomOut" type="button" aria-label="缩小">−</button>
+        <button id="mapZoomIn" type="button" aria-label="放大">＋</button>
+        <button id="mapClose" type="button">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <div class="mobile-actions">
     <button id="bagButton" type="button">背包</button>
     <button id="interactButton" type="button">行动</button>

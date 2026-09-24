@@ -9,9 +9,10 @@
 // 移动逐格插值、摄像机平滑跟随，避免瞬移带来的眩晕。
 
 import { screenToTile, TILE_W, TILE_H } from './iso.js';
-import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN } from './map.js';
+import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN, MAP_SIZE } from './map.js';
 import { findPath } from './pathfind.js';
 import { renderFrame } from './renderer.js';
+import { drawOverview } from './minimap.js';
 import { createInput } from './input.js';
 import { startLoop } from './loop.js';
 import { playTone } from './audio.js';
@@ -110,6 +111,138 @@ resize();
 
 const input = createInput(canvas);
 
+// ---- 小地图 / 全图预览 ----
+const miniCanvas = document.getElementById('minimap');
+const miniCtx = miniCanvas.getContext('2d');
+const bigCanvas = document.getElementById('bigMap');
+const bigCtx = bigCanvas.getContext('2d');
+const mapOverlay = document.getElementById('mapOverlay');
+let mapOpen = false;
+let bigView = 0; // 放大预览画布的边长（CSS px）
+let bigTile = 12; // 放大预览每格像素
+let bigFit = 12; // 恰好容纳整张地图的每格像素（缩放下限）
+const bigPan = { x: 0, y: 0 };
+
+function scaleCanvas(cvs, context, cssSize) {
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  cvs.width = Math.round(cssSize * dpr);
+  cvs.height = Math.round(cssSize * dpr);
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.imageSmoothingEnabled = false;
+}
+
+function renderMinimap() {
+  const css = miniCanvas.clientWidth || 128;
+  if (miniCanvas._css !== css) {
+    miniCanvas._css = css;
+    scaleCanvas(miniCanvas, miniCtx, css);
+  }
+  const tile = css / MAP_SIZE;
+  const vw = window.innerWidth / TILE_W;
+  const vh = window.innerHeight / TILE_H;
+  const viewport = {
+    x: state.render.x + 0.5 - vw / 2,
+    y: state.render.y + 0.5 - vh / 2,
+    w: vw,
+    h: vh,
+  };
+  miniCtx.clearRect(0, 0, css, css);
+  drawOverview(miniCtx, {
+    tile,
+    player: { rx: state.render.x, ry: state.render.y },
+    npcs: state.npcs,
+    viewport,
+    now: state.clock,
+  });
+}
+
+function clampPan() {
+  const content = MAP_SIZE * bigTile;
+  if (content <= bigView) {
+    bigPan.x = (bigView - content) / 2;
+    bigPan.y = (bigView - content) / 2;
+  } else {
+    bigPan.x = Math.min(0, Math.max(bigView - content, bigPan.x));
+    bigPan.y = Math.min(0, Math.max(bigView - content, bigPan.y));
+  }
+}
+
+function renderBigMap() {
+  bigCtx.clearRect(0, 0, bigView, bigView);
+  clampPan();
+  drawOverview(bigCtx, {
+    tile: bigTile,
+    ox: bigPan.x,
+    oy: bigPan.y,
+    player: { rx: state.render.x, ry: state.render.y },
+    npcs: state.npcs,
+    showLabels: bigTile >= 11,
+    now: state.clock,
+  });
+}
+
+function openMap() {
+  bigView = Math.round(Math.min(window.innerWidth * 0.9, window.innerHeight * 0.78, 640));
+  bigFit = Math.max(6, Math.floor(bigView / MAP_SIZE));
+  bigView = bigFit * MAP_SIZE; // 让画布正好放下整张图
+  bigTile = bigFit;
+  bigCanvas.style.width = `${bigView}px`;
+  bigCanvas.style.height = `${bigView}px`;
+  scaleCanvas(bigCanvas, bigCtx, bigView);
+  bigPan.x = 0;
+  bigPan.y = 0;
+  mapOverlay.hidden = false;
+  mapOpen = true;
+}
+
+function closeMap() {
+  mapOverlay.hidden = true;
+  mapOpen = false;
+}
+
+// 以 (cx, cy) 为焦点缩放，保持该点对应的地图位置不动。
+function zoomBig(factor, cx, cy) {
+  const next = Math.max(bigFit, Math.min(bigFit * 4, bigTile * factor));
+  if (next === bigTile) return;
+  const wx = (cx - bigPan.x) / bigTile;
+  const wy = (cy - bigPan.y) / bigTile;
+  bigTile = next;
+  bigPan.x = cx - wx * bigTile;
+  bigPan.y = cy - wy * bigTile;
+  clampPan();
+}
+
+miniCanvas.addEventListener('click', openMap);
+document.getElementById('mapClose').addEventListener('click', closeMap);
+mapOverlay.addEventListener('pointerdown', (event) => {
+  if (event.target === mapOverlay) closeMap();
+});
+document.getElementById('mapZoomIn').addEventListener('click', () => zoomBig(1.4, bigView / 2, bigView / 2));
+document.getElementById('mapZoomOut').addEventListener('click', () => zoomBig(1 / 1.4, bigView / 2, bigView / 2));
+bigCanvas.addEventListener('wheel', (event) => {
+  event.preventDefault();
+  const rect = bigCanvas.getBoundingClientRect();
+  zoomBig(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX - rect.left, event.clientY - rect.top);
+}, { passive: false });
+
+let dragging = null;
+bigCanvas.addEventListener('pointerdown', (event) => {
+  dragging = { x: event.clientX, y: event.clientY };
+  bigCanvas.setPointerCapture(event.pointerId);
+});
+bigCanvas.addEventListener('pointermove', (event) => {
+  if (!dragging) return;
+  bigPan.x += event.clientX - dragging.x;
+  bigPan.y += event.clientY - dragging.y;
+  dragging = { x: event.clientX, y: event.clientY };
+  clampPan();
+});
+const endDrag = () => {
+  dragging = null;
+};
+bigCanvas.addEventListener('pointerup', endDrag);
+bigCanvas.addEventListener('pointercancel', endDrag);
+
 // 摄像机左上角在屏幕里的偏移，和渲染保持一致，点击换算才不会偏。
 function cameraFor(rx, ry, width, height) {
   return {
@@ -190,6 +323,8 @@ function render() {
     cameraY: CAMERA_Y,
   });
   renderHud();
+  renderMinimap();
+  if (mapOpen) renderBigMap();
 }
 function nearestSpot() {
   const { tx, ty } = state.player;
@@ -395,10 +530,15 @@ window.addEventListener('keydown', (event) => {
     interact();
   }
   if (event.key === 'b' || event.key === 'B') toggleBag();
+  if (event.key === 'm' || event.key === 'M') {
+    if (mapOpen) closeMap();
+    else openMap();
+  }
   if (event.key === 'Escape') {
     panel.hidden = true;
     dialogue.hidden = true;
     bagPanel.hidden = true;
+    closeMap();
   }
 });
 
