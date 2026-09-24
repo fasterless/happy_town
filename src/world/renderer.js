@@ -1,94 +1,148 @@
 // 俯视像素小镇渲染
 //
 // 地面与场景物件全部用整数像素绘制，地图使用正交方格，摄像机跟随玩家。
+// 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
-import { TILE_W, TILE_H, tileToScreen, depthSort } from './iso.js';
+import { TILE_W, TILE_H } from './iso.js';
 import { MAP_SIZE, getGround, BUILDINGS, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { seedList, growthStage } from './sim.js';
 
 const COLORS = {
-  grass: ['#73b968', '#7dc471', '#69ae61'],
-  path: ['#d8bd86', '#e5ca91', '#cbae76'],
-  plaza: ['#c9c0a0', '#d9cfad', '#bcb28f'],
-  water: ['#4d9ab2', '#58a6bc', '#438ba7'],
-  sand: ['#dfc27d', '#ebd394', '#cfad66'],
-  farm: ['#80543d', '#906044', '#704a37'],
-  greenhouse: ['#cce5ce', '#d8edd8', '#bedbc5'],
-  rock: ['#707b78', '#849087', '#68736f'],
-  forest: ['#477c4d', '#528852', '#3c7047'],
-  wall: ['#4c574d', '#596252', '#414d46'],
+  grass: ['#79b45f', '#84bd69', '#71a957'],
+  path: ['#d3b57e', '#dcbf88', '#c7a870'],
+  plaza: ['#cfc6a4', '#dbd2ad', '#c4ba96'],
+  water: ['#5aa6c4', '#69b3ce', '#4f97b6'],
+  sand: ['#e4cd93', '#eed79f', '#d8bd80'],
+  farm: ['#8a5c40', '#996749', '#7c5039'],
+  greenhouse: ['#cfe8d1', '#dcf0db', '#c2ddc7'],
+  rock: ['#7c8683', '#8e9892', '#6f7a76'],
+  forest: ['#3f7548', '#4a8150', '#376a44'],
+  wall: ['#586359', '#66705f', '#4c5750'],
 };
 
 const SEASON_GRASS = {
-  spring_bloom: ['#84c96f', '#8fd079', '#79bd66'],
-  summer_cool: ['#67ac59', '#72b863', '#5da151'],
-  autumn_harvest: ['#9fb85f', '#acc26c', '#93ab54'],
+  spring_bloom: ['#84c96f', '#90d079', '#79bd66'],
+  summer_cool: ['#67ac59', '#73b863', '#5da151'],
+  autumn_harvest: ['#a6bb62', '#b3c56f', '#98ad56'],
   winter_feast: ['#cadbcf', '#d6e5da', '#bfd2c6'],
   new_year: ['#b7c98f', '#c2d29a', '#abbd83'],
 };
+
+const FLOWERS = ['#f2d06b', '#ef8fb0', '#d7e0f0', '#f0a35a'];
 
 function hash(tx, ty, salt = 0) {
   const value = Math.sin(tx * 127.1 + ty * 311.7 + salt * 74.7) * 43758.5453;
   return value - Math.floor(value);
 }
 
+function tileCenter(tx, ty) {
+  return { x: (tx + 0.5) * TILE_W, y: (ty + 0.5) * TILE_H };
+}
+
+const isPath = (tx, ty) => {
+  const g = getGround(tx, ty);
+  return g === 'path' || g === 'plaza';
+};
+const isWater = (tx, ty) => getGround(tx, ty) === 'water';
+
 function tileRect(ctx, x, y, color, inset = 0) {
   ctx.fillStyle = color;
   ctx.fillRect(x + inset, y + inset, TILE_W - inset * 2, TILE_H - inset * 2);
 }
 
+// 沿着「和邻居不同」的边描一条内边，autotile 的观感来源。
+function drawInnerEdges(ctx, x, y, tx, ty, same, color, w) {
+  ctx.fillStyle = color;
+  if (!same(tx, ty - 1)) ctx.fillRect(x, y, TILE_W, w);
+  if (!same(tx, ty + 1)) ctx.fillRect(x, y + TILE_H - w, TILE_W, w);
+  if (!same(tx - 1, ty)) ctx.fillRect(x, y, w, TILE_H);
+  if (!same(tx + 1, ty)) ctx.fillRect(x + TILE_W - w, y, w, TILE_H);
+}
+
 function drawGrass(ctx, x, y, tx, ty, colors) {
-  tileRect(ctx, x, y, colors[(tx + ty) % colors.length]);
-  const detail = hash(tx, ty);
-  if (detail > 0.48) {
-    ctx.fillStyle = detail > 0.78 ? '#a9d279' : '#5b9c59';
-    ctx.fillRect(x + 7 + Math.floor(hash(tx, ty, 2) * 25), y + 8 + Math.floor(hash(tx, ty, 3) * 23), 3, 2);
-    ctx.fillRect(x + 10 + Math.floor(hash(tx, ty, 4) * 20), y + 25, 2, 2);
+  tileRect(ctx, x, y, colors[(tx * 2 + ty) % colors.length]);
+  // 轻微的斑驳，让大片草地不至于死板。
+  if (hash(tx, ty, 1) > 0.62) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(x, y, TILE_W, TILE_H);
   }
-  if (detail > 0.91) {
-    ctx.fillStyle = '#f3d88a';
-    ctx.fillRect(x + 12, y + 12, 3, 3);
-    ctx.fillStyle = '#fff0bd';
-    ctx.fillRect(x + 13, y + 11, 1, 1);
+  const detail = hash(tx, ty);
+  if (detail > 0.4) {
+    ctx.fillStyle = detail > 0.78 ? '#a6d275' : '#5f9f5a';
+    const bx = x + 6 + Math.floor(hash(tx, ty, 2) * 26);
+    const by = y + 9 + Math.floor(hash(tx, ty, 3) * 22);
+    ctx.fillRect(bx, by, 2, 4);
+    ctx.fillRect(bx + 3, by + 1, 2, 3);
+  }
+  if (detail > 0.88) {
+    const petal = FLOWERS[Math.floor(hash(tx, ty, 5) * FLOWERS.length)];
+    const fx = x + 10 + Math.floor(hash(tx, ty, 6) * 18);
+    const fy = y + 10 + Math.floor(hash(tx, ty, 7) * 18);
+    ctx.fillStyle = petal;
+    ctx.fillRect(fx, fy - 2, 2, 2);
+    ctx.fillRect(fx - 2, fy, 2, 2);
+    ctx.fillRect(fx + 2, fy, 2, 2);
+    ctx.fillRect(fx, fy + 2, 2, 2);
+    ctx.fillStyle = '#fff4c9';
+    ctx.fillRect(fx, fy, 2, 2);
   }
 }
 
 function drawPath(ctx, x, y, tx, ty) {
   tileRect(ctx, x, y, COLORS.path[(tx + ty) % 3]);
-  ctx.fillStyle = 'rgba(113, 82, 51, 0.16)';
-  ctx.fillRect(x, y + TILE_H - 3, TILE_W, 3);
-  ctx.fillStyle = '#b69768';
-  const pebbleX = x + 6 + Math.floor(hash(tx, ty, 4) * 27);
-  const pebbleY = y + 8 + Math.floor(hash(tx, ty, 5) * 24);
+  // 和草地相接的边压深一档，像是被踩出来的路肩。
+  drawInnerEdges(ctx, x, y, tx, ty, isPath, 'rgba(150, 116, 70, 0.5)', 3);
+  ctx.fillStyle = 'rgba(255, 246, 214, 0.28)';
+  ctx.fillRect(x + 3, y + 3, TILE_W - 6, 1);
+  ctx.fillStyle = '#b89468';
+  const pebbleX = x + 7 + Math.floor(hash(tx, ty, 4) * 24);
+  const pebbleY = y + 9 + Math.floor(hash(tx, ty, 5) * 22);
   ctx.fillRect(pebbleX, pebbleY, 3, 2);
-  if (hash(tx, ty, 6) > 0.45) ctx.fillRect(x + 27, y + 9 + Math.floor(hash(tx, ty, 7) * 22), 2, 2);
-  ctx.fillStyle = 'rgba(255, 246, 218, 0.38)';
-  ctx.fillRect(x + 2, y + 2, TILE_W - 4, 1);
+  if (hash(tx, ty, 6) > 0.5) ctx.fillRect(x + 26, y + 10 + Math.floor(hash(tx, ty, 7) * 18), 2, 2);
 }
-
 function drawPlaza(ctx, x, y, tx, ty) {
   tileRect(ctx, x, y, COLORS.plaza[(tx * 3 + ty) % 3]);
-  ctx.strokeStyle = 'rgba(115, 105, 80, 0.28)';
+  ctx.strokeStyle = 'rgba(120, 108, 82, 0.3)';
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 2.5, y + 2.5, TILE_W - 5, TILE_H - 5);
-  ctx.fillStyle = 'rgba(248, 239, 205, 0.42)';
+  ctx.fillStyle = 'rgba(250, 242, 210, 0.4)';
   ctx.fillRect(x + 4, y + 4, TILE_W - 8, 2);
   ctx.fillRect(x + 4, y + 4, 2, TILE_H - 8);
   if ((tx + ty) % 4 === 0) {
-    ctx.fillStyle = '#a39b7d';
-    ctx.fillRect(x + 29, y + 28, 2, 2);
+    ctx.fillStyle = '#a79d7c';
+    ctx.fillRect(x + 28, y + 27, 3, 3);
   }
 }
 
 function drawWater(ctx, x, y, tx, ty, now) {
   tileRect(ctx, x, y, COLORS.water[(tx + ty) % 3]);
   const phase = Math.floor(now / 700 + tx * 2 + ty) % 3;
-  ctx.fillStyle = 'rgba(199, 238, 224, 0.5)';
+  ctx.fillStyle = 'rgba(206, 240, 228, 0.5)';
   ctx.fillRect(x + 5 + phase * 5, y + 9 + (ty % 3) * 8, 11, 2);
   ctx.fillRect(x + 23 - phase * 3, y + 26 - (tx % 3) * 4, 8, 1);
-  ctx.fillStyle = 'rgba(37, 101, 128, 0.24)';
-  ctx.fillRect(x, y + TILE_H - 3, TILE_W, 3);
+  // 岸边泛白的浪花，只画在挨着陆地的一侧。
+  drawInnerEdges(ctx, x, y, tx, ty, isWater, 'rgba(224, 245, 240, 0.55)', 3);
+  // 偶尔一片睡莲，点缀湖面。
+  if (hash(tx, ty, 12) > 0.82 && isWater(tx, ty - 1) && isWater(tx, ty + 1)) {
+    const lx = x + 12 + Math.floor(hash(tx, ty, 13) * 12);
+    const ly = y + 14 + Math.floor(hash(tx, ty, 14) * 10);
+    ctx.fillStyle = '#5aa15a';
+    ctx.fillRect(lx, ly, 8, 6);
+    ctx.fillStyle = '#6fb56a';
+    ctx.fillRect(lx + 1, ly + 1, 3, 2);
+    if (hash(tx, ty, 15) > 0.5) {
+      ctx.fillStyle = '#f2a6c4';
+      ctx.fillRect(lx + 3, ly - 2, 3, 3);
+    }
+  }
+}
+
+function drawSand(ctx, x, y, tx, ty) {
+  tileRect(ctx, x, y, COLORS.sand[(tx + ty) % 3]);
+  ctx.fillStyle = 'rgba(154, 126, 74, 0.28)';
+  ctx.fillRect(x + 8 + Math.floor(hash(tx, ty, 3) * 20), y + 12, 3, 2);
+  ctx.fillRect(x + 12, y + 30 - (tx % 3) * 3, 2, 2);
 }
 
 function drawFarm(ctx, x, y, tx, ty) {
@@ -97,7 +151,7 @@ function drawFarm(ctx, x, y, tx, ty) {
   for (let row = 0; row < 4; row += 1) {
     ctx.fillRect(x + 4, y + 5 + row * 9, TILE_W - 8, 2);
   }
-  ctx.fillStyle = 'rgba(212, 160, 102, 0.45)';
+  ctx.fillStyle = 'rgba(214, 162, 104, 0.45)';
   ctx.fillRect(x + 5, y + 7, TILE_W - 10, 2);
 }
 
@@ -123,49 +177,58 @@ function drawRock(ctx, x, y, tx, ty) {
   ctx.fillRect(x + ox + 5, y + oy + 2, 5, 2);
 }
 
+function drawForestFloor(ctx, x, y, tx, ty) {
+  tileRect(ctx, x, y, COLORS.forest[(tx + ty) % 3]);
+  ctx.fillStyle = 'rgba(30, 60, 40, 0.35)';
+  ctx.fillRect(x + 3, y + 34, TILE_W - 6, 3);
+}
+
 function drawTile(ctx, ground, x, y, tx, ty, grass, now) {
   if (ground === 'grass') drawGrass(ctx, x, y, tx, ty, grass);
   else if (ground === 'path') drawPath(ctx, x, y, tx, ty);
   else if (ground === 'plaza') drawPlaza(ctx, x, y, tx, ty);
   else if (ground === 'water') drawWater(ctx, x, y, tx, ty, now);
-  else if (ground === 'sand') {
-    tileRect(ctx, x, y, COLORS.sand[(tx + ty) % 3]);
-    ctx.fillStyle = 'rgba(154, 126, 74, 0.3)';
-    ctx.fillRect(x + 8 + Math.floor(hash(tx, ty, 3) * 22), y + 12, 3, 2);
-    ctx.fillRect(x + 12, y + 30 - (tx % 3) * 3, 2, 2);
-  } else if (ground === 'farm') drawFarm(ctx, x, y, tx, ty);
+  else if (ground === 'sand') drawSand(ctx, x, y, tx, ty);
+  else if (ground === 'farm') drawFarm(ctx, x, y, tx, ty);
   else if (ground === 'greenhouse') drawGreenhouseFloor(ctx, x, y, tx, ty);
   else if (ground === 'rock') drawRock(ctx, x, y, tx, ty);
-  else if (ground === 'forest') {
-    tileRect(ctx, x, y, COLORS.forest[(tx + ty) % 3]);
-    ctx.fillStyle = '#65a05d';
-    ctx.fillRect(x + 3, y + 35, TILE_W - 6, 2);
-  } else if (ground === 'wall') drawRock(ctx, x, y, tx, ty);
+  else if (ground === 'forest') drawForestFloor(ctx, x, y, tx, ty);
+  else if (ground === 'wall') drawRock(ctx, x, y, tx, ty);
+  else drawGrass(ctx, x, y, tx, ty, grass);
 }
-
 function drawTree(ctx, x, y, tx, ty) {
-  const variant = Math.floor(hash(tx, ty, 10) * 3);
-  const greens = ['#2f6947', '#34764a', '#3c8050'];
-  const crownX = x + 5 + variant * 2;
-  const crownY = y + 3 + (variant % 2) * 2;
-  ctx.fillStyle = 'rgba(29, 54, 39, 0.3)';
-  ctx.fillRect(x + 7, y + 30, 27, 7);
-  ctx.fillStyle = '#684b37';
-  ctx.fillRect(x + 17, y + 21, 7, 15);
-  ctx.fillStyle = '#4c392f';
-  ctx.fillRect(x + 14, y + 31, 12, 4);
-  ctx.fillStyle = greens[variant];
-  ctx.fillRect(crownX + 4, crownY + 4, 25, 21);
-  ctx.fillRect(crownX + 8, crownY, 17, 29);
-  ctx.fillRect(crownX + 2, crownY + 9, 29, 13);
-  ctx.fillStyle = '#57935a';
-  ctx.fillRect(crownX + 9, crownY + 5, 12, 5);
-  ctx.fillRect(crownX + 5, crownY + 11, 7, 4);
-  ctx.fillStyle = '#285b40';
-  ctx.fillRect(crownX + 22, crownY + 13, 6, 8);
+  const v = Math.floor(hash(tx, ty, 10) * 3);
+  const sway = Math.floor(hash(tx, ty, 16) * 3) - 1;
+  // 落地的软阴影。
+  ctx.fillStyle = 'rgba(26, 44, 32, 0.26)';
+  ctx.fillRect(x + 9, y + 32, 24, 6);
+  ctx.fillRect(x + 12, y + 36, 18, 2);
+  // 树干。
+  ctx.fillStyle = '#6b4a33';
+  ctx.fillRect(x + 17, y + 22, 6, 14);
+  ctx.fillStyle = '#553a2a';
+  ctx.fillRect(x + 17, y + 22, 2, 14);
+  // 分三层叠出圆润的树冠（仍是像素方块，只是层次更多）。
+  const dark = ['#2f6b42', '#356f3c', '#2c6047'][v];
+  const mid = ['#3f854f', '#458a4a', '#3c7d55'][v];
+  const light = ['#5aa564', '#61ab5d', '#57a06a'][v];
+  const cx = x + 8 + sway;
+  const cy = y + 2;
+  ctx.fillStyle = dark;
+  ctx.fillRect(cx + 3, cy + 6, 22, 18);
+  ctx.fillRect(cx + 7, cy + 2, 14, 24);
+  ctx.fillRect(cx, cy + 10, 28, 10);
+  ctx.fillStyle = mid;
+  ctx.fillRect(cx + 6, cy + 5, 16, 12);
+  ctx.fillRect(cx + 2, cy + 11, 10, 7);
+  ctx.fillRect(cx + 17, cy + 12, 8, 6);
+  ctx.fillStyle = light;
+  ctx.fillRect(cx + 8, cy + 4, 8, 5);
+  ctx.fillRect(cx + 5, cy + 9, 5, 4);
   if ((tx + ty) % 3 === 0) {
-    ctx.fillStyle = '#f2d57a';
-    ctx.fillRect(crownX + 24, crownY + 7, 3, 3);
+    ctx.fillStyle = '#f2c14e';
+    ctx.fillRect(cx + 20, cy + 8, 3, 3);
+    ctx.fillRect(cx + 6, cy + 18, 3, 3);
   }
 }
 
@@ -228,7 +291,6 @@ function drawBuilding(ctx, building, cameraX, cameraY) {
   ctx.textBaseline = 'middle';
   ctx.fillText(building.name, x + width / 2, y - 10, width - 16);
 }
-
 function drawPerson(ctx, cx, cy, color, marker, name = '') {
   const x = Math.round(cx);
   const y = Math.round(cy);
@@ -322,18 +384,17 @@ function drawCrop(ctx, cx, cy, stage, icon, watered = false) {
     ctx.fillText(icon, x, y - size - 7);
   }
 }
-
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now } = view;
+  const cameraOffsetY = view.cameraY ?? 34;
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = '#42634b';
+  ctx.fillStyle = '#3c5a48';
   ctx.fillRect(0, 0, width, height);
 
-  const playerPos = tileToScreen(player.tx, player.ty);
-  const cameraX = Math.round(width / 2 - playerPos.x);
-  const cameraY = Math.round(height / 2 - playerPos.y + 34);
+  const cameraX = Math.round(width / 2 - (player.rx + 0.5) * TILE_W);
+  const cameraY = Math.round(height / 2 - (player.ry + 0.5) * TILE_H + cameraOffsetY);
   const grass = SEASON_GRASS[seasonId] || COLORS.grass;
   const minX = Math.max(0, Math.floor(-cameraX / TILE_W) - 1);
   const maxX = Math.min(MAP_SIZE - 1, Math.ceil((width - cameraX) / TILE_W) + 1);
@@ -348,15 +409,13 @@ export function renderFrame(ctx, view) {
     }
   }
 
-  // Dense forest tiles become solid tree canopies; clearings remain walkable.
-  const trees = [];
+  // Dense forest tiles become tree canopies; drawn top-to-bottom so近处压住远处。
   for (let ty = minY; ty <= maxY; ty += 1) {
     for (let tx = minX; tx <= maxX; tx += 1) {
-      if (getGround(tx, ty) === 'forest') trees.push({ tx, ty, kind: 'tree' });
+      if (getGround(tx, ty) === 'forest') {
+        drawTree(ctx, tx * TILE_W + cameraX, ty * TILE_H + cameraY, tx, ty);
+      }
     }
-  }
-  for (const tree of depthSort(trees)) {
-    drawTree(ctx, tree.tx * TILE_W + cameraX, tree.ty * TILE_H + cameraY, tree.tx, tree.ty);
   }
 
   for (const building of BUILDINGS) drawBuilding(ctx, building, cameraX, cameraY);
@@ -366,7 +425,7 @@ export function renderFrame(ctx, view) {
     const spot = FARM_PLOTS[i];
     if (!spot) return;
     const crop = crops.find((item) => item.id === plot.cropId);
-    const pos = tileToScreen(spot.tx, spot.ty);
+    const pos = tileCenter(spot.tx, spot.ty);
     drawCrop(ctx, pos.x + cameraX, pos.y + cameraY, growthStage(plot, crop, now), crop ? crop.icon : '', plot.watered);
   });
   world.greenhouse.forEach((plot, i) => {
@@ -374,26 +433,27 @@ export function renderFrame(ctx, view) {
     const crop = greenhouseCrops.find((item) => item.id === plot.cropId);
     if (!spot || !crop) return;
     const stage = now - plot.plantedAt >= Math.min(crop.growTime * 1000, 600000) ? 4 : 2;
-    const pos = tileToScreen(spot.tx, spot.ty);
+    const pos = tileCenter(spot.tx, spot.ty);
     drawCrop(ctx, pos.x + cameraX, pos.y + cameraY, stage, crop.icon);
   });
 
   for (const spot of SPOTS) {
-    const pos = tileToScreen(spot.tx, spot.ty);
+    const pos = tileCenter(spot.tx, spot.ty);
     const x = pos.x + cameraX;
     const y = pos.y + cameraY;
     if (x < -TILE_W || y < -TILE_H || x > width + TILE_W || y > height + TILE_H) continue;
     drawSpot(ctx, spot, x, y, now);
   }
 
+  // 玩家与邻居都用插值坐标，按 y 排序保证前后遮挡自然。
   const actors = [
-    ...npcs.map((npc) => ({ ...npc, kind: 'npc' })),
-    { ...player, kind: 'player' },
+    ...npcs.map((npc) => ({ rx: npc.rx ?? npc.tx, ry: npc.ry ?? npc.ty, kind: 'npc', avatar: npc.avatar, name: npc.name })),
+    { rx: player.rx, ry: player.ry, kind: 'player' },
   ];
-  for (const actor of depthSort(actors)) {
-    const pos = tileToScreen(actor.tx, actor.ty);
-    const x = pos.x + cameraX;
-    const y = pos.y + cameraY;
+  actors.sort((a, b) => a.ry - b.ry);
+  for (const actor of actors) {
+    const x = (actor.rx + 0.5) * TILE_W + cameraX;
+    const y = (actor.ry + 0.5) * TILE_H + cameraY;
     if (x < -TILE_W || y < -TILE_H || x > width + TILE_W || y > height + TILE_H) continue;
     if (actor.kind === 'player') drawPerson(ctx, x, y, '#4f83bd', '');
     else drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name);
@@ -406,4 +466,15 @@ export function renderFrame(ctx, view) {
     ctx.fillStyle = `rgba(18, 28, 54, ${darkness * 0.35})`;
     ctx.fillRect(0, 0, width, height);
   }
+
+  // 轻微的暗角，把视线收拢到小镇中心。
+  const vignette = ctx.createRadialGradient(
+    width / 2, height / 2, Math.min(width, height) * 0.35,
+    width / 2, height / 2, Math.max(width, height) * 0.72,
+  );
+  vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vignette.addColorStop(1, 'rgba(20, 24, 20, 0.28)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, width, height);
 }
+

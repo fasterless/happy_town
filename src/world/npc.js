@@ -57,6 +57,8 @@ export function createNpcs() {
       waypoint: 0,
       tx: route[0].tx,
       ty: route[0].ty,
+      rx: route[0].tx,
+      ry: route[0].ty,
       progress: 0,
     };
   });

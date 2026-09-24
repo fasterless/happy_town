@@ -1,7 +1,8 @@
 // 输入
 //
-// 键盘方向、鼠标点地、触屏摇杆三路都汇总成同一个意图：
-//   held 持续按住的方向，tap 点下去的屏幕坐标。
+// 两路输入汇成同一个意图：
+//   held —— PC 上持续按住的方向键；
+//   taps —— 点/触到达的屏幕坐标（手机点击到达、PC 鼠标点地都走这里）。
 // 寻路与移动由 main.js 消费，这里只记录。
 
 const KEY_DIRS = {
@@ -43,7 +44,7 @@ export function createInput(canvas) {
   canvas.addEventListener('pointerdown', onPointer);
 
   return {
-    /** 当前按住的方向，多个键同时按时取后按的 */
+    /** 当前按住的方向键，多个键同时按时取后按的（仅 PC 键盘） */
     direction() {
       let dir = null;
       for (const key of held) dir = KEY_DIRS[key];
@@ -52,14 +53,6 @@ export function createInput(canvas) {
     /** 取走累计的点击 */
     consumeTaps() {
       return taps.splice(0, taps.length);
-    },
-    /** 摇杆给的方向，和键盘走同一条路 */
-    holdStick(tx, ty) {
-      held.delete('stick');
-      if (tx || ty) {
-        KEY_DIRS.stick = [tx, ty];
-        held.add('stick');
-      }
     },
     dispose() {
       window.removeEventListener('keydown', onKeyDown);

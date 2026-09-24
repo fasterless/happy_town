@@ -70,7 +70,8 @@ html, body {
 #bagPanel { top: 64px; right: 12px; left: auto; transform: none; max-height: 60vh; overflow: auto; }
 #bagPanel p { margin: 4px 0; }
 
-#actionPanel {
+/* 用 :not([hidden]) 限定，否则 display:flex 会盖过 hidden 属性，空面板一直挂在画面中央。 */
+#actionPanel:not([hidden]) {
   bottom: 150px;
   display: flex;
   flex-direction: column;
@@ -89,18 +90,6 @@ html, body {
   padding: 8px 10px;
   cursor: pointer;
   font-size: 14px;
-}
-
-#stick {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: rgba(255, 250, 240, 0.55);
-  border: 2px solid var(--line);
-  touch-action: none;
 }
 
 .mobile-actions {
@@ -123,5 +112,5 @@ html, body {
 }
 
 @media (min-width: 900px) {
-  #stick, .mobile-actions { display: none; }
+  .mobile-actions { display: none; }
 }

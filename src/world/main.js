@@ -2,8 +2,13 @@
 //
 // 把地图、输入、模拟和画面接在一起。玩法规则都在 sim.js，
 // 这里只负责「玩家走过去、按键、看到结果」。
+//
+// 控制方式：
+//   · 手机：点击地面 → 自动寻路走到那格（点击到达）。
+//   · 电脑：鼠标点地走过去，或用方向键 / WASD 直接走；E/空格互动。
+// 移动逐格插值、摄像机平滑跟随，避免瞬移带来的眩晕。
 
-import { screenToTile, tileToScreen } from './iso.js';
+import { screenToTile, TILE_W, TILE_H } from './iso.js';
 import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN } from './map.js';
 import { findPath } from './pathfind.js';
 import { renderFrame } from './renderer.js';
@@ -41,8 +46,10 @@ import {
   sellForage,
   describeBag,
 } from './sim.js';
-
-const MOVE_MS = 180;
+// 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
+const MOVE_MS = 240;
+// 镜头竖直偏移，让玩家略靠画面下方，看得见前方的路（渲染与点击换算共用）。
+const CAMERA_Y = 34;
 
 const canvas = document.getElementById('worldCanvas');
 const ctx = canvas.getContext('2d');
@@ -56,11 +63,11 @@ const bagPanel = document.getElementById('bagPanel');
 
 const state = {
   world: loadWorld(Date.now()),
-  player: { ...SPAWN },
+  player: { tx: SPAWN.tx, ty: SPAWN.ty },
+  render: { x: SPAWN.tx, y: SPAWN.ty },
+  anim: null,
   npcs: createNpcs(),
   path: [],
-  moveAcc: 0,
-  keyAcc: 0,
   clock: Date.now(),
 };
 
@@ -84,7 +91,6 @@ function apply(result, sound) {
   saveTimer = setTimeout(() => saveWorld(state.world), 1000);
   renderHud();
 }
-
 function renderHud() {
   const event = getCurrentSeasonalEvent();
   hudCoin.textContent = `${state.world.coin} 金币`;
@@ -104,50 +110,69 @@ resize();
 
 const input = createInput(canvas);
 
-function stepToward(dir) {
-  const nx = state.player.tx + dir[0];
-  const ny = state.player.ty + dir[1];
-  if (!isBlocked(nx, ny)) {
-    state.player.tx = nx;
-    state.player.ty = ny;
+// 摄像机左上角在屏幕里的偏移，和渲染保持一致，点击换算才不会偏。
+function cameraFor(rx, ry, width, height) {
+  return {
+    x: Math.round(width / 2 - (rx + 0.5) * TILE_W),
+    y: Math.round(height / 2 - (ry + 0.5) * TILE_H + CAMERA_Y),
+  };
+}
+
+// 玩家当前的插值位置（格坐标，可能是小数）。
+function renderPos() {
+  if (!state.anim) return { x: state.player.tx, y: state.player.ty };
+  const p = Math.min(1, (state.clock - state.anim.startAt) / MOVE_MS);
+  return {
+    x: state.anim.fromX + (state.player.tx - state.anim.fromX) * p,
+    y: state.anim.fromY + (state.player.ty - state.anim.fromY) * p,
+  };
+}
+
+// 迈出一步：记录起点开始插值，逻辑坐标立刻落到目标格；撞墙则取消寻路。
+function commitMove(nx, ny) {
+  if (isBlocked(nx, ny)) {
     state.path = [];
+    return;
   }
+  state.anim = { fromX: state.player.tx, fromY: state.player.ty, startAt: state.clock };
+  state.player.tx = nx;
+  state.player.ty = ny;
+}
+
+// 邻居也做平滑跟随：指数逼近各自的目标格。
+function easeNpcs(npcs, dt) {
+  const k = 1 - Math.exp(-dt / 130);
+  return npcs.map((npc) => {
+    const rx = npc.rx ?? npc.tx;
+    const ry = npc.ry ?? npc.ty;
+    return { ...npc, rx: rx + (npc.tx - rx) * k, ry: ry + (npc.ty - ry) * k };
+  });
 }
 
 function update(dt) {
   state.clock += dt;
-  state.npcs = stepNpcs(state.npcs, dt);
+  state.npcs = easeNpcs(stepNpcs(state.npcs, dt), dt);
 
-  const dir = input.direction();
-  if (dir) {
-    state.keyAcc += dt;
-    if (state.keyAcc >= MOVE_MS) {
-      state.keyAcc = 0;
-      stepToward(dir);
-    }
-  } else {
-    state.keyAcc = 0;
-  }
+  // 一步走完就解锁，允许迈下一步。
+  if (state.anim && state.clock - state.anim.startAt >= MOVE_MS) state.anim = null;
+  state.render = renderPos();
 
+  // 点击（手机点、电脑鼠标点）都换成一次寻路。
   for (const tap of input.consumeTaps()) {
-    const center = tileToScreen(state.player.tx, state.player.ty);
-    const cameraX = window.innerWidth / 2 - center.x;
-    const cameraY = window.innerHeight / 2 - center.y + 34;
-    const tile = screenToTile(tap.x - cameraX, tap.y - cameraY);
+    const cam = cameraFor(state.render.x, state.render.y, window.innerWidth, window.innerHeight);
+    const tile = screenToTile(tap.x - cam.x, tap.y - cam.y);
     state.path = findPath(state.player, tile, isBlocked);
   }
 
-  if (!dir && state.path.length) {
-    state.moveAcc += dt;
-    if (state.moveAcc >= MOVE_MS) {
-      state.moveAcc = 0;
+  // 没有正在走的动画时才决定下一步：键盘优先于寻路。
+  if (!state.anim) {
+    const dir = input.direction();
+    if (dir) {
+      state.path = [];
+      commitMove(state.player.tx + dir[0], state.player.ty + dir[1]);
+    } else if (state.path.length) {
       const step = state.path.shift();
-      if (!isBlocked(step.tx, step.ty)) {
-        state.player.tx = step.tx;
-        state.player.ty = step.ty;
-      } else {
-        state.path = [];
-      }
+      commitMove(step.tx, step.ty);
     }
   }
 }
@@ -157,15 +182,15 @@ function render() {
   renderFrame(ctx, {
     width: window.innerWidth,
     height: window.innerHeight,
-    player: state.player,
+    player: { rx: state.render.x, ry: state.render.y },
     npcs: state.npcs,
     world: state.world,
     seasonId: event ? event.id : '',
     now: state.clock,
+    cameraY: CAMERA_Y,
   });
   renderHud();
 }
-
 function nearestSpot() {
   const { tx, ty } = state.player;
   return SPOTS.find((spot) => isAdjacent(tx, ty, spot.tx, spot.ty)) || null;
@@ -251,7 +276,6 @@ function interact() {
     say('喷泉的水声很安静，广场上什么都不用做。');
   }
 }
-
 function openFarm(index) {
   const plot = state.world.plots[index];
   const crop = seedList().find((c) => c.id === plot.cropId);
@@ -381,21 +405,6 @@ window.addEventListener('keydown', (event) => {
 document.getElementById('interactButton').addEventListener('click', interact);
 document.getElementById('bagButton').addEventListener('click', toggleBag);
 
-const stick = document.getElementById('stick');
-stick.addEventListener('pointerdown', (event) => stick.setPointerCapture(event.pointerId));
-stick.addEventListener('pointermove', (event) => {
-  if (!stick.hasPointerCapture(event.pointerId)) return;
-  const rect = stick.getBoundingClientRect();
-  const dx = event.clientX - (rect.left + rect.width / 2);
-  const dy = event.clientY - (rect.top + rect.height / 2);
-  const tx = Math.abs(dx) > 14 ? Math.sign(dx) : 0;
-  const ty = Math.abs(dy) > 14 ? Math.sign(dy) : 0;
-  input.holdStick(Math.abs(dx) > Math.abs(dy) ? tx : 0, Math.abs(dy) >= Math.abs(dx) ? ty : 0);
-});
-const releaseStick = () => input.holdStick(0, 0);
-stick.addEventListener('pointerup', releaseStick);
-stick.addEventListener('pointercancel', releaseStick);
-
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveWorld(state.world);
 });
@@ -403,3 +412,4 @@ window.addEventListener('beforeunload', () => saveWorld(state.world));
 
 renderHud();
 startLoop(update, render);
+
