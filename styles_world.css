@@ -136,7 +136,7 @@ html, body {
   z-index: 5;
 }
 
-#mapOverlay {
+#mapOverlay:not([hidden]) {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -247,7 +247,7 @@ html, body {
 .ach-row small { color: #6a6157; }
 
 /* 钓鱼小游戏浮层 */
-#fishingOverlay {
+#fishingOverlay:not([hidden]) {
   position: fixed;
   inset: 0;
   z-index: 25;
@@ -303,7 +303,7 @@ html, body {
 .fish-hint { margin-top: 12px; font-size: 12px; color: #6a6157; line-height: 1.5; }
 
 /* 帮助 / 新手引导 */
-#helpOverlay {
+#helpOverlay:not([hidden]) {
   position: fixed;
   inset: 0;
   z-index: 30;
