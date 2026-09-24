@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -39,6 +39,9 @@ import {
   careAnimal,
   ranchReady,
   sellRanch,
+  collectHoney,
+  apiaryReady,
+  sellHoney,
   describeBag,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
@@ -530,5 +533,46 @@ describe('牧场', () => {
     expect(ach).toBeTruthy();
     expect(ach.value).toBeGreaterThan(0);
     expect(dailyRemaining(state, NOW).ranch).toBe(RANCH_ANIMALS.length - 1);
+  });
+});
+
+describe('蜂场', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('蜂箱都在地图内的可通行地面上', () => {
+    expect(APIARY_HIVES.length).toBeGreaterThan(0);
+    for (const hive of APIARY_HIVES) {
+      expect(isBlocked(hive.tx, hive.ty)).toBe(false);
+    }
+  });
+
+  it('每箱每天收一次蜜，蜂蜜进背包，隔天恢复', () => {
+    let state = createWorldState(NOW);
+    expect(apiaryReady(state, 0, NOW)).toBe(true);
+    const res = collectHoney(state, 0, NOW);
+    expect(res.ok).toBe(true);
+    state = res.state;
+    expect(state.bag.apiary_honey).toBeGreaterThan(0);
+    // 同一天再收失败
+    expect(apiaryReady(state, 0, NOW)).toBe(false);
+    expect(collectHoney(state, 0, NOW).ok).toBe(false);
+    // 隔天恢复
+    expect(apiaryReady(state, 0, NOW + DAY)).toBe(true);
+    expect(collectHoney(state, 0, NOW + DAY).ok).toBe(true);
+  });
+
+  it('蜂蜜能在货摊卖钱，并计入成就与每日额度', () => {
+    const state = collectHoney(createWorldState(NOW), 0, NOW).state;
+    const before = state.coin;
+    const sold = sellHoney(state, 'apiary_honey', state.bag.apiary_honey);
+    expect(sold.ok).toBe(true);
+    expect(sold.state.coin).toBeGreaterThan(before);
+    const listed = describeBag(state).find((it) => it.key === 'apiary_honey');
+    expect(listed).toBeTruthy();
+    expect(listed.sell).toBeGreaterThan(0);
+    const ach = achievementsOf(state).find((a) => a.id === 'honey');
+    expect(ach).toBeTruthy();
+    expect(ach.value).toBeGreaterThan(0);
+    expect(dailyRemaining(state, NOW).apiary).toBe(APIARY_HIVES.length - 1);
   });
 });

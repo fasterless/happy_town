@@ -9,7 +9,7 @@
 // 移动逐格插值、摄像机平滑跟随，避免瞬移带来的眩晕。
 
 import { screenToTile, TILE_W, TILE_H } from './iso.js';
-import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, SPAWN, MAP_SIZE } from './map.js';
+import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SPAWN, MAP_SIZE } from './map.js';
 import { findPath } from './pathfind.js';
 import { renderFrame } from './renderer.js';
 import { drawOverview } from './minimap.js';
@@ -62,6 +62,8 @@ import {
   sellFruit,
   careAnimal,
   sellRanch,
+  collectHoney,
+  sellHoney,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -159,8 +161,8 @@ function renderHud() {
   hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
   if (hudDaily) {
     const r = dailyRemaining(state.world, Date.now());
-    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
-    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} 🍯${r.apiary} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、蜂场 ${r.apiary} 箱、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
   syncHudHeight();
 }
@@ -478,6 +480,21 @@ function nearestAnimal() {
   return bestDist <= 1 ? best : -1;
 }
 
+// 相邻（含脚下）的蜂箱下标，没有就返回 -1。
+function nearestHive() {
+  const { tx, ty } = state.player;
+  let best = -1;
+  let bestDist = Infinity;
+  APIARY_HIVES.forEach((hive, i) => {
+    const dist = Math.abs(hive.tx - tx) + Math.abs(hive.ty - ty);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  });
+  return bestDist <= 1 ? best : -1;
+}
+
 function openPanel(title, buttons) {
   panel.hidden = false;
   panel.innerHTML = '';
@@ -512,6 +529,7 @@ function nearbyLabel() {
   if (nearestPlot(GREENHOUSE_PLOTS) >= 0) return '温室';
   if (nearestOrchard() >= 0) return '果园摘果';
   if (nearestAnimal() >= 0) return '照料动物';
+  if (nearestHive() >= 0) return '收取蜂蜜';
   const spot = nearestSpot();
   if (spot && spot.kind !== 'npc') return spot.name;
   const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
@@ -590,6 +608,19 @@ function openRanch() {
   openPanel('牧场 · 畜舍 🐄', buttons);
 }
 
+// 林间蜂场：列出蜂箱，今天还没收的可一键收蜜（偶尔出蜂王浆）。
+function openApiary() {
+  const day = dayKeyToday();
+  const buttons = APIARY_HIVES.map((hive, i) => {
+    const ready = (state.world.apiary?.[i]) !== day;
+    return {
+      label: ready ? `🍯 ${i + 1} 号蜂箱 — 收取蜂蜜` : `🍯 ${i + 1} 号蜂箱（今天已收）`,
+      run: () => { apply(collectHoney(state.world, i, Date.now()), 'harvest'); openApiary(); },
+    };
+  });
+  openPanel('林间蜂场 🍯', buttons);
+}
+
 function runSpot(spot) {
   if (spot.kind === 'sell') return openStall();
   if (spot.kind === 'board') return openBoard();
@@ -602,6 +633,7 @@ function runSpot(spot) {
   if (spot.kind === 'cafe') return openCafe();
   if (spot.kind === 'wish') return openWish();
   if (spot.kind === 'ranch') return openRanch();
+  if (spot.kind === 'apiary') return openApiary();
   if (spot.kind === 'talk') say('喷泉的水声很安静，广场上什么都不用做。');
   return undefined;
 }
@@ -632,6 +664,8 @@ function interact() {
   if (treeIndex >= 0) return apply(harvestOrchard(state.world, treeIndex, Date.now()), 'harvest');
   const animalIndex = nearestAnimal();
   if (animalIndex >= 0) return apply(careAnimal(state.world, animalIndex, Date.now()), 'harvest');
+  const hiveIndex = nearestHive();
+  if (hiveIndex >= 0) return apply(collectHoney(state.world, hiveIndex, Date.now()), 'harvest');
 
   // 2) 功能地标（货摊、钓鱼、矿洞……），店门口点先跳过。
   const spot = nearestSpot();
@@ -767,7 +801,9 @@ function sellItem(item, amount) {
           ? sellFruit(state.world, item.sellId, amount)
           : kind === 'ranch'
             ? sellRanch(state.world, item.sellId, amount)
-            : sellOre(state.world, item.sellId, amount);
+            : kind === 'apiary'
+              ? sellHoney(state.world, item.sellId, amount)
+              : sellOre(state.world, item.sellId, amount);
   apply(result, 'coin');
   openStall(); // 卖完刷新货摊数量
 }

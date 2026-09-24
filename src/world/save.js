@@ -24,6 +24,7 @@ export function loadWorld(now = Date.now()) {
       greenhouse: base.greenhouse.map((plot, i) => ({ ...plot, ...(saved.greenhouse?.[i] || {}) })),
       orchard: saved.orchard && typeof saved.orchard === 'object' ? saved.orchard : base.orchard,
       ranch: saved.ranch && typeof saved.ranch === 'object' ? saved.ranch : base.ranch,
+      apiary: saved.apiary && typeof saved.apiary === 'object' ? saved.apiary : base.apiary,
       cafeServed: Array.isArray(saved.cafeServed) ? saved.cafeServed : [],
       forageCount: Number.isFinite(saved.forageCount) ? saved.forageCount : base.forageCount,
       forageDay: typeof saved.forageDay === 'string' ? saved.forageDay : base.forageDay,

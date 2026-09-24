@@ -11,8 +11,10 @@ import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
 import { mineLoot, pickaxes, oreValues, getPickaxe, isMaxPick } from '../config/mine.js';
 import { cafeGuests, CAFE_GUESTS_PER_DAY, getCafePrice } from '../config/cafe.js';
-import { FARM_PLOTS, ORCHARD_TREES, RANCH_ANIMALS } from './map.js';
-import { FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot, orchardFruits, ranchAnimals } from '../config/world.js';
+import { FARM_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES } from './map.js';
+import {
+  FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot, orchardFruits, ranchAnimals, apiaryHoney, APIARY_YIELD,
+} from '../config/world.js';
 
 // 鱼类表与 src/systems/fishing.js 的 fishes 一致。
 // 不直接 import 那个文件：它会把整个 systems 层拖进来。
@@ -77,6 +79,7 @@ export function createWorldState(now = Date.now()) {
     greenhouse: Array.from({ length: GREENHOUSE_PLOTS }, () => ({ cropId: 0, plantedAt: 0, day: '' })),
     orchard: {},
     ranch: {},
+    apiary: {},
     crafting: null,
     pickLevel: 1,
     stamina: pickaxes[0].maxStamina,
@@ -93,7 +96,7 @@ export function createWorldState(now = Date.now()) {
     wishDay: '',
     friends: {},
     stats: {
-      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, fruits: 0, ranch: 0, coinEarned: 0,
+      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, fruits: 0, ranch: 0, honey: 0, coinEarned: 0,
     },
   };
 }
@@ -152,6 +155,7 @@ function clone(state) {
     greenhouse: state.greenhouse.map((p) => ({ ...p })),
     orchard: { ...(state.orchard || {}) },
     ranch: { ...(state.ranch || {}) },
+    apiary: { ...(state.apiary || {}) },
     crafting: state.crafting ? { ...state.crafting } : null,
     cafeServed: [...state.cafeServed],
     friends: { ...(state.friends || {}) },
@@ -576,6 +580,44 @@ export function sellRanch(state, key, amount) {
   return { ok: true, message: `卖掉${info.productName}，+${earned} 金币`, state: next };
 }
 
+// ---------- 蜂场 ----------
+
+/** 这个蜂箱今天是否还能收蜜（按现实日期，隔天自动恢复）。 */
+export function apiaryReady(state, index, now) {
+  return (state.apiary?.[index]) !== dayKey(now);
+}
+
+/** 收一个蜂箱：每箱每天一次，给 min~max 罐蜂蜜，偶尔额外一份蜂王浆。 */
+export function collectHoney(state, index, now) {
+  const hive = APIARY_HIVES[index];
+  if (!hive) return fail(state, '这里没有蜂箱');
+  const day = dayKey(now);
+  if (state.apiary?.[index] === day) return fail(state, '这个蜂箱今天已经收过蜜了，明天再来');
+  const next = clone(state);
+  next.apiary[index] = day;
+  const span = APIARY_YIELD.max - APIARY_YIELD.min + 1;
+  const honey = APIARY_YIELD.min + Math.floor(Math.random() * span);
+  add(next, 'apiary_honey', honey);
+  bump(next, 'honey', honey);
+  let extra = '';
+  if (Math.random() < APIARY_YIELD.rareChance) {
+    add(next, 'apiary_jelly', 1);
+    extra = `，还意外收获${apiaryHoney.jelly.icon}${apiaryHoney.jelly.name}×1`;
+  }
+  return { ok: true, message: `收取${apiaryHoney.honey.icon}${apiaryHoney.honey.name}×${honey}${extra}`, state: next };
+}
+
+export function sellHoney(state, key, amount) {
+  const next = clone(state);
+  const info = apiaryHoney[key.replace('apiary_', '')];
+  if (!info) return fail(state, '这个不能卖');
+  if (!take(next, key, amount)) return fail(state, '背包里不够');
+  const earned = info.sellPrice * amount;
+  next.coin += earned;
+  bump(next, 'coinEarned', earned);
+  return { ok: true, message: `卖掉${info.name}，+${earned} 金币`, state: next };
+}
+
 // ---------- 背包展示 ----------
 
 /** 背包/物品目录：key → { name, icon, sell, sellKind, sellId } */
@@ -595,6 +637,9 @@ function buildCatalog() {
   }
   for (const info of Object.values(ranchAnimals)) {
     catalog.set(`ranch_${info.product}`, { name: info.productName, icon: info.productIcon, sell: info.sellPrice, sellKind: 'ranch', sellId: `ranch_${info.product}` });
+  }
+  for (const [key, info] of Object.entries(apiaryHoney)) {
+    catalog.set(`apiary_${key}`, { name: info.name, icon: info.icon, sell: info.sellPrice, sellKind: 'apiary', sellId: `apiary_${key}` });
   }
   for (const [key, price] of Object.entries(oreValues)) {
     const loot = mineLoot.find((item) => item.key === key);
@@ -712,6 +757,7 @@ export function dailyRemaining(state, now) {
     wished: state.wishDay === day,
     orchard: ORCHARD_TREES.filter((_, i) => (state.orchard?.[i]) !== day).length,
     ranch: RANCH_ANIMALS.filter((_, i) => (state.ranch?.[i]) !== day).length,
+    apiary: APIARY_HIVES.filter((_, i) => (state.apiary?.[i]) !== day).length,
   };
 }
 
@@ -744,6 +790,7 @@ export function achievementsOf(state) {
     { id: 'wish', icon: '🌟', name: '心愿收集', goal: 15, value: s.wishes || 0, desc: '在喷泉许愿 15 次' },
     { id: 'orchard', icon: '🍎', name: '果园丰收', goal: 30, value: s.fruits || 0, desc: '从果园摘到 30 个水果' },
     { id: 'ranch', icon: '🐄', name: '牧场之友', goal: 40, value: s.ranch || 0, desc: '照料牧场动物 40 次' },
+    { id: 'honey', icon: '🍯', name: '甜蜜守望', goal: 30, value: s.honey || 0, desc: '从蜂场收取 30 罐蜂蜜' },
   ];
   return defs.map((d) => ({ ...d, done: d.value >= d.goal }));
 }

@@ -32,6 +32,15 @@ export const ranchAnimals = {
   goat: { name: '山羊', icon: '🐐', product: 'goatmilk', productName: '羊奶', productIcon: '🍼', sellPrice: 28, count: 1 },
 };
 
+// 东边林间空地的蜂场：每个蜂箱每天可收一次蜂蜜，偶尔还能收到珍贵的蜂王浆。
+// 位置登记在 src/world/map.js 的 APIARY_HIVES；产品的背包 key 是 apiary_<product>。
+export const apiaryHoney = {
+  honey: { name: '森林蜂蜜', icon: '🍯', sellPrice: 24 },
+  jelly: { name: '蜂王浆', icon: '🫙', sellPrice: 82 },
+};
+// 每次收蜜给 min~max 罐蜂蜜；有 rareChance 概率额外掉一份蜂王浆。
+export const APIARY_YIELD = { min: 1, max: 2, rareChance: 0.18 };
+
 // 公告栏每天固定一张委托，刷新页面也不会改变当天的目标。
 export const boardRequests = [
   { id: 'berry-basket', name: '野莓果篮', icon: '🧺', item: 'forage_berry', count: 3, reward: 90, text: '给咖啡馆送一篮新鲜野莓' },
@@ -43,4 +52,5 @@ export const boardRequests = [
   { id: 'fruit-basket', name: '鲜果拼盘', icon: '🍎', item: 'fruit_apple', count: 3, reward: 110, text: '给咖啡馆送一篮新鲜苹果' },
   { id: 'milk-run', name: '鲜奶配送', icon: '🥛', item: 'ranch_milk', count: 2, reward: 120, text: '给咖啡馆送去两瓶新鲜牛奶' },
   { id: 'wool-order', name: '羊毛订单', icon: '🧶', item: 'ranch_wool', count: 2, reward: 130, text: '为木工坊备两卷柔软羊毛' },
+  { id: 'honey-jar', name: '蜂蜜罐', icon: '🍯', item: 'apiary_honey', count: 3, reward: 135, text: '给咖啡馆送三罐森林蜂蜜' },
 ];

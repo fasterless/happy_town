@@ -4,10 +4,10 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, RANCH_ANIMALS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { orchardFruits, ranchAnimals } from '../config/world.js';
-import { allCrops, growthStage, orchardReady, ranchReady } from './sim.js';
+import { allCrops, growthStage, orchardReady, ranchReady, apiaryReady } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
@@ -803,6 +803,46 @@ function drawAnimal(ctx, cx, cy, animalKey, ready, now) {
   }
 }
 
+// 蜂场蜂箱：草黄的层叠蜂巢箱，白天有蜜蜂绕飞；今天可收蜜时头顶浮出蜜罐。
+function drawHive(ctx, cx, cy, ready, now) {
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  ctx.fillStyle = 'rgba(30, 42, 32, 0.24)';
+  ctx.fillRect(x - 9, y + 8, 18, 4);
+  // 箱身：三层带缝的木箱。
+  ctx.fillStyle = '#d7a24b';
+  ctx.fillRect(x - 8, y - 12, 16, 20);
+  ctx.fillStyle = '#b9822f';
+  ctx.fillRect(x - 8, y - 6, 16, 2);
+  ctx.fillRect(x - 8, y, 16, 2);
+  ctx.fillRect(x - 8, y + 6, 16, 2);
+  ctx.fillStyle = '#e9be6d';
+  ctx.fillRect(x - 8, y - 12, 16, 2);
+  // 顶盖。
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x - 10, y - 15, 20, 4);
+  // 入口小口。
+  ctx.fillStyle = '#5e3f24';
+  ctx.fillRect(x - 2, y + 2, 4, 4);
+  // 绕飞的蜜蜂（两只，白天更活跃）。
+  for (let i = 0; i < 2; i += 1) {
+    const t = now / 420 + i * 3.14 + x;
+    const bx = x + Math.round(Math.cos(t) * 12);
+    const by = y - 6 + Math.round(Math.sin(t * 1.3) * 8);
+    ctx.fillStyle = '#f2c14e';
+    ctx.fillRect(bx, by, 2, 2);
+    ctx.fillStyle = '#3d302b';
+    ctx.fillRect(bx, by, 1, 2);
+  }
+  if (ready) {
+    const bob = Math.round(Math.sin(now / 500 + x) * 2);
+    ctx.font = '13px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🍯', x, y - 22 + bob);
+  }
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now, weather } = view;
@@ -883,6 +923,15 @@ export function renderFrame(ctx, view) {
     const y = pos.y + cameraY;
     if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
     drawAnimal(ctx, x, y, beast.animal, ranchReady(world, i, now), now);
+  });
+
+  // 蜂场：林间空地的蜂箱，今天可收蜜时头顶浮出蜜罐。
+  APIARY_HIVES.forEach((hive, i) => {
+    const pos = tileCenter(hive.tx, hive.ty);
+    const x = pos.x + cameraX;
+    const y = pos.y + cameraY;
+    if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
+    drawHive(ctx, x, y, apiaryReady(world, i, now), now);
   });
 
   for (const spot of SPOTS) {

@@ -76,6 +76,8 @@ function makeMap() {
   grid[10][36] = '.';
   grid[15][33] = '.';
   grid[20][35] = '.';
+  // 东侧密林里辟出一小片草地空地，用作林间蜂场（蜂箱与地标登记在下面）。
+  fill(32, 10, 36, 14, '.');
   fill(1, 33, 4, 38, 't');
   fill(27, 33, 38, 38, 't');
   fill(5, 33, 26, 38, 'a');
@@ -151,6 +153,7 @@ export const SPOTS = [
   { id: 'lookout', name: '风车坡', kind: 'lookout', tx: 25, ty: 4, icon: '🌬️' },
   { id: 'forestEdge', name: '萤火林', kind: 'forage', tx: 29, ty: 17, icon: '🌿' },
   { id: 'ranch', name: '牧场', kind: 'ranch', tx: 10, ty: 36, icon: '🐄' },
+  { id: 'apiary', name: '林间蜂场', kind: 'apiary', tx: 34, ty: 12, icon: '🍯' },
   { id: 'cafeDoor', name: '咖啡馆', kind: 'cafe', tx: 13, ty: 9, icon: '☕' },
   { id: 'craftDoor', name: '加工坊', kind: 'craft', tx: 19, ty: 9, icon: '🥖' },
   { id: 'kitchenDoor', name: '料理铺', kind: 'cook', tx: 25, ty: 9, icon: '🍳' },
@@ -196,6 +199,15 @@ export const RANCH_ANIMALS = [
   { tx: 11, ty: 38, animal: 'sheep' },
   { tx: 19, ty: 35, animal: 'chicken' },
   { tx: 23, ty: 37, animal: 'goat' },
+];
+
+// 东侧林间空地的蜂箱：每个每天可收一次蜂蜜（偶尔蜂王浆）。
+// 不阻挡寻路，站到相邻格或在蜂场地标前收蜜；数值在 src/config/world.js。
+export const APIARY_HIVES = [
+  { tx: 32, ty: 11 },
+  { tx: 36, ty: 11 },
+  { tx: 33, ty: 13 },
+  { tx: 35, ty: 13 },
 ];
 
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
