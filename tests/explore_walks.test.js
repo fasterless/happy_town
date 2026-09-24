@@ -1,5 +1,5 @@
 // 第十四轮玩法（1/3）：邻居同行散步与永久回忆
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createDefaultState, mergeState, normalizeState, CURRENT_VERSION } from '../src/core/state.js';
 import { migrateState } from '../src/core/migrations.js';
 import { storyChapters } from '../src/config/story.js';
@@ -343,7 +343,15 @@ describe('邻居同行散步', () => {
     expect(getYearbookRecallLine(state, new Date().getFullYear())).toBe("");
     const points = state.wallet.friendPoint;
     const coin = state.wallet.coin;
-    const result = visitFriend(state, "npc_mayor");
+    // 日程回礼有 35% 概率触发，镇长当天的回礼是金币；
+    // 固定为不触发，才能稳定验证年鉴回忆本身不加数值。
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.99);
+    let result;
+    try {
+      result = visitFriend(state, "npc_mayor");
+    } finally {
+      randomSpy.mockRestore();
+    }
     expect(result.message).toContain("2024 年的年鉴");
     expect(result.message).not.toContain(new Date().getFullYear() + " 年的年鉴");
     expect(state.wallet.friendPoint - points).toBeLessThan(20);
