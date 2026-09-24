@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>像素小镇</title>
+  <link rel="stylesheet" href="styles_world.css">
+</head>
+<body>
+  <canvas id="worldCanvas"></canvas>
+
+  <div class="world-hud">
+    <a href="index.html">← 返回</a>
+    <span id="hudSeason" class="hud-season"></span>
+    <span id="hudClock"></span>
+    <span id="hudCoin" class="hud-stat"></span>
+  </div>
+
+  <div id="worldToast" hidden></div>
+  <div id="dialogue" hidden></div>
+  <div id="actionPanel" hidden></div>
+  <div id="bagPanel" hidden></div>
+
+  <div id="stick" aria-label="摇杆"></div>
+  <div class="mobile-actions">
+    <button id="bagButton" type="button">背包</button>
+    <button id="interactButton" type="button">行动</button>
+  </div>
+
+  <script type="module" src="src/world/main.js"></script>
+</body>
+</html>

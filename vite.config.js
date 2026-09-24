@@ -18,6 +18,7 @@ export default defineConfig({
     minify: true,
     emptyOutDir: true,
     rollupOptions: {
+      input: ['index.html', 'world.html'],
       output: {
         // core 与 systems 相互依赖（storage.js 结算 orders/wishes/codex，
         // 这些系统又回头用 inventory），拆成两个 chunk 会产生循环引用警告。
