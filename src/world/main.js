@@ -35,6 +35,10 @@ import {
   sellOre,
   serveGuest,
   todaysGuests,
+  boardRequestOf,
+  forageForest,
+  completeBoardRequest,
+  sellForage,
   describeBag,
 } from './sim.js';
 
@@ -225,6 +229,12 @@ function interact() {
     return;
   }
   if (spot.kind === 'sell') return openStall();
+  if (spot.kind === 'board') return openBoard();
+  if (spot.kind === 'forage') return apply(forageForest(state.world, state.clock), 'harvest');
+  if (spot.kind === 'lookout') {
+    say('登上风车坡，能看见湖水、农田和整座小镇。');
+    return;
+  }
   if (spot.kind === 'fish') return apply(castLine(state.world, Date.now()), 'harvest');
   if (spot.kind === 'mine') return openMine();
   if (spot.kind === 'craft') return openCraft();
@@ -273,6 +283,17 @@ function openGreenhouse(index) {
   })));
 }
 
+function openBoard() {
+  const request = boardRequestOf(state.clock);
+  const amount = state.world.bag[request.item] || 0;
+  openPanel(`公告栏 · ${request.name}`, [
+    {
+      label: `${request.icon} ${request.text}（${amount}/${request.count}）`,
+      run: () => apply(completeBoardRequest(state.world, state.clock), 'coin'),
+    },
+  ]);
+}
+
 function openStall() {
   const items = describeBag(state.world).filter((item) => item.sell > 0);
   if (!items.length) {
@@ -286,7 +307,9 @@ function openStall() {
         ? sellCrop(state.world, item.sellId, item.amount)
         : item.sellKind === 'fish'
           ? sellFish(state.world, item.sellId, item.amount)
-          : sellOre(state.world, item.sellId, item.amount);
+          : item.sellKind === 'forage'
+            ? sellForage(state.world, item.sellId, item.amount)
+            : sellOre(state.world, item.sellId, item.amount);
       apply(result, 'coin');
     },
   })));

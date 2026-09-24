@@ -12,6 +12,7 @@ import { dishes } from '../config/dishes.js';
 import { mineLoot, pickaxes, oreValues, getPickaxe, isMaxPick } from '../config/mine.js';
 import { cafeGuests, CAFE_GUESTS_PER_DAY, getCafePrice } from '../config/cafe.js';
 import { FARM_PLOTS } from './map.js';
+import { FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot } from '../config/world.js';
 
 // 鱼类表与 src/systems/fishing.js 的 fishes 一致。
 // 不直接 import 那个文件：它会把整个 systems 层拖进来。
@@ -45,6 +46,10 @@ export function createWorldState(now = Date.now()) {
     fishDay: dayKey(now),
     cafeServed: [],
     cafeDay: dayKey(now),
+    forageCount: 0,
+    forageDay: dayKey(now),
+    boardDone: false,
+    boardDay: dayKey(now),
   };
 }
 
@@ -120,6 +125,14 @@ function rollDaily(state, now) {
   if (state.cafeDay !== day) {
     state.cafeServed = [];
     state.cafeDay = day;
+  }
+  if (state.forageDay !== day) {
+    state.forageCount = 0;
+    state.forageDay = day;
+  }
+  if (state.boardDay !== day) {
+    state.boardDone = false;
+    state.boardDay = day;
   }
 }
 
@@ -278,6 +291,62 @@ export function sellFish(state, fishId, amount) {
   return { ok: true, message: `卖掉${fish.name}，+${earned} 金币`, state: next };
 }
 
+// ---------- 萤火林与公告栏 ----------
+
+function stableHash(text) {
+  let value = 0;
+  for (const ch of text) value = (value * 33 + ch.charCodeAt(0)) % 997;
+  return value;
+}
+
+/** 今天公告栏上的唯一委托，日期固定，刷新页面也不会换单。 */
+export function boardRequestOf(now) {
+  return boardRequests[stableHash(dayKey(now)) % boardRequests.length];
+}
+
+export function forageForest(state, now) {
+  const next = clone(state);
+  rollDaily(next, now);
+  if (next.forageCount >= FORAGE_LIMIT_PER_DAY) return fail(state, '今天的萤火林已经采得差不多了');
+  next.forageCount += 1;
+  const total = forageLoot.reduce((sum, item) => sum + item.weight, 0);
+  let roll = Math.random() * total;
+  let drop = forageLoot[forageLoot.length - 1];
+  for (const item of forageLoot) {
+    roll -= item.weight;
+    if (roll <= 0) {
+      drop = item;
+      break;
+    }
+  }
+  const amount = drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
+  add(next, drop.key, amount);
+  return { ok: true, message: `在萤火林找到${drop.name}×${amount}`, state: next };
+}
+
+export function completeBoardRequest(state, now) {
+  const next = clone(state);
+  rollDaily(next, now);
+  const request = boardRequestOf(now);
+  if (next.boardDone) return fail(state, '今天的公告栏委托已经完成了');
+  if (!take(next, request.item, request.count)) {
+    return fail(state, `还缺${request.name}需要的材料`);
+  }
+  next.coin += request.reward;
+  next.boardDone = true;
+  return { ok: true, message: `完成${request.name}，获得${request.reward}金币`, state: next };
+}
+
+export function sellForage(state, key, amount) {
+  const next = clone(state);
+  const item = forageLoot.find((entry) => entry.key === key);
+  if (!item) return fail(state, '这件东西不能在货摊出售');
+  if (!take(next, key, amount)) return fail(state, '背包里不够');
+  const earned = item.sellPrice * amount;
+  next.coin += earned;
+  return { ok: true, message: `卖掉${item.name}，+${earned}金币`, state: next };
+}
+
 // ---------- 矿洞 ----------
 
 export function digMine(state, now) {
@@ -363,6 +432,9 @@ export function describeBag(state) {
   }
   for (const fish of FISHES) {
     catalog.set(`fish_${fish.id}`, { name: fish.name, icon: fish.icon, sell: fish.sellPrice, sellKind: 'fish', sellId: fish.id });
+  }
+  for (const item of forageLoot) {
+    catalog.set(item.key, { name: item.name, icon: item.icon, sell: item.sellPrice, sellKind: 'forage', sellId: item.key });
   }
   for (const [key, price] of Object.entries(oreValues)) {
     const loot = mineLoot.find((item) => item.key === key);

@@ -16,6 +16,7 @@ const GROUND_COLORS = {
   farm: ['#a66f45', '#b67d52'],
   greenhouse: ['#d8efe4', '#e7f7ee'],
   rock: ['#9aa0a6', '#b0b6bb'],
+  forest: ['#3f8051', '#4e9560'],
   wall: ['#6b6358', '#6b6358'],
   sand: ['#ecd59a', '#f6e3b0'],
 };
@@ -59,6 +60,19 @@ function drawCrop(ctx, cx, cy, stage, icon) {
   }
 }
 
+function drawForestDetails(ctx, cx, cy, tx, ty) {
+  ctx.fillStyle = '#5d3f2a';
+  ctx.fillRect(cx - 2, cy - 8, 4, 11);
+  ctx.fillStyle = (tx + ty) % 2 ? '#2e6b43' : '#387b4b';
+  ctx.beginPath();
+  ctx.arc(cx, cy - 12, 9, 0, Math.PI * 2);
+  ctx.fill();
+  if ((tx * 7 + ty * 3) % 5 === 0) {
+    ctx.fillStyle = '#ffd66b';
+    ctx.fillRect(cx + 6, cy - 8, 2, 2);
+  }
+}
+
 function drawBuilding(ctx, building, originX, originY) {
   const base = tileToScreen(building.tx, building.ty);
   const far = tileToScreen(building.tx + building.w - 1, building.ty + building.h - 1);
@@ -77,6 +91,10 @@ function drawBuilding(ctx, building, originX, originY) {
   ctx.fill();
   ctx.fillStyle = '#f5e6c4';
   ctx.fillRect(cx - 4, cy - depth - 16, 8, 12);
+  ctx.fillStyle = 'rgba(48, 35, 24, 0.82)';
+  ctx.font = '11px Microsoft YaHei, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(building.name, cx, cy - depth - 53);
 }
 
 function drawPerson(ctx, cx, cy, color, marker) {
@@ -127,6 +145,7 @@ export function renderFrame(ctx, view) {
     const pair = tile.ground === 'grass' ? grass : GROUND_COLORS[tile.ground];
     const shade = (tile.tx + tile.ty) % 2 === 0 ? pair[0] : pair[1];
     diamond(ctx, cx, cy, shade);
+    if (tile.ground === 'forest') drawForestDetails(ctx, cx, cy, tile.tx, tile.ty);
     if (tile.ground === 'water') {
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.fillRect(cx - 6, cy - 1, 5, 2);

@@ -23,6 +23,10 @@ export function loadWorld(now = Date.now()) {
       plots: base.plots.map((plot, i) => ({ ...plot, ...(saved.plots?.[i] || {}) })),
       greenhouse: base.greenhouse.map((plot, i) => ({ ...plot, ...(saved.greenhouse?.[i] || {}) })),
       cafeServed: Array.isArray(saved.cafeServed) ? saved.cafeServed : [],
+      forageCount: Number.isFinite(saved.forageCount) ? saved.forageCount : base.forageCount,
+      forageDay: typeof saved.forageDay === 'string' ? saved.forageDay : base.forageDay,
+      boardDone: Boolean(saved.boardDone),
+      boardDay: typeof saved.boardDay === 'string' ? saved.boardDay : base.boardDay,
     };
   } catch (error) {
     console.warn('像素小镇存档读不出来，用新档', error);

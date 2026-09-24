@@ -19,6 +19,9 @@ import {
   sellOre,
   serveGuest,
   todaysGuests,
+  boardRequestOf,
+  forageForest,
+  completeBoardRequest,
   growthStage,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
@@ -136,6 +139,30 @@ describe('温室、加工、料理', () => {
     const cooked = cookDish(state, 7001);
     expect(cooked.ok).toBe(true);
     expect(cooked.state.bag.dish_7001).toBe(1);
+  });
+});
+
+describe('萤火林与公告栏', () => {
+  it('采集每天最多三次，并把资源放进独立背包', () => {
+    let state = createWorldState(NOW);
+    for (let i = 0; i < 3; i += 1) {
+      const result = forageForest(state, NOW);
+      expect(result.ok).toBe(true);
+      state = result.state;
+    }
+    expect(forageForest(state, NOW).ok).toBe(false);
+    expect(Object.keys(state.bag).some((key) => key.startsWith('forage_'))).toBe(true);
+  });
+
+  it('公告栏当天固定一张委托，材料够时只能完成一次', () => {
+    const request = boardRequestOf(NOW);
+    let state = createWorldState(NOW);
+    state.bag[request.item] = request.count;
+    const result = completeBoardRequest(state, NOW);
+    expect(result.ok).toBe(true);
+    expect(result.state.coin).toBe(200 + request.reward);
+    expect(completeBoardRequest(result.state, NOW).ok).toBe(false);
+    expect(boardRequestOf(NOW)).toEqual(request);
   });
 });
 
