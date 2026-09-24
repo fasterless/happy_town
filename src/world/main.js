@@ -73,6 +73,7 @@ const hudCoin = document.getElementById('hudCoin');
 const hudSeason = document.getElementById('hudSeason');
 const hudClock = document.getElementById('hudClock');
 const hudDaily = document.getElementById('hudDaily');
+const worldHud = document.querySelector('.world-hud');
 const toast = document.getElementById('worldToast');
 const panel = document.getElementById('actionPanel');
 const dialogue = document.getElementById('dialogue');
@@ -157,6 +158,18 @@ function renderHud() {
     hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
     hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
+  syncHudHeight();
+}
+
+// 顶栏高度写进 CSS 变量，小地图/背包等浮层据此避让；换行变高时也能跟上。
+let lastHudH = 0;
+function syncHudHeight() {
+  if (!worldHud) return;
+  const h = Math.round(worldHud.getBoundingClientRect().height);
+  if (h && h !== lastHudH) {
+    lastHudH = h;
+    document.documentElement.style.setProperty('--hud-h', `${h}px`);
+  }
 }
 
 function resize() {
@@ -164,6 +177,7 @@ function resize() {
   canvas.width = Math.round(window.innerWidth * dpr);
   canvas.height = Math.round(window.innerHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  syncHudHeight();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -894,5 +908,6 @@ try {
 }
 
 renderHud();
+syncHudHeight();
 startLoop(update, render);
 

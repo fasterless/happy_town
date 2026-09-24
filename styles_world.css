@@ -6,6 +6,8 @@
   --ink: #2f2a25;
   --green: #2f7656;
   --line: rgba(79, 61, 40, 0.18);
+  /* 顶栏实际高度，由脚本按内容/换行动态写入；其他浮层据此避让，避免重叠错位。 */
+  --hud-h: 56px;
 }
 
 * { box-sizing: border-box; }
@@ -33,11 +35,22 @@ html, body {
   left: 0;
   right: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  row-gap: 6px;
   align-items: center;
   padding: 10px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
+  z-index: 6;
+}
+
+/* 信息太长时优先让文字省略，而不是把返回键和右侧圆钮挤出屏幕。 */
+.hud-season, .hud-daily {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .world-hud a, .world-hud button {
@@ -68,7 +81,7 @@ html, body {
 #worldToast { bottom: 92px; }
 #dialogue { bottom: 150px; white-space: pre-wrap; line-height: 1.6; cursor: pointer; }
 /* 背包挪到小地图下方，不再和小地图叠在一起。 */
-#bagPanel { top: 200px; right: 12px; left: auto; transform: none; max-height: 56vh; overflow: auto; }
+#bagPanel { top: calc(var(--hud-h, 56px) + 142px); right: 12px; left: auto; transform: none; max-height: 56vh; overflow: auto; }
 #bagPanel p { margin: 4px 0; }
 #bagPanel #bagClose {
   margin-top: 6px;
@@ -123,7 +136,7 @@ html, body {
 
 #minimap {
   position: fixed;
-  top: 56px;
+  top: calc(var(--hud-h, 56px) + 6px);
   right: 12px;
   width: 128px;
   height: 128px;
@@ -201,8 +214,8 @@ html, body {
 }
 
 @media (max-width: 899px) {
-  #minimap { width: 92px; height: 92px; top: 52px; right: 10px; }
-  #bagPanel { top: 154px; }
+  #minimap { width: 92px; height: 92px; top: calc(var(--hud-h, 52px) + 6px); right: 10px; }
+  #bagPanel { top: calc(var(--hud-h, 52px) + 104px); }
 }
 
 /* HUD 里的天气/时钟/额度与右侧圆按钮 */
