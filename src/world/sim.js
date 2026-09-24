@@ -11,8 +11,8 @@ import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
 import { mineLoot, pickaxes, oreValues, getPickaxe, isMaxPick } from '../config/mine.js';
 import { cafeGuests, CAFE_GUESTS_PER_DAY, getCafePrice } from '../config/cafe.js';
-import { FARM_PLOTS } from './map.js';
-import { FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot } from '../config/world.js';
+import { FARM_PLOTS, ORCHARD_TREES } from './map.js';
+import { FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot, orchardFruits } from '../config/world.js';
 
 // 鱼类表与 src/systems/fishing.js 的 fishes 一致。
 // 不直接 import 那个文件：它会把整个 systems 层拖进来。
@@ -75,6 +75,7 @@ export function createWorldState(now = Date.now()) {
     bag: {},
     plots: FARM_PLOTS.map(() => ({ cropId: 0, plantedAt: 0, watered: false })),
     greenhouse: Array.from({ length: GREENHOUSE_PLOTS }, () => ({ cropId: 0, plantedAt: 0, day: '' })),
+    orchard: {},
     crafting: null,
     pickLevel: 1,
     stamina: pickaxes[0].maxStamina,
@@ -91,7 +92,7 @@ export function createWorldState(now = Date.now()) {
     wishDay: '',
     friends: {},
     stats: {
-      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, coinEarned: 0,
+      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, fruits: 0, coinEarned: 0,
     },
   };
 }
@@ -148,6 +149,7 @@ function clone(state) {
     bag: { ...state.bag },
     plots: state.plots.map((p) => ({ ...p })),
     greenhouse: state.greenhouse.map((p) => ({ ...p })),
+    orchard: { ...(state.orchard || {}) },
     crafting: state.crafting ? { ...state.crafting } : null,
     cafeServed: [...state.cafeServed],
     friends: { ...(state.friends || {}) },
@@ -505,6 +507,39 @@ export function serveGuest(state, guestId, now) {
   return { ok: true, message: `${guest.name}付了 ${price} 金币`, state: next };
 }
 
+// ---------- 果园 ----------
+
+/** 这棵果树今天是否还能摘（按现实日期，隔天自动恢复）。 */
+export function orchardReady(state, index, now) {
+  return (state.orchard?.[index]) !== dayKey(now);
+}
+
+/** 摘一棵果树：每棵每天一次，给固定数量的果子。 */
+export function harvestOrchard(state, index, now) {
+  const tree = ORCHARD_TREES[index];
+  if (!tree) return fail(state, '这里没有果树');
+  const fruit = orchardFruits[tree.fruit];
+  if (!fruit) return fail(state, '这棵树不结果');
+  const day = dayKey(now);
+  if (state.orchard?.[index] === day) return fail(state, `这棵${fruit.name}树今天已经摘过了，明天再来`);
+  const next = clone(state);
+  next.orchard[index] = day;
+  add(next, `fruit_${tree.fruit}`, fruit.count);
+  bump(next, 'fruits', fruit.count);
+  return { ok: true, message: `摘下${fruit.icon}${fruit.name}×${fruit.count}`, state: next };
+}
+
+export function sellFruit(state, key, amount) {
+  const next = clone(state);
+  const fruit = orchardFruits[key.replace('fruit_', '')];
+  if (!fruit) return fail(state, '这个不能卖');
+  if (!take(next, key, amount)) return fail(state, '背包里不够');
+  const earned = fruit.sellPrice * amount;
+  next.coin += earned;
+  bump(next, 'coinEarned', earned);
+  return { ok: true, message: `卖掉${fruit.name}，+${earned} 金币`, state: next };
+}
+
 // ---------- 背包展示 ----------
 
 /** 背包/物品目录：key → { name, icon, sell, sellKind, sellId } */
@@ -518,6 +553,9 @@ function buildCatalog() {
   }
   for (const item of forageLoot) {
     catalog.set(item.key, { name: item.name, icon: item.icon, sell: item.sellPrice, sellKind: 'forage', sellId: item.key });
+  }
+  for (const [key, fruit] of Object.entries(orchardFruits)) {
+    catalog.set(`fruit_${key}`, { name: fruit.name, icon: fruit.icon, sell: fruit.sellPrice, sellKind: 'fruit', sellId: `fruit_${key}` });
   }
   for (const [key, price] of Object.entries(oreValues)) {
     const loot = mineLoot.find((item) => item.key === key);
@@ -633,6 +671,7 @@ export function dailyRemaining(state, now) {
     stamina,
     boardDone: state.boardDay === day ? state.boardDone : false,
     wished: state.wishDay === day,
+    orchard: ORCHARD_TREES.filter((_, i) => (state.orchard?.[i]) !== day).length,
   };
 }
 
@@ -663,6 +702,7 @@ export function achievementsOf(state) {
     { id: 'pick', icon: '🔨', name: '镐子行家', goal: 3, value: state.pickLevel || 1, desc: '把镐子升到 3 级' },
     { id: 'friend', icon: '💞', name: '知心好友', goal: FRIEND_MAX, value: topFriend, desc: '把一位邻居处到满好感' },
     { id: 'wish', icon: '🌟', name: '心愿收集', goal: 15, value: s.wishes || 0, desc: '在喷泉许愿 15 次' },
+    { id: 'orchard', icon: '🍎', name: '果园丰收', goal: 30, value: s.fruits || 0, desc: '从果园摘到 30 个水果' },
   ];
   return defs.map((d) => ({ ...d, done: d.value >= d.goal }));
 }

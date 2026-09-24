@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -33,6 +33,10 @@ import {
   makeWish,
   wishGiftOf,
   forecast,
+  harvestOrchard,
+  orchardReady,
+  sellFruit,
+  describeBag,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
 import { dialogueOf, stepNpcs, createNpcs } from '../src/world/npc.js';
@@ -432,5 +436,47 @@ describe('地图装饰物', () => {
     for (const prop of PROPS) {
       expect(taken.has(`${prop.tx},${prop.ty}`)).toBe(false);
     }
+  });
+});
+
+describe('果园', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('果树都在地图内的可通行地面上', () => {
+    expect(ORCHARD_TREES.length).toBeGreaterThan(0);
+    for (const tree of ORCHARD_TREES) {
+      expect(isBlocked(tree.tx, tree.ty)).toBe(false);
+      expect(tree.fruit).toBeTruthy();
+    }
+  });
+
+  it('每棵每天摘一次，摘到果子进背包，隔天恢复', () => {
+    let state = createWorldState(NOW);
+    expect(orchardReady(state, 0, NOW)).toBe(true);
+    const res = harvestOrchard(state, 0, NOW);
+    expect(res.ok).toBe(true);
+    state = res.state;
+    const fruitKeys = Object.keys(state.bag).filter((k) => k.startsWith('fruit_'));
+    expect(fruitKeys.length).toBe(1);
+    expect(state.bag[fruitKeys[0]]).toBeGreaterThan(0);
+    // 同一天再摘失败
+    expect(orchardReady(state, 0, NOW)).toBe(false);
+    expect(harvestOrchard(state, 0, NOW).ok).toBe(false);
+    // 隔天恢复
+    expect(orchardReady(state, 0, NOW + DAY)).toBe(true);
+    expect(harvestOrchard(state, 0, NOW + DAY).ok).toBe(true);
+  });
+
+  it('果子能在货摊卖钱', () => {
+    let state = harvestOrchard(createWorldState(NOW), 0, NOW).state;
+    const key = Object.keys(state.bag).find((k) => k.startsWith('fruit_'));
+    const before = state.coin;
+    const sold = sellFruit(state, key, state.bag[key]);
+    expect(sold.ok).toBe(true);
+    expect(sold.state.coin).toBeGreaterThan(before);
+    // 背包里的果子也能被货摊目录识别（sellKind=fruit）
+    const listed = describeBag(state).find((it) => it.key === key);
+    expect(listed).toBeTruthy();
+    expect(listed.sell).toBeGreaterThan(0);
   });
 });

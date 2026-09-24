@@ -161,6 +161,17 @@ export function getGround(tx, ty) {
   return groundAt(tx, ty);
 }
 
+// 南边果园的果树：每棵一个固定果子类型，走到相邻格可每天摘一次。
+// 树本身不阻挡寻路（与农田一致，站上/靠近都能摘），渲染时画成结果的果树。
+export const ORCHARD_TREES = [
+  { tx: 23, ty: 26, fruit: 'apple' },
+  { tx: 26, ty: 26, fruit: 'pear' },
+  { tx: 29, ty: 26, fruit: 'orange' },
+  { tx: 24, ty: 28, fruit: 'peach' },
+  { tx: 27, ty: 28, fruit: 'cherry' },
+  { tx: 22, ty: 29, fruit: 'apple' },
+];
+
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
 export const SPAWN = { tx: 15, ty: 22 };
 
@@ -180,6 +191,7 @@ export const PROPS = [
   { type: 'flowerbed', tx: 3, ty: 25 }, { type: 'shrub', tx: 7, ty: 25 },
   // 温室旁的花架与灌木
   { type: 'pot', tx: 23, ty: 22 }, { type: 'pot', tx: 27, ty: 24 }, { type: 'shrub', tx: 28, ty: 25 },
+  { type: 'signpost', tx: 21, ty: 27 },
   // 西边店铺门口的盆栽
   { type: 'pot', tx: 8, ty: 7 }, { type: 'pot', tx: 8, ty: 11 }, { type: 'pot', tx: 8, ty: 14 },
   // 北边加工区的木桶木箱

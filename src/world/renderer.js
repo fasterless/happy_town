@@ -4,9 +4,10 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
-import { allCrops, growthStage } from './sim.js';
+import { orchardFruits } from '../config/world.js';
+import { allCrops, growthStage, orchardReady } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
@@ -651,6 +652,50 @@ function drawFireflies(ctx, tx, ty, x, y, t, amt) {
   }
 }
 
+const FRUIT_DOT = {
+  apple: '#e8523f', pear: '#c6d75a', orange: '#f0972f', peach: '#f2a6b8', cherry: '#c0324b',
+};
+
+// 果园的果树：结果时挂满彩色果子并在顶上标一个果子图标，摘过后只剩树冠。
+function drawFruitTree(ctx, cx, cy, tx, ty, fruitKey, ready) {
+  const x = Math.round(cx) - 20;
+  const y = Math.round(cy) - 26;
+  ctx.fillStyle = 'rgba(26, 44, 32, 0.24)';
+  ctx.fillRect(x + 10, y + 32, 22, 6);
+  ctx.fillRect(x + 13, y + 36, 16, 2);
+  ctx.fillStyle = '#6b4a33';
+  ctx.fillRect(x + 17, y + 24, 6, 14);
+  ctx.fillStyle = '#553a2a';
+  ctx.fillRect(x + 17, y + 24, 2, 14);
+  const cxx = x + 8;
+  const cyy = y + 2;
+  ctx.fillStyle = '#2f6b42';
+  ctx.fillRect(cxx + 3, cyy + 6, 22, 18);
+  ctx.fillRect(cxx + 7, cyy + 2, 14, 24);
+  ctx.fillRect(cxx, cyy + 10, 28, 10);
+  ctx.fillStyle = '#3f854f';
+  ctx.fillRect(cxx + 6, cyy + 5, 16, 12);
+  ctx.fillStyle = '#5aa564';
+  ctx.fillRect(cxx + 8, cyy + 4, 8, 5);
+  if (ready) {
+    const dot = FRUIT_DOT[fruitKey] || '#e8523f';
+    const spots = [[6, 12], [18, 10], [12, 18], [22, 16], [4, 18], [15, 6]];
+    for (const [ox, oy] of spots) {
+      ctx.fillStyle = dot;
+      ctx.fillRect(cxx + ox, cyy + oy, 4, 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(cxx + ox + 1, cyy + oy, 1, 1);
+    }
+    const fruit = orchardFruits[fruitKey];
+    if (fruit) {
+      ctx.font = '13px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fruit.icon, Math.round(cx), y - 4);
+    }
+  }
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now, weather } = view;
@@ -713,6 +758,15 @@ export function renderFrame(ctx, view) {
     const stage = now - plot.plantedAt >= Math.min(crop.growTime * 1000, 600000) ? 4 : 2;
     const pos = tileCenter(spot.tx, spot.ty);
     drawCrop(ctx, pos.x + cameraX, pos.y + cameraY, stage, crop.icon);
+  });
+
+  // 果园：结果的果树画在地面上，摘过的今天只剩树冠。
+  ORCHARD_TREES.forEach((tree, i) => {
+    const pos = tileCenter(tree.tx, tree.ty);
+    const x = pos.x + cameraX;
+    const y = pos.y + cameraY;
+    if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
+    drawFruitTree(ctx, x, y, tree.tx, tree.ty, tree.fruit, orchardReady(world, i, now));
   });
 
   for (const spot of SPOTS) {
