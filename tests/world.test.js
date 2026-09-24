@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -32,6 +32,7 @@ import {
   achievementsOf,
   makeWish,
   wishGiftOf,
+  forecast,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
 import { dialogueOf, stepNpcs, createNpcs } from '../src/world/npc.js';
@@ -392,5 +393,44 @@ describe('许愿喷泉', () => {
     const wishAch = achievementsOf(state).find((a) => a.id === 'wish');
     expect(wishAch).toBeTruthy();
     expect(wishAch.value).toBe(1);
+  });
+});
+
+describe('天气瞭望台', () => {
+  it('返回连续多天、按日期固定的预报', () => {
+    const list = forecast(NOW, 3);
+    expect(list).toHaveLength(3);
+    expect(list.map((d) => d.offset)).toEqual([0, 1, 2]);
+    expect(forecast(NOW, 3)).toEqual(forecast(NOW, 3));
+  });
+
+  it('第一天就是今天的天气', () => {
+    const list = forecast(NOW, 2);
+    expect(list[0].id).toBe(weatherOf(NOW).id);
+    const tomorrow = weatherOf(NOW + 24 * 60 * 60 * 1000);
+    expect(list[1].id).toBe(tomorrow.id);
+  });
+});
+
+describe('地图装饰物', () => {
+  it('都在地图内、站在可通行的地面上（不埋进建筑/墙/水/田里）', () => {
+    expect(PROPS.length).toBeGreaterThan(0);
+    for (const prop of PROPS) {
+      expect(prop.tx).toBeGreaterThan(0);
+      expect(prop.ty).toBeGreaterThan(0);
+      expect(prop.tx).toBeLessThan(MAP_SIZE - 1);
+      expect(prop.ty).toBeLessThan(MAP_SIZE - 1);
+      expect(isBlocked(prop.tx, prop.ty)).toBe(false);
+    }
+  });
+
+  it('不和交互点或路灯占用同一格', () => {
+    const taken = new Set([
+      ...SPOTS.map((s) => `${s.tx},${s.ty}`),
+      ...LAMPS.map((l) => `${l.tx},${l.ty}`),
+    ]);
+    for (const prop of PROPS) {
+      expect(taken.has(`${prop.tx},${prop.ty}`)).toBe(false);
+    }
   });
 });

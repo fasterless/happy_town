@@ -56,6 +56,7 @@ import {
   allDailiesDone,
   achievementsOf,
   makeWish,
+  forecast,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -486,14 +487,36 @@ function openWish() {
   return undefined;
 }
 
+function openLookout() {
+  const days = forecast(Date.now(), 3);
+  const labels = ['今天', '明天', '后天'];
+  panel.hidden = false;
+  panel.innerHTML = '';
+  const heading = document.createElement('h3');
+  heading.textContent = '风车坡 · 天气瞭望台';
+  panel.appendChild(heading);
+  days.forEach((d, i) => {
+    const row = document.createElement('div');
+    row.className = 'ach-row';
+    row.innerHTML = `<b>${labels[i] || `${i} 天后`} ${d.icon} ${d.name}</b><small>${d.note}</small>`;
+    panel.appendChild(row);
+  });
+  const tip = document.createElement('div');
+  tip.className = 'ach-row';
+  tip.innerHTML = '<small>🌱 雨天作物长得更快、还免浇水，可以照着预报安排播种。</small>';
+  panel.appendChild(tip);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = '关闭';
+  close.addEventListener('click', () => { panel.hidden = true; });
+  panel.appendChild(close);
+}
+
 function runSpot(spot) {
   if (spot.kind === 'sell') return openStall();
   if (spot.kind === 'board') return openBoard();
   if (spot.kind === 'forage') return apply(forageForest(state.world, Date.now()), 'harvest');
-  if (spot.kind === 'lookout') {
-    say('登上风车坡，能看见湖水、农田和整座小镇。');
-    return undefined;
-  }
+  if (spot.kind === 'lookout') return openLookout();
   if (spot.kind === 'fish') return openFishing();
   if (spot.kind === 'mine') return openMine();
   if (spot.kind === 'craft') return openCraft();

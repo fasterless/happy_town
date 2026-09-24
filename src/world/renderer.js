@@ -4,7 +4,7 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { allCrops, growthStage } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
@@ -446,6 +446,149 @@ function drawHearts(ctx, cx, cy, hearts) {
   ctx.fillText('❤'.repeat(n), x, y);
 }
 
+// 地图装饰物：都以格中心 (cx, cy) 为基准画一小段像素，先垫一层落地阴影。
+function propShadow(ctx, x, y, w) {
+  ctx.fillStyle = 'rgba(30, 42, 32, 0.22)';
+  ctx.fillRect(x - w / 2, y + 8, w, 4);
+}
+
+function drawBench(ctx, x, y) {
+  propShadow(ctx, x, y, 26);
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x - 12, y - 2, 24, 5);
+  ctx.fillStyle = '#a06c40';
+  ctx.fillRect(x - 12, y - 2, 24, 2);
+  ctx.fillStyle = '#6f4526';
+  ctx.fillRect(x - 12, y - 9, 24, 3);
+  ctx.fillRect(x - 11, y + 3, 3, 6);
+  ctx.fillRect(x + 8, y + 3, 3, 6);
+}
+
+function drawFlowerbed(ctx, x, y, tx, ty) {
+  propShadow(ctx, x, y, 24);
+  ctx.fillStyle = '#5a3c28';
+  ctx.fillRect(x - 12, y - 2, 24, 9);
+  ctx.fillStyle = '#3f7d43';
+  ctx.fillRect(x - 12, y - 4, 24, 3);
+  for (let i = 0; i < 5; i += 1) {
+    const fx = x - 9 + i * 5;
+    const fy = y + 1 + ((i % 2) ? 2 : 0);
+    ctx.fillStyle = FLOWERS[Math.floor(hash(tx + i, ty, 50) * FLOWERS.length)];
+    ctx.fillRect(fx, fy - 4, 3, 3);
+    ctx.fillStyle = '#fff4c9';
+    ctx.fillRect(fx + 1, fy - 3, 1, 1);
+  }
+}
+
+function drawShrub(ctx, x, y, tx, ty) {
+  propShadow(ctx, x, y, 20);
+  ctx.fillStyle = '#2f6b42';
+  ctx.fillRect(x - 9, y - 6, 18, 12);
+  ctx.fillStyle = '#3f854f';
+  ctx.fillRect(x - 7, y - 9, 12, 8);
+  ctx.fillStyle = '#5aa564';
+  ctx.fillRect(x - 4, y - 8, 6, 4);
+  if ((tx + ty) % 2 === 0) {
+    ctx.fillStyle = '#f2c14e';
+    ctx.fillRect(x + 2, y - 2, 2, 2);
+    ctx.fillStyle = '#ef8fb0';
+    ctx.fillRect(x - 6, y, 2, 2);
+  }
+}
+
+function drawBarrel(ctx, x, y) {
+  propShadow(ctx, x, y, 16);
+  ctx.fillStyle = '#9a6b3c';
+  ctx.fillRect(x - 7, y - 12, 14, 18);
+  ctx.fillStyle = '#7c5330';
+  ctx.fillRect(x - 7, y - 12, 3, 18);
+  ctx.fillStyle = '#c9a15e';
+  ctx.fillRect(x - 5, y - 12, 8, 18);
+  ctx.fillStyle = '#5e3f24';
+  ctx.fillRect(x - 7, y - 8, 14, 2);
+  ctx.fillRect(x - 7, y + 2, 14, 2);
+  ctx.fillStyle = '#b98a4f';
+  ctx.fillRect(x - 6, y - 12, 12, 2);
+}
+
+function drawCrate(ctx, x, y) {
+  propShadow(ctx, x, y, 18);
+  ctx.fillStyle = '#b98a54';
+  ctx.fillRect(x - 8, y - 10, 16, 16);
+  ctx.fillStyle = '#8a6238';
+  ctx.fillRect(x - 8, y - 10, 16, 2);
+  ctx.fillRect(x - 8, y + 4, 16, 2);
+  ctx.fillRect(x - 8, y - 10, 2, 16);
+  ctx.fillRect(x + 6, y - 10, 2, 16);
+  ctx.strokeStyle = '#8a6238';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - 7, y - 9); ctx.lineTo(x + 7, y + 5);
+  ctx.moveTo(x + 7, y - 9); ctx.lineTo(x - 7, y + 5);
+  ctx.stroke();
+}
+
+function drawSignpost(ctx, x, y) {
+  propShadow(ctx, x, y, 12);
+  ctx.fillStyle = '#6f4a2c';
+  ctx.fillRect(x - 2, y - 16, 4, 22);
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x - 2, y - 16, 2, 22);
+  ctx.fillStyle = '#c79a5b';
+  ctx.fillRect(x - 11, y - 15, 14, 5);
+  ctx.fillRect(x - 3, y - 8, 13, 5);
+  ctx.fillStyle = '#7c5330';
+  ctx.fillRect(x - 11, y - 15, 14, 1);
+  ctx.fillRect(x - 3, y - 8, 13, 1);
+}
+
+function drawPot(ctx, x, y) {
+  propShadow(ctx, x, y, 14);
+  ctx.fillStyle = '#3f854f';
+  ctx.fillRect(x - 5, y - 10, 10, 6);
+  ctx.fillStyle = '#5aa564';
+  ctx.fillRect(x - 3, y - 12, 5, 4);
+  ctx.fillStyle = '#ef8fb0';
+  ctx.fillRect(x - 4, y - 11, 2, 2);
+  ctx.fillStyle = '#f2d06b';
+  ctx.fillRect(x + 1, y - 9, 2, 2);
+  ctx.fillStyle = '#b5613a';
+  ctx.fillRect(x - 6, y - 4, 12, 8);
+  ctx.fillStyle = '#c9784c';
+  ctx.fillRect(x - 6, y - 4, 12, 2);
+}
+
+function drawScarecrow(ctx, x, y) {
+  propShadow(ctx, x, y, 16);
+  ctx.fillStyle = '#7c5330';
+  ctx.fillRect(x - 1, y - 18, 3, 24);
+  ctx.fillRect(x - 9, y - 10, 18, 3);
+  ctx.fillStyle = '#d9c07a';
+  ctx.fillRect(x - 6, y - 16, 12, 10);
+  ctx.fillStyle = '#b79a52';
+  ctx.fillRect(x - 6, y - 7, 12, 4);
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x - 7, y - 18, 14, 3);
+  ctx.fillRect(x - 4, y - 22, 8, 5);
+  ctx.fillStyle = '#3d302b';
+  ctx.fillRect(x - 3, y - 14, 2, 2);
+  ctx.fillRect(x + 2, y - 14, 2, 2);
+}
+
+function drawProp(ctx, prop, x, y) {
+  switch (prop.type) {
+    case 'bench': return drawBench(ctx, x, y);
+    case 'flowerbed': return drawFlowerbed(ctx, x, y, prop.tx, prop.ty);
+    case 'shrub': return drawShrub(ctx, x, y, prop.tx, prop.ty);
+    case 'barrel': return drawBarrel(ctx, x, y);
+    case 'crate': return drawCrate(ctx, x, y);
+    case 'signpost': return drawSignpost(ctx, x, y);
+    case 'pot': return drawPot(ctx, x, y);
+    case 'scarecrow': return drawScarecrow(ctx, x, y);
+    default: return undefined;
+  }
+}
+
 // 装饰路灯：白天是灰蓝灯柱，夜里灯头亮起暖黄（灯光的光晕另在夜间光层叠加）。
 function drawLamp(ctx, cx, cy, lit) {
   const x = Math.round(cx);
@@ -578,6 +721,15 @@ export function renderFrame(ctx, view) {
     const y = pos.y + cameraY;
     if (x < -TILE_W || y < -TILE_H || x > width + TILE_W || y > height + TILE_H) continue;
     drawSpot(ctx, spot, x, y, now);
+  }
+
+  // 地图装饰物（花圃、长椅、木桶、路牌……），画在角色之前当作街景。
+  for (const prop of PROPS) {
+    const pos = tileCenter(prop.tx, prop.ty);
+    const px = pos.x + cameraX;
+    const py = pos.y + cameraY;
+    if (px < -TILE_W || py < -TILE_H || px > width + TILE_W || py > height + TILE_H) continue;
+    drawProp(ctx, prop, Math.round(px), Math.round(py));
   }
 
   // 装饰路灯（灯柱），画在角色之前，让角色可以从灯前走过。

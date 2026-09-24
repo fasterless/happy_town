@@ -164,6 +164,28 @@ export function getGround(tx, ty) {
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
 export const SPAWN = { tx: 15, ty: 22 };
 
+// 地图装饰物：纯渲染、不参与寻路与阻挡，用来把小镇点缀得更有生活气息。
+// type 决定外观（见 renderer.js 的 drawProp），tx/ty 是所在格；都放在草地上。
+export const PROPS = [
+  // 南边主路两侧的小公园：长椅、花圃、灌木、路牌
+  { type: 'signpost', tx: 13, ty: 25 }, { type: 'signpost', tx: 17, ty: 25 },
+  { type: 'flowerbed', tx: 10, ty: 25 }, { type: 'bench', tx: 11, ty: 26 }, { type: 'shrub', tx: 9, ty: 27 },
+  { type: 'flowerbed', tx: 12, ty: 27 },
+  { type: 'flowerbed', tx: 20, ty: 25 }, { type: 'bench', tx: 19, ty: 26 }, { type: 'shrub', tx: 21, ty: 27 },
+  { type: 'flowerbed', tx: 18, ty: 27 },
+  { type: 'shrub', tx: 8, ty: 29 }, { type: 'flowerbed', tx: 22, ty: 29 },
+  { type: 'shrub', tx: 5, ty: 30 }, { type: 'shrub', tx: 25, ty: 30 },
+  // 农田旁的农家小院：稻草人、木箱、木桶、花圃
+  { type: 'scarecrow', tx: 8, ty: 24 }, { type: 'crate', tx: 2, ty: 22 }, { type: 'barrel', tx: 2, ty: 24 },
+  { type: 'flowerbed', tx: 3, ty: 25 }, { type: 'shrub', tx: 7, ty: 25 },
+  // 温室旁的花架与灌木
+  { type: 'pot', tx: 23, ty: 22 }, { type: 'pot', tx: 27, ty: 24 }, { type: 'shrub', tx: 28, ty: 25 },
+  // 西边店铺门口的盆栽
+  { type: 'pot', tx: 8, ty: 7 }, { type: 'pot', tx: 8, ty: 11 }, { type: 'pot', tx: 8, ty: 14 },
+  // 北边加工区的木桶木箱
+  { type: 'barrel', tx: 10, ty: 10 }, { type: 'barrel', tx: 17, ty: 10 }, { type: 'crate', tx: 18, ty: 10 },
+];
+
 // 装饰路灯：只用于渲染，夜里会亮起暖黄的灯光，不参与寻路与阻挡。
 export const LAMPS = [
   { tx: 11, ty: 12 }, { tx: 20, ty: 12 }, { tx: 11, ty: 19 }, { tx: 20, ty: 19 },

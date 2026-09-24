@@ -55,6 +55,19 @@ export function weatherOf(now) {
   return [WEATHERS[0], WEATHERS[1], WEATHERS[0], WEATHERS[2]][seed % 4];
 }
 
+// 一天的毫秒数，用于天气预报按日推进。
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 从今天起连续 n 天的天气预报（按日期固定，供风车坡瞭望台展示）。 */
+export function forecast(now, days = 3) {
+  const list = [];
+  for (let i = 0; i < days; i += 1) {
+    const w = weatherOf(now + i * ONE_DAY_MS);
+    list.push({ offset: i, id: w.id, name: w.name, icon: w.icon, note: w.note });
+  }
+  return list;
+}
+
 export function createWorldState(now = Date.now()) {
   return {
     version: 1,
