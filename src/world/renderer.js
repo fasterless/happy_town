@@ -7,6 +7,7 @@ import { TILE_W, TILE_H } from './iso.js';
 import { MAP_SIZE, getGround, BUILDINGS, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { seedList, growthStage } from './sim.js';
+import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
   grass: ['#79b45f', '#84bd69', '#71a957'],
@@ -183,7 +184,25 @@ function drawForestFloor(ctx, x, y, tx, ty) {
   ctx.fillRect(x + 3, y + 34, TILE_W - 6, 3);
 }
 
+// 地面类型 + 坐标 → 图集里的贴图名（草地/农田按位置换个变体）。
+function groundSprite(ground, tx, ty) {
+  if (ground === 'grass' || ground === 'forest') {
+    const r = hash(tx, ty);
+    return r > 0.9 ? 'grass2' : r > 0.72 ? 'grass1' : 'grass0';
+  }
+  if (ground === 'path') return 'path';
+  if (ground === 'plaza') return 'plaza';
+  if (ground === 'water') return 'water';
+  if (ground === 'sand') return 'sand';
+  if (ground === 'farm') return (tx + ty) % 2 ? 'farm0' : 'farm1';
+  if (ground === 'greenhouse') return 'green';
+  if (ground === 'rock') return 'rock';
+  if (ground === 'wall') return 'wall';
+  return 'grass0';
+}
+
 function drawTile(ctx, ground, x, y, tx, ty, grass, now) {
+  if (atlasReady() && drawSprite(ctx, groundSprite(ground, tx, ty), x, y)) return;
   if (ground === 'grass') drawGrass(ctx, x, y, tx, ty, grass);
   else if (ground === 'path') drawPath(ctx, x, y, tx, ty);
   else if (ground === 'plaza') drawPlaza(ctx, x, y, tx, ty);
@@ -330,6 +349,37 @@ function drawPerson(ctx, cx, cy, color, marker, name = '') {
   }
 }
 
+// 图集就绪时用 Kenney 的小人贴图；画影子并把贴图脚底对齐格中心。
+function drawActorSprite(ctx, cx, cy, kind) {
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  ctx.fillStyle = 'rgba(27, 43, 35, 0.3)';
+  ctx.fillRect(x - 10, y + 8, 20, 5);
+  return drawSprite(ctx, kind === 'player' ? 'player' : 'npc', x - 20, y - 30, 40);
+}
+
+// 邻居头顶的表情与名牌，和程序化小人共用一套样式。
+function drawActorLabel(ctx, cx, cy, marker, name) {
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  if (marker) {
+    ctx.font = '12px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(marker, x, y - 34);
+  }
+  if (name) {
+    ctx.font = '10px Microsoft YaHei, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const labelWidth = Math.max(34, ctx.measureText(name).width + 8);
+    ctx.fillStyle = 'rgba(31, 48, 39, 0.78)';
+    ctx.fillRect(x - labelWidth / 2, y - 50, labelWidth, 14);
+    ctx.fillStyle = '#fff5d9';
+    ctx.fillText(name, x, y - 43);
+  }
+}
+
 function drawSpot(ctx, spot, x, y, now) {
   const pulse = Math.floor(now / 450 + spot.tx + spot.ty) % 2;
   ctx.fillStyle = 'rgba(42, 55, 43, 0.25)';
@@ -412,8 +462,18 @@ export function renderFrame(ctx, view) {
   // Dense forest tiles become tree canopies; drawn top-to-bottom so近处压住远处。
   for (let ty = minY; ty <= maxY; ty += 1) {
     for (let tx = minX; tx <= maxX; tx += 1) {
-      if (getGround(tx, ty) === 'forest') {
-        drawTree(ctx, tx * TILE_W + cameraX, ty * TILE_H + cameraY, tx, ty);
+      if (getGround(tx, ty) !== 'forest') continue;
+      const x = tx * TILE_W + cameraX;
+      const y = ty * TILE_H + cameraY;
+      if (atlasReady()) {
+        const r = hash(tx, ty, 10);
+        const name = r > 0.86 ? 'bush' : `tree${Math.floor(hash(tx, ty, 11) * 3) % 3}`;
+        // 轻微的落地阴影，让树站在地上。
+        ctx.fillStyle = 'rgba(26, 44, 32, 0.22)';
+        ctx.fillRect(x + 9, y + 30, 22, 6);
+        drawSprite(ctx, name, x, y);
+      } else {
+        drawTree(ctx, x, y, tx, ty);
       }
     }
   }
@@ -455,8 +515,13 @@ export function renderFrame(ctx, view) {
     const x = (actor.rx + 0.5) * TILE_W + cameraX;
     const y = (actor.ry + 0.5) * TILE_H + cameraY;
     if (x < -TILE_W || y < -TILE_H || x > width + TILE_W || y > height + TILE_H) continue;
-    if (actor.kind === 'player') drawPerson(ctx, x, y, '#4f83bd', '');
-    else drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name);
+    if (atlasReady() && drawActorSprite(ctx, x, y, actor.kind)) {
+      if (actor.kind !== 'player') drawActorLabel(ctx, x, y, actor.avatar, actor.name);
+    } else if (actor.kind === 'player') {
+      drawPerson(ctx, x, y, '#4f83bd', '');
+    } else {
+      drawPerson(ctx, x, y, '#cf716d', actor.avatar, actor.name);
+    }
   }
 
   // Day-night tint stays subtle enough to keep paths and interaction markers legible.

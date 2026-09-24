@@ -1,0 +1,14 @@
+像素小镇画面素材来源
+====================
+
+地面、树木、人物贴图改编自 Kenney 的免费素材包（均为 CC0 公共领域授权，
+可商用、无需署名，署名仅表感谢）：
+
+- Tiny Town 1.1  —  https://kenney.nl/assets/tiny-town
+- Tiny Farm 1.0  —  https://kenney.nl/assets/tiny-farm
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+水面、沙地、广场、温室地砖为本项目自绘，配色与上述素材保持一致。
+所有贴图统一烘焙为 40px 一格打包进 atlas.png（见 src/world/atlas.js）。
