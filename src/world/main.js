@@ -9,7 +9,7 @@
 // 移动逐格插值、摄像机平滑跟随，避免瞬移带来的眩晕。
 
 import { screenToTile, TILE_W, TILE_H } from './iso.js';
-import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, SPAWN, MAP_SIZE } from './map.js';
+import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, SPAWN, MAP_SIZE } from './map.js';
 import { findPath } from './pathfind.js';
 import { renderFrame } from './renderer.js';
 import { drawOverview } from './minimap.js';
@@ -22,6 +22,7 @@ import { getCurrentSeasonalEvent } from '../config/seasons.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
+import { ranchAnimals } from '../config/world.js';
 import {
   seedList,
   allCrops,
@@ -59,6 +60,8 @@ import {
   forecast,
   harvestOrchard,
   sellFruit,
+  careAnimal,
+  sellRanch,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -155,8 +158,8 @@ function renderHud() {
   hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
   if (hudDaily) {
     const r = dailyRemaining(state.world, Date.now());
-    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
-    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
   syncHudHeight();
 }
@@ -449,6 +452,21 @@ function nearestOrchard() {
   return bestDist <= 1 ? best : -1;
 }
 
+// 相邻（含脚下）的牧场动物下标，没有就返回 -1。
+function nearestAnimal() {
+  const { tx, ty } = state.player;
+  let best = -1;
+  let bestDist = Infinity;
+  RANCH_ANIMALS.forEach((beast, i) => {
+    const dist = Math.abs(beast.tx - tx) + Math.abs(beast.ty - ty);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  });
+  return bestDist <= 1 ? best : -1;
+}
+
 function openPanel(title, buttons) {
   panel.hidden = false;
   panel.innerHTML = '';
@@ -482,6 +500,7 @@ function nearbyLabel() {
   if (nearestPlot(FARM_PLOTS) >= 0) return '耕种 / 收获';
   if (nearestPlot(GREENHOUSE_PLOTS) >= 0) return '温室';
   if (nearestOrchard() >= 0) return '果园摘果';
+  if (nearestAnimal() >= 0) return '照料动物';
   const spot = nearestSpot();
   if (spot && spot.kind !== 'npc') return spot.name;
   const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
@@ -544,6 +563,22 @@ function openLookout() {
   panel.appendChild(close);
 }
 
+// 牧场畜舍：列出四只动物，今天还没照料的可一键收取畜产品。
+function openRanch() {
+  const day = dayKeyToday();
+  const buttons = RANCH_ANIMALS.map((beast, i) => {
+    const info = ranchAnimals[beast.animal];
+    const ready = (state.world.ranch?.[i]) !== day;
+    return {
+      label: ready
+        ? `${info.icon} ${info.name} — 照料收取 ${info.productIcon}${info.productName}`
+        : `${info.icon} ${info.name}（今天已照料）`,
+      run: () => { apply(careAnimal(state.world, i, Date.now()), 'harvest'); openRanch(); },
+    };
+  });
+  openPanel('牧场 · 畜舍 🐄', buttons);
+}
+
 function runSpot(spot) {
   if (spot.kind === 'sell') return openStall();
   if (spot.kind === 'board') return openBoard();
@@ -555,6 +590,7 @@ function runSpot(spot) {
   if (spot.kind === 'cook') return openKitchen();
   if (spot.kind === 'cafe') return openCafe();
   if (spot.kind === 'wish') return openWish();
+  if (spot.kind === 'ranch') return openRanch();
   if (spot.kind === 'talk') say('喷泉的水声很安静，广场上什么都不用做。');
   return undefined;
 }
@@ -583,6 +619,8 @@ function interact() {
   if (greenIndex >= 0) return openGreenhouse(greenIndex);
   const treeIndex = nearestOrchard();
   if (treeIndex >= 0) return apply(harvestOrchard(state.world, treeIndex, Date.now()), 'harvest');
+  const animalIndex = nearestAnimal();
+  if (animalIndex >= 0) return apply(careAnimal(state.world, animalIndex, Date.now()), 'harvest');
 
   // 2) 功能地标（货摊、钓鱼、矿洞……），店门口点先跳过。
   const spot = nearestSpot();
@@ -716,7 +754,9 @@ function sellItem(item, amount) {
         ? sellForage(state.world, item.sellId, amount)
         : kind === 'fruit'
           ? sellFruit(state.world, item.sellId, amount)
-          : sellOre(state.world, item.sellId, amount);
+          : kind === 'ranch'
+            ? sellRanch(state.world, item.sellId, amount)
+            : sellOre(state.world, item.sellId, amount);
   apply(result, 'coin');
   openStall(); // 卖完刷新货摊数量
 }

@@ -15,6 +15,7 @@ const TERRAIN = {
   sand: '#e4cd93',
   farm: '#8a5c40',
   greenhouse: '#bfe3c8',
+  pasture: '#93c96a',
   rock: '#8e9892',
   forest: '#3f7548',
   wall: '#586359',

@@ -1,9 +1,9 @@
 // 小镇地图
 //
-// 32×32 的俯视地图。字符只描述地面，建筑与可互动地标登记在下面，
+// 40×40 的俯视地图。字符只描述地面，建筑与可互动地标登记在下面，
 // 这样寻路、渲染和玩法仍然可以各自复用同一份地图数据。
 
-export const MAP_SIZE = 32;
+export const MAP_SIZE = 40;
 
 const TILES = {
   '.': 'grass',
@@ -16,6 +16,7 @@ const TILES = {
   'm': 'rock',
   't': 'forest',
   'p': 'plaza',
+  'a': 'pasture',
 };
 
 function makeMap() {
@@ -66,9 +67,22 @@ function makeMap() {
   fill(3, 22, 8, 23, 'f');
   fill(25, 22, 27, 23, 'g');
 
+  // 地图向南、向东扩大后的新区域：
+  //   · 东侧一整片密林，框住扩大后的地图边界（留几处林间空地）。
+  //   · 南边一片被林地环抱的牧场草甸（'a'=pasture），畜舍与动物在下面登记。
+  // 这些填充放在主干道之前，稍后的道路会覆盖穿过草甸的那两列，露出通往牧场的路。
+  fill(31, 2, 38, 24, 't');
+  grid[6][34] = '.';
+  grid[10][36] = '.';
+  grid[15][33] = '.';
+  grid[20][35] = '.';
+  fill(1, 33, 4, 38, 't');
+  fill(27, 33, 38, 38, 't');
+  fill(5, 33, 26, 38, 'a');
+
   // Main roads, central square and neighborhood branches.
-  line(15, 1, 15, 30, ',');
-  line(16, 1, 16, 30, ',');
+  line(15, 1, 15, 38, ',');
+  line(16, 1, 16, 38, ',');
   line(1, 15, 30, 15, ',');
   line(1, 16, 30, 16, ',');
   fill(11, 12, 20, 19, 'p');
@@ -124,6 +138,7 @@ export const BUILDINGS = [
   { id: 'craft', name: '加工坊', tx: 17, ty: 6, w: 4, h: 3, color: '#dbc88e', roof: '#896d3f', trim: '#f6e5b6' },
   { id: 'kitchen', name: '料理铺', tx: 23, ty: 6, w: 4, h: 3, color: '#e1a282', roof: '#a55142', trim: '#ffdbb0' },
   { id: 'forestCabin', name: '林间小屋', tx: 27, ty: 6, w: 3, h: 3, color: '#a77b55', roof: '#5a4639', trim: '#e5bb73' },
+  { id: 'barn', name: '畜舍', tx: 8, ty: 33, w: 5, h: 3, color: '#c98f5a', roof: '#7a4a2c', trim: '#f0cd8b' },
 ];
 
 // 交互点：走到相邻格按键触发。
@@ -135,6 +150,7 @@ export const SPOTS = [
   { id: 'mine', name: '后山矿洞', kind: 'mine', tx: 12, ty: 4, icon: '⛏️' },
   { id: 'lookout', name: '风车坡', kind: 'lookout', tx: 25, ty: 4, icon: '🌬️' },
   { id: 'forestEdge', name: '萤火林', kind: 'forage', tx: 29, ty: 17, icon: '🌿' },
+  { id: 'ranch', name: '牧场', kind: 'ranch', tx: 10, ty: 36, icon: '🐄' },
   { id: 'cafeDoor', name: '咖啡馆', kind: 'cafe', tx: 13, ty: 9, icon: '☕' },
   { id: 'craftDoor', name: '加工坊', kind: 'craft', tx: 19, ty: 9, icon: '🥖' },
   { id: 'kitchenDoor', name: '料理铺', kind: 'cook', tx: 25, ty: 9, icon: '🍳' },
@@ -172,6 +188,16 @@ export const ORCHARD_TREES = [
   { tx: 22, ty: 29, fruit: 'apple' },
 ];
 
+// 南边牧场的动物：每头一个固定种类，走到相邻格（或在畜舍前）每天照料一次。
+// 动物本身不阻挡寻路（和果树一致），渲染时画成站在草甸上的小动物。
+// 数值（产品、售价、数量）在 src/config/world.js 的 ranchAnimals。
+export const RANCH_ANIMALS = [
+  { tx: 6, ty: 37, animal: 'cow' },
+  { tx: 11, ty: 38, animal: 'sheep' },
+  { tx: 19, ty: 35, animal: 'chicken' },
+  { tx: 23, ty: 37, animal: 'goat' },
+];
+
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
 export const SPAWN = { tx: 15, ty: 22 };
 
@@ -196,6 +222,10 @@ export const PROPS = [
   { type: 'pot', tx: 8, ty: 7 }, { type: 'pot', tx: 8, ty: 11 }, { type: 'pot', tx: 8, ty: 14 },
   // 北边加工区的木桶木箱
   { type: 'barrel', tx: 10, ty: 10 }, { type: 'barrel', tx: 17, ty: 10 }, { type: 'crate', tx: 18, ty: 10 },
+  // 南边牧场：草甸北缘的木栅栏（中间 15/16 两列留出通往牧场的路口）、干草与饲料桶
+  { type: 'fence', tx: 5, ty: 32 }, { type: 'fence', tx: 8, ty: 32 }, { type: 'fence', tx: 11, ty: 32 },
+  { type: 'fence', tx: 20, ty: 32 }, { type: 'fence', tx: 23, ty: 32 }, { type: 'fence', tx: 26, ty: 32 },
+  { type: 'haystack', tx: 14, ty: 37 }, { type: 'barrel', tx: 7, ty: 34 }, { type: 'crate', tx: 22, ty: 34 },
 ];
 
 // 装饰路灯：只用于渲染，夜里会亮起暖黄的灯光，不参与寻路与阻挡。

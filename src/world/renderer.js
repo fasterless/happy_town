@@ -4,10 +4,10 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, RANCH_ANIMALS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
-import { orchardFruits } from '../config/world.js';
-import { allCrops, growthStage, orchardReady } from './sim.js';
+import { orchardFruits, ranchAnimals } from '../config/world.js';
+import { allCrops, growthStage, orchardReady, ranchReady } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
@@ -18,6 +18,7 @@ const COLORS = {
   sand: ['#e4cd93', '#eed79f', '#d8bd80'],
   farm: ['#8a5c40', '#996749', '#7c5039'],
   greenhouse: ['#cfe8d1', '#dcf0db', '#c2ddc7'],
+  pasture: ['#93c96a', '#9fd473', '#88bf60'],
   rock: ['#7c8683', '#8e9892', '#6f7a76'],
   forest: ['#3f7548', '#4a8150', '#376a44'],
   wall: ['#586359', '#66705f', '#4c5750'],
@@ -166,6 +167,29 @@ function drawGreenhouseFloor(ctx, x, y, tx, ty) {
   ctx.fillRect(x + TILE_W - 5, y + 5, 2, TILE_H - 10);
 }
 
+// 牧场草甸：比普通草地更明亮的修剪草皮，带成排的短草纹与偶尔的三叶草。
+function drawPasture(ctx, x, y, tx, ty) {
+  tileRect(ctx, x, y, COLORS.pasture[(tx * 2 + ty) % 3]);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.fillRect(x, y + 12, TILE_W, 2);
+  ctx.fillRect(x, y + 28, TILE_W, 2);
+  ctx.fillStyle = 'rgba(74, 132, 74, 0.35)';
+  for (let i = 0; i < 3; i += 1) {
+    const gx = x + 6 + i * 12 + Math.floor(hash(tx, ty, 60 + i) * 4);
+    const gy = y + 20 + Math.floor(hash(tx, ty, 63 + i) * 12);
+    ctx.fillRect(gx, gy, 2, 4);
+    ctx.fillRect(gx + 2, gy + 1, 2, 3);
+  }
+  if (hash(tx, ty, 66) > 0.82) {
+    ctx.fillStyle = '#e7f0c0';
+    const cx = x + 12 + Math.floor(hash(tx, ty, 67) * 14);
+    const cy = y + 10 + Math.floor(hash(tx, ty, 68) * 16);
+    ctx.fillRect(cx, cy, 2, 2);
+    ctx.fillRect(cx + 3, cy, 2, 2);
+    ctx.fillRect(cx + 1, cy + 3, 2, 2);
+  }
+}
+
 function drawRock(ctx, x, y, tx, ty) {
   tileRect(ctx, x, y, COLORS.rock[(tx + ty) % 3]);
   const ox = 5 + Math.floor(hash(tx, ty, 8) * 13);
@@ -197,6 +221,7 @@ function groundSprite(ground, tx, ty) {
   if (ground === 'sand') return 'sand';
   if (ground === 'farm') return (tx + ty) % 2 ? 'farm0' : 'farm1';
   if (ground === 'greenhouse') return 'green';
+  if (ground === 'pasture') return 'pasture';
   if (ground === 'rock') return 'rock';
   if (ground === 'wall') return 'wall';
   return 'grass0';
@@ -211,6 +236,7 @@ function drawTile(ctx, ground, x, y, tx, ty, grass, now) {
   else if (ground === 'sand') drawSand(ctx, x, y, tx, ty);
   else if (ground === 'farm') drawFarm(ctx, x, y, tx, ty);
   else if (ground === 'greenhouse') drawGreenhouseFloor(ctx, x, y, tx, ty);
+  else if (ground === 'pasture') drawPasture(ctx, x, y, tx, ty);
   else if (ground === 'rock') drawRock(ctx, x, y, tx, ty);
   else if (ground === 'forest') drawForestFloor(ctx, x, y, tx, ty);
   else if (ground === 'wall') drawRock(ctx, x, y, tx, ty);
@@ -586,8 +612,40 @@ function drawProp(ctx, prop, x, y) {
     case 'signpost': return drawSignpost(ctx, x, y);
     case 'pot': return drawPot(ctx, x, y);
     case 'scarecrow': return drawScarecrow(ctx, x, y);
+    case 'fence': return drawFence(ctx, x, y);
+    case 'haystack': return drawHaystack(ctx, x, y);
     default: return undefined;
   }
+}
+
+// 牧场木栅栏：两根立柱夹两道横木，纯装饰。
+function drawFence(ctx, x, y) {
+  propShadow(ctx, x, y, 26);
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x - 12, y - 12, 3, 18);
+  ctx.fillRect(x + 9, y - 12, 3, 18);
+  ctx.fillStyle = '#a06c40';
+  ctx.fillRect(x - 12, y - 12, 3, 3);
+  ctx.fillRect(x + 9, y - 12, 3, 3);
+  ctx.fillStyle = '#9a6b3c';
+  ctx.fillRect(x - 12, y - 8, 24, 3);
+  ctx.fillRect(x - 12, y - 1, 24, 3);
+}
+
+// 干草堆：金黄的圆润草垛，牧场里的饲料。
+function drawHaystack(ctx, x, y) {
+  propShadow(ctx, x, y, 24);
+  ctx.fillStyle = '#d9b45a';
+  ctx.fillRect(x - 11, y - 4, 22, 10);
+  ctx.fillRect(x - 8, y - 9, 16, 6);
+  ctx.fillRect(x - 4, y - 13, 8, 5);
+  ctx.fillStyle = '#e9cd77';
+  ctx.fillRect(x - 8, y - 3, 16, 3);
+  ctx.fillStyle = '#b78f3f';
+  ctx.fillRect(x - 11, y + 3, 22, 3);
+  ctx.fillStyle = 'rgba(120, 90, 40, 0.35)';
+  ctx.fillRect(x - 6, y - 8, 2, 12);
+  ctx.fillRect(x + 3, y - 6, 2, 10);
 }
 
 // 装饰路灯：白天是灰蓝灯柱，夜里灯头亮起暖黄（灯光的光晕另在夜间光层叠加）。
@@ -696,6 +754,29 @@ function drawFruitTree(ctx, cx, cy, tx, ty, fruitKey, ready) {
   }
 }
 
+// 牧场动物：站在草甸上的小动物用 emoji 表示，脚下垫一小块土色底座。
+// 今天还没照料时，头顶浮起对应的畜产品图标（提示可收取），照料过则安静吃草。
+function drawAnimal(ctx, cx, cy, animalKey, ready, now) {
+  const info = ranchAnimals[animalKey];
+  if (!info) return;
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  ctx.fillStyle = 'rgba(30, 42, 32, 0.24)';
+  ctx.fillRect(x - 10, y + 8, 20, 5);
+  // 一小撮草料底座，让动物像踩在草地上。
+  ctx.fillStyle = '#6fae52';
+  ctx.fillRect(x - 8, y + 6, 16, 3);
+  ctx.font = '20px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(info.icon, x, y - 2);
+  if (ready) {
+    const bob = Math.round(Math.sin(now / 500 + x) * 2);
+    ctx.font = '13px serif';
+    ctx.fillText(info.productIcon, x + 12, y - 16 + bob);
+  }
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now, weather } = view;
@@ -767,6 +848,15 @@ export function renderFrame(ctx, view) {
     const y = pos.y + cameraY;
     if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
     drawFruitTree(ctx, x, y, tree.tx, tree.ty, tree.fruit, orchardReady(world, i, now));
+  });
+
+  // 牧场：动物站在草甸上，今天可照料时头顶浮出畜产品图标。
+  RANCH_ANIMALS.forEach((beast, i) => {
+    const pos = tileCenter(beast.tx, beast.ty);
+    const x = pos.x + cameraX;
+    const y = pos.y + cameraY;
+    if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
+    drawAnimal(ctx, x, y, beast.animal, ranchReady(world, i, now), now);
   });
 
   for (const spot of SPOTS) {

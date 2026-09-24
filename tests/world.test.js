@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -36,6 +36,9 @@ import {
   harvestOrchard,
   orchardReady,
   sellFruit,
+  careAnimal,
+  ranchReady,
+  sellRanch,
   describeBag,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
@@ -66,7 +69,7 @@ describe('俯视坐标', () => {
 });
 
 describe('小镇地图', () => {
-  it('每一行都是 32 格宽', () => {
+  it('每一行都和 MAP_SIZE 一样宽', () => {
     expect(ROWS).toHaveLength(MAP_SIZE);
     expect(ROWS.every((row) => row.length === MAP_SIZE)).toBe(true);
   });
@@ -478,5 +481,52 @@ describe('果园', () => {
     const listed = describeBag(state).find((it) => it.key === key);
     expect(listed).toBeTruthy();
     expect(listed.sell).toBeGreaterThan(0);
+  });
+});
+
+describe('牧场', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('动物都在地图内的可通行草甸上', () => {
+    expect(RANCH_ANIMALS.length).toBeGreaterThan(0);
+    for (const beast of RANCH_ANIMALS) {
+      expect(isBlocked(beast.tx, beast.ty)).toBe(false);
+      expect(beast.animal).toBeTruthy();
+    }
+  });
+
+  it('每只每天照料一次，产品进背包，隔天恢复', () => {
+    let state = createWorldState(NOW);
+    expect(ranchReady(state, 0, NOW)).toBe(true);
+    const res = careAnimal(state, 0, NOW);
+    expect(res.ok).toBe(true);
+    state = res.state;
+    const productKeys = Object.keys(state.bag).filter((k) => k.startsWith('ranch_'));
+    expect(productKeys.length).toBe(1);
+    expect(state.bag[productKeys[0]]).toBeGreaterThan(0);
+    // 同一天再照料失败
+    expect(ranchReady(state, 0, NOW)).toBe(false);
+    expect(careAnimal(state, 0, NOW).ok).toBe(false);
+    // 隔天恢复
+    expect(ranchReady(state, 0, NOW + DAY)).toBe(true);
+    expect(careAnimal(state, 0, NOW + DAY).ok).toBe(true);
+  });
+
+  it('畜产品能在货摊卖钱，并计入成就与每日额度', () => {
+    let state = careAnimal(createWorldState(NOW), 0, NOW).state;
+    const key = Object.keys(state.bag).find((k) => k.startsWith('ranch_'));
+    const before = state.coin;
+    const sold = sellRanch(state, key, state.bag[key]);
+    expect(sold.ok).toBe(true);
+    expect(sold.state.coin).toBeGreaterThan(before);
+    // 货摊目录识别（sellKind=ranch）
+    const listed = describeBag(state).find((it) => it.key === key);
+    expect(listed).toBeTruthy();
+    expect(listed.sell).toBeGreaterThan(0);
+    // 成就进度与每日剩余
+    const ach = achievementsOf(state).find((a) => a.id === 'ranch');
+    expect(ach).toBeTruthy();
+    expect(ach.value).toBeGreaterThan(0);
+    expect(dailyRemaining(state, NOW).ranch).toBe(RANCH_ANIMALS.length - 1);
   });
 });
