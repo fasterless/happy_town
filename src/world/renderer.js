@@ -844,18 +844,22 @@ export function renderFrame(ctx, view) {
     ctx.restore();
   }
 
-  // 雨天：斜向雨丝加一层冷色。
+  // 雨天：一层冷色 + 稀疏斜向短雨丝，向下飘落、循环平滑。
   if (weather?.id === 'rainy') {
     ctx.fillStyle = 'rgba(120, 150, 190, 0.10)';
     ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = 'rgba(205, 222, 240, 0.32)';
+    ctx.strokeStyle = 'rgba(205, 222, 240, 0.30)';
     ctx.lineWidth = 1;
-    const drift = (now / 6) % 40;
     ctx.beginPath();
-    for (let i = -40; i < width + 40; i += 22) {
-      const rx = i + drift;
-      ctx.moveTo(rx, 0);
-      ctx.lineTo(rx - 12, height);
+    const drops = Math.round((width * height) / 12000); // 密度随屏幕大小自适应
+    const spanX = width + 40;
+    const spanY = height + 40;
+    for (let i = 0; i < drops; i += 1) {
+      const speed = 0.6 + (i % 4) * 0.18;            // 每滴稍有快慢，避免整齐成排
+      const x = ((i * 149.3 + now * 0.03) % spanX) - 20;
+      const y = ((i * 91.7 + now * (0.55 * speed)) % spanY) - 20;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 3, y + 11);                     // 短促的斜线，像一段雨丝
     }
     ctx.stroke();
   }
