@@ -94,16 +94,11 @@
     padding: 10px 12px;
   }
 
-  /* 底部导航：单行横向滑动（基础规则已是 flex，这里只微调间距） */
+  /* 底部导航保持单行，让展开菜单可以完整显示 */
   .bottom-nav {
-    scrollbar-width: none;
     padding: 6px 8px;
-    width: min(100vw - 16px, 640px);
+    width: min(calc(100vw - 16px), 640px);
     gap: 2px;
-  }
-
-  .bottom-nav::-webkit-scrollbar {
-    display: none;
   }
 
   .nav-button {

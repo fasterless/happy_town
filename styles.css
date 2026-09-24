@@ -609,25 +609,13 @@ h2 {
   gap: 6px;
   width: min(1680px, calc(100vw - 28px));
   padding: 8px 10px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  overflow: visible;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 250, 240, 0.94);
   box-shadow: var(--shadow);
   transform: translateX(-50%);
   backdrop-filter: blur(14px);
-}
-
-.bottom-nav::-webkit-scrollbar {
-  height: 5px;
-}
-
-.bottom-nav::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(79, 61, 40, 0.28);
 }
 
 .nav-button {
