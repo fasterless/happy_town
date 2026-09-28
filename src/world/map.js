@@ -9,6 +9,7 @@ const TILES = {
   '.': 'grass',
   ',': 'path',
   '~': 'water',
+  'h': 'springWater',
   '#': 'wall',
   'f': 'farm',
   'g': 'greenhouse',
@@ -82,6 +83,11 @@ function makeMap() {
   fill(27, 33, 38, 38, 't');
   fill(5, 33, 26, 38, 'a');
 
+  // 湖东南侧的林间温泉：清出一块浴场空地，池水单独标记以便绘制蒸汽。
+  fill(31, 25, 38, 32, 't');
+  fill(32, 25, 37, 32, '.');
+  fill(34, 26, 37, 28, 'h');
+
   // Main roads, central square and neighborhood branches.
   line(15, 1, 15, 38, ',');
   line(16, 1, 16, 38, ',');
@@ -95,6 +101,9 @@ function makeMap() {
   line(24, 5, 24, 10, ',');
   line(20, 20, 20, 24, ',');
   line(21, 20, 21, 24, ',');
+  line(21, 24, 31, 24, ',');
+  line(31, 24, 31, 32, ',');
+  line(31, 32, 35, 32, ',');
 
   // Paved forecourts tie the shop fronts into the street grid.
   fill(2, 6, 5, 8, 'p');
@@ -123,7 +132,7 @@ function groundAt(tx, ty) {
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_SIZE || ty >= MAP_SIZE) return true;
   const ground = groundAt(tx, ty);
-  if (ground === 'wall' || ground === 'water') return true;
+  if (ground === 'wall' || ground === 'water' || ground === 'springWater') return true;
   return BUILDINGS.some((building) => (
     tx >= building.tx
     && tx < building.tx + building.w
@@ -141,6 +150,7 @@ export const BUILDINGS = [
   { id: 'kitchen', name: '料理铺', tx: 23, ty: 6, w: 4, h: 3, color: '#e1a282', roof: '#a55142', trim: '#ffdbb0' },
   { id: 'forestCabin', name: '林间小屋', tx: 27, ty: 6, w: 3, h: 3, color: '#a77b55', roof: '#5a4639', trim: '#e5bb73' },
   { id: 'barn', name: '畜舍', tx: 8, ty: 33, w: 5, h: 3, color: '#c98f5a', roof: '#7a4a2c', trim: '#f0cd8b' },
+  { id: 'bathhouse', name: '林间温泉', tx: 33, ty: 29, w: 4, h: 3, color: '#b8c9ad', roof: '#527e78', trim: '#e1d59f' },
 ];
 
 // 交互点：走到相邻格按键触发。
@@ -154,6 +164,7 @@ export const SPOTS = [
   { id: 'forestEdge', name: '萤火林', kind: 'forage', tx: 29, ty: 17, icon: '🌿' },
   { id: 'ranch', name: '牧场', kind: 'ranch', tx: 10, ty: 36, icon: '🐄' },
   { id: 'apiary', name: '林间蜂场', kind: 'apiary', tx: 34, ty: 12, icon: '🍯' },
+  { id: 'hotSpring', name: '林间温泉', kind: 'spring', tx: 35, ty: 32, icon: '♨️' },
   { id: 'cafeDoor', name: '咖啡馆', kind: 'cafe', tx: 13, ty: 9, icon: '☕' },
   { id: 'craftDoor', name: '加工坊', kind: 'craft', tx: 19, ty: 9, icon: '🥖' },
   { id: 'kitchenDoor', name: '料理铺', kind: 'cook', tx: 25, ty: 9, icon: '🍳' },

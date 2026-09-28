@@ -42,6 +42,7 @@ import {
   collectHoney,
   apiaryReady,
   sellHoney,
+  soakHotSpring,
   describeBag,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
@@ -97,6 +98,13 @@ describe('小镇地图', () => {
       const path = findPath(SPAWN, front, isBlocked);
       expect(path.length).toBeGreaterThan(0);
     }
+  });
+
+  it('温泉小路可从出生点抵达，池水不可通行', () => {
+    const spring = SPOTS.find((spot) => spot.kind === 'spring');
+    expect(spring).toBeTruthy();
+    expect(findPath(SPAWN, { tx: spring.tx, ty: spring.ty }, isBlocked).length).toBeGreaterThan(0);
+    expect(isBlocked(35, 27)).toBe(true);
   });
 });
 
@@ -288,6 +296,7 @@ describe('存档与邻居', () => {
     const kept = loadWorld(NOW);
     expect(kept.coin).toBe(999);
     expect(kept.plots).toHaveLength(12);
+    expect(kept.springDay).toBe('');
     localStorage.removeItem(WORLD_STORAGE_KEY);
   });
 
@@ -533,6 +542,39 @@ describe('牧场', () => {
     expect(ach).toBeTruthy();
     expect(ach.value).toBeGreaterThan(0);
     expect(dailyRemaining(state, NOW).ranch).toBe(RANCH_ANIMALS.length - 1);
+  });
+});
+
+describe('林间温泉', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('每天泡一次恢复最多 3 点体力，体力满时不消耗次数', () => {
+    let state = createWorldState(NOW);
+    expect(soakHotSpring(state, NOW).ok).toBe(false);
+    expect(dailyRemaining(state, NOW).spring).toBe(0);
+    state = digMine(state, NOW).state;
+    expect(dailyRemaining(state, NOW).spring).toBe(1);
+    const first = soakHotSpring(state, NOW);
+    expect(first.ok).toBe(true);
+    expect(first.state.stamina).toBe(state.stamina + 1);
+    expect(first.state.springDay).toBeTruthy();
+    expect(dailyRemaining(first.state, NOW).spring).toBe(0);
+    expect(soakHotSpring(first.state, NOW).ok).toBe(false);
+  });
+
+  it('体力耗尽后恢复 3 点，隔天可再次使用', () => {
+    let state = createWorldState(NOW);
+    for (let i = 0; i < 10; i += 1) state = digMine(state, NOW).state;
+    const soaked = soakHotSpring(state, NOW);
+    expect(soaked.ok).toBe(true);
+    expect(soaked.state.stamina).toBe(3);
+
+    const nextDay = NOW + DAY;
+    for (let i = 0; i < 4; i += 1) state = digMine(state, nextDay).state;
+    expect(state.stamina).toBe(6);
+    const nextSoak = soakHotSpring(state, nextDay);
+    expect(nextSoak.ok).toBe(true);
+    expect(nextSoak.state.stamina).toBe(9);
   });
 });
 

@@ -25,6 +25,7 @@ export function loadWorld(now = Date.now()) {
       orchard: saved.orchard && typeof saved.orchard === 'object' ? saved.orchard : base.orchard,
       ranch: saved.ranch && typeof saved.ranch === 'object' ? saved.ranch : base.ranch,
       apiary: saved.apiary && typeof saved.apiary === 'object' ? saved.apiary : base.apiary,
+      springDay: typeof saved.springDay === 'string' ? saved.springDay : base.springDay,
       cafeServed: Array.isArray(saved.cafeServed) ? saved.cafeServed : [],
       forageCount: Number.isFinite(saved.forageCount) ? saved.forageCount : base.forageCount,
       forageDay: typeof saved.forageDay === 'string' ? saved.forageDay : base.forageDay,

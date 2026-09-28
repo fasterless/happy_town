@@ -48,6 +48,7 @@ const isPath = (tx, ty) => {
   return g === 'path' || g === 'plaza';
 };
 const isWater = (tx, ty) => getGround(tx, ty) === 'water';
+const isSpringWater = (tx, ty) => getGround(tx, ty) === 'springWater';
 
 function tileRect(ctx, x, y, color, inset = 0) {
   ctx.fillStyle = color;
@@ -141,6 +142,22 @@ function drawWater(ctx, x, y, tx, ty, now) {
   }
 }
 
+function drawSpringWater(ctx, x, y, tx, ty, now) {
+  tileRect(ctx, x, y, ['#78b7ad', '#83c2b5', '#6eaa9f'][(tx + ty) % 3]);
+  drawInnerEdges(ctx, x, y, tx, ty, isSpringWater, 'rgba(221, 239, 208, 0.75)', 3);
+  const phase = Math.floor(now / 620 + tx + ty) % 3;
+  ctx.fillStyle = 'rgba(227, 247, 224, 0.55)';
+  ctx.fillRect(x + 7 + phase * 5, y + 12 + (ty % 3) * 6, 10, 2);
+  ctx.fillRect(x + 22 - phase * 3, y + 29 - (tx % 3) * 4, 7, 2);
+
+  if (isSpringWater(tx, ty - 1) || hash(tx, ty, 82) < 0.48) return;
+  const drift = Math.floor(now / 800 + hash(tx, ty, 83) * 5) % 5;
+  ctx.fillStyle = `rgba(248, 255, 231, ${0.28 + hash(tx, ty, 84) * 0.22})`;
+  ctx.fillRect(x + 9 + drift, y + 4, 2, 5);
+  ctx.fillRect(x + 12 + drift, y, 2, 5);
+  ctx.fillRect(x + 15 + drift, y - 4, 2, 5);
+}
+
 function drawSand(ctx, x, y, tx, ty) {
   tileRect(ctx, x, y, COLORS.sand[(tx + ty) % 3]);
   ctx.fillStyle = 'rgba(154, 126, 74, 0.28)';
@@ -218,6 +235,7 @@ function groundSprite(ground, tx, ty) {
   if (ground === 'path') return 'path';
   if (ground === 'plaza') return 'plaza';
   if (ground === 'water') return 'water';
+  if (ground === 'springWater') return null;
   if (ground === 'sand') return 'sand';
   if (ground === 'farm') return (tx + ty) % 2 ? 'farm0' : 'farm1';
   if (ground === 'greenhouse') return 'green';
@@ -233,6 +251,7 @@ function drawTile(ctx, ground, x, y, tx, ty, grass, now) {
   else if (ground === 'path') drawPath(ctx, x, y, tx, ty);
   else if (ground === 'plaza') drawPlaza(ctx, x, y, tx, ty);
   else if (ground === 'water') drawWater(ctx, x, y, tx, ty, now);
+  else if (ground === 'springWater') drawSpringWater(ctx, x, y, tx, ty, now);
   else if (ground === 'sand') drawSand(ctx, x, y, tx, ty);
   else if (ground === 'farm') drawFarm(ctx, x, y, tx, ty);
   else if (ground === 'greenhouse') drawGreenhouseFloor(ctx, x, y, tx, ty);

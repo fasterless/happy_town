@@ -12,6 +12,7 @@ const TERRAIN = {
   path: '#d3b57e',
   plaza: '#cfc6a4',
   water: '#5aa6c4',
+  springWater: '#78b7ad',
   sand: '#e4cd93',
   farm: '#8a5c40',
   greenhouse: '#bfe3c8',

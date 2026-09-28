@@ -80,6 +80,7 @@ export function createWorldState(now = Date.now()) {
     orchard: {},
     ranch: {},
     apiary: {},
+    springDay: '',
     crafting: null,
     pickLevel: 1,
     stamina: pickaxes[0].maxStamina,
@@ -451,6 +452,19 @@ export function digMine(state, now) {
   return { ok: true, message: `挖到${drop.name}×${amount}（体力剩 ${next.stamina}）`, state: next };
 }
 
+/** 温泉每天可恢复一次，最多恢复 3 点体力，不会超过镐子的上限。 */
+export function soakHotSpring(state, now) {
+  const day = dayKey(now);
+  if (state.springDay === day) return fail(state, '今天已经泡过温泉了，明天再来');
+  const next = clone(state);
+  rollDaily(next, now);
+  if (next.stamina >= getPickaxe(next.pickLevel).maxStamina) return fail(state, '体力充足时不需要泡温泉');
+  const restored = Math.min(3, getPickaxe(next.pickLevel).maxStamina - next.stamina);
+  next.stamina += restored;
+  next.springDay = day;
+  return { ok: true, message: `泡过温泉，恢复 ${restored} 点体力（剩余 ${next.stamina}）`, state: next };
+}
+
 export function upgradePick(state) {
   const next = clone(state);
   if (isMaxPick(next.pickLevel)) return fail(state, '镐子已经满级');
@@ -758,6 +772,7 @@ export function dailyRemaining(state, now) {
     orchard: ORCHARD_TREES.filter((_, i) => (state.orchard?.[i]) !== day).length,
     ranch: RANCH_ANIMALS.filter((_, i) => (state.ranch?.[i]) !== day).length,
     apiary: APIARY_HIVES.filter((_, i) => (state.apiary?.[i]) !== day).length,
+    spring: state.springDay === day || stamina >= getPickaxe(state.pickLevel).maxStamina ? 0 : 1,
   };
 }
 

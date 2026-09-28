@@ -64,6 +64,7 @@ import {
   sellRanch,
   collectHoney,
   sellHoney,
+  soakHotSpring,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -161,8 +162,8 @@ function renderHud() {
   hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
   if (hudDaily) {
     const r = dailyRemaining(state.world, Date.now());
-    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} 🍯${r.apiary} ⛏️${r.stamina}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
-    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、蜂场 ${r.apiary} 箱、体力 ${r.stamina}${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} 🍯${r.apiary} ⛏️${r.stamina} ♨️${r.spring}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、蜂场 ${r.apiary} 箱、体力 ${r.stamina}、温泉 ${r.spring} 次${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
   syncHudHeight();
 }
@@ -634,6 +635,7 @@ function runSpot(spot) {
   if (spot.kind === 'wish') return openWish();
   if (spot.kind === 'ranch') return openRanch();
   if (spot.kind === 'apiary') return openApiary();
+  if (spot.kind === 'spring') return apply(soakHotSpring(state.world, Date.now()), 'harvest');
   if (spot.kind === 'talk') say('喷泉的水声很安静，广场上什么都不用做。');
   return undefined;
 }
