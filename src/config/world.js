@@ -41,6 +41,14 @@ export const apiaryHoney = {
 // 每次收蜜给 min~max 罐蜂蜜；有 rareChance 概率额外掉一份蜂王浆。
 export const APIARY_YIELD = { min: 1, max: 2, rareChance: 0.18 };
 
+// 湖岸潮池：每处每天可拾取一次，少见的月光珍珠有更高售价。
+export const shoreFinds = [
+  { key: 'shore_shell', name: '湖贝', icon: '🐚', weight: 48, min: 1, max: 2, sellPrice: 18 },
+  { key: 'shore_glass', name: '海玻璃', icon: '🟢', weight: 32, min: 1, max: 2, sellPrice: 24 },
+  { key: 'shore_driftwood', name: '湖岸浮木', icon: '🪵', weight: 15, min: 1, max: 1, sellPrice: 16 },
+  { key: 'shore_pearl', name: '月光珍珠', icon: '🫧', weight: 5, min: 1, max: 1, sellPrice: 110 },
+];
+
 // 公告栏每天固定一张委托，刷新页面也不会改变当天的目标。
 export const boardRequests = [
   { id: 'berry-basket', name: '野莓果篮', icon: '🧺', item: 'forage_berry', count: 3, reward: 90, text: '给咖啡馆送一篮新鲜野莓' },
@@ -53,4 +61,5 @@ export const boardRequests = [
   { id: 'milk-run', name: '鲜奶配送', icon: '🥛', item: 'ranch_milk', count: 2, reward: 120, text: '给咖啡馆送去两瓶新鲜牛奶' },
   { id: 'wool-order', name: '羊毛订单', icon: '🧶', item: 'ranch_wool', count: 2, reward: 130, text: '为木工坊备两卷柔软羊毛' },
   { id: 'honey-jar', name: '蜂蜜罐', icon: '🍯', item: 'apiary_honey', count: 3, reward: 135, text: '给咖啡馆送三罐森林蜂蜜' },
+  { id: 'shore-shell', name: '湖贝收藏', icon: '🐚', item: 'shore_shell', count: 1, reward: 105, text: '为湖畔长椅寻一枚完整的湖贝' },
 ];

@@ -11,9 +11,9 @@ import { craftingRecipes } from '../config/crafting.js';
 import { dishes } from '../config/dishes.js';
 import { mineLoot, pickaxes, oreValues, getPickaxe, isMaxPick } from '../config/mine.js';
 import { cafeGuests, CAFE_GUESTS_PER_DAY, getCafePrice } from '../config/cafe.js';
-import { FARM_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES } from './map.js';
+import { FARM_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SHORE_TIDEPOOLS } from './map.js';
 import {
-  FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot, orchardFruits, ranchAnimals, apiaryHoney, APIARY_YIELD,
+  FORAGE_LIMIT_PER_DAY, boardRequests, forageLoot, orchardFruits, ranchAnimals, apiaryHoney, APIARY_YIELD, shoreFinds,
 } from '../config/world.js';
 
 // 鱼类表与 src/systems/fishing.js 的 fishes 一致。
@@ -81,6 +81,7 @@ export function createWorldState(now = Date.now()) {
     ranch: {},
     apiary: {},
     springDay: '',
+    shore: {},
     crafting: null,
     pickLevel: 1,
     stamina: pickaxes[0].maxStamina,
@@ -97,7 +98,7 @@ export function createWorldState(now = Date.now()) {
     wishDay: '',
     friends: {},
     stats: {
-      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, fruits: 0, ranch: 0, honey: 0, coinEarned: 0,
+      casts: 0, digs: 0, harvests: 0, served: 0, foraged: 0, crafted: 0, cooked: 0, talks: 0, wishes: 0, fruits: 0, ranch: 0, honey: 0, shore: 0, coinEarned: 0,
     },
   };
 }
@@ -157,6 +158,7 @@ function clone(state) {
     orchard: { ...(state.orchard || {}) },
     ranch: { ...(state.ranch || {}) },
     apiary: { ...(state.apiary || {}) },
+    shore: { ...(state.shore || {}) },
     crafting: state.crafting ? { ...state.crafting } : null,
     cafeServed: [...state.cafeServed],
     friends: { ...(state.friends || {}) },
@@ -372,6 +374,45 @@ export function sellFish(state, fishId, amount) {
   next.coin += earned;
   bump(next, 'coinEarned', earned);
   return { ok: true, message: `卖掉${fish.name}，+${earned} 金币`, state: next };
+}
+
+// ---------- 湖岸潮池 ----------
+
+export function shoreReady(state, index, now) {
+  return state.shore?.[index] !== dayKey(now);
+}
+
+/** 每处潮池每天拾取一次，按权重获得湖岸小物。 */
+export function collectShoreFind(state, index, now) {
+  if (!SHORE_TIDEPOOLS[index]) return fail(state, '这里没有潮池');
+  const day = dayKey(now);
+  if (!shoreReady(state, index, now)) return fail(state, '这个潮池今天已经找过了，明天再来');
+  const next = clone(state);
+  let roll = Math.random() * shoreFinds.reduce((sum, item) => sum + item.weight, 0);
+  let drop = shoreFinds[shoreFinds.length - 1];
+  for (const item of shoreFinds) {
+    roll -= item.weight;
+    if (roll <= 0) {
+      drop = item;
+      break;
+    }
+  }
+  const amount = drop.min + Math.floor(Math.random() * (drop.max - drop.min + 1));
+  next.shore[index] = day;
+  add(next, drop.key, amount);
+  bump(next, 'shore');
+  return { ok: true, message: `在湖岸潮池找到${drop.icon}${drop.name}×${amount}`, state: next };
+}
+
+export function sellShoreFind(state, key, amount) {
+  const next = clone(state);
+  const item = shoreFinds.find((entry) => entry.key === key);
+  if (!item) return fail(state, '这件东西不能在货摊出售');
+  if (!take(next, key, amount)) return fail(state, '背包里不够');
+  const earned = item.sellPrice * amount;
+  next.coin += earned;
+  bump(next, 'coinEarned', earned);
+  return { ok: true, message: `卖掉${item.name}，+${earned} 金币`, state: next };
 }
 
 // ---------- 萤火林与公告栏 ----------
@@ -646,6 +687,9 @@ function buildCatalog() {
   for (const item of forageLoot) {
     catalog.set(item.key, { name: item.name, icon: item.icon, sell: item.sellPrice, sellKind: 'forage', sellId: item.key });
   }
+  for (const item of shoreFinds) {
+    catalog.set(item.key, { name: item.name, icon: item.icon, sell: item.sellPrice, sellKind: 'shore', sellId: item.key });
+  }
   for (const [key, fruit] of Object.entries(orchardFruits)) {
     catalog.set(`fruit_${key}`, { name: fruit.name, icon: fruit.icon, sell: fruit.sellPrice, sellKind: 'fruit', sellId: `fruit_${key}` });
   }
@@ -772,6 +816,7 @@ export function dailyRemaining(state, now) {
     orchard: ORCHARD_TREES.filter((_, i) => (state.orchard?.[i]) !== day).length,
     ranch: RANCH_ANIMALS.filter((_, i) => (state.ranch?.[i]) !== day).length,
     apiary: APIARY_HIVES.filter((_, i) => (state.apiary?.[i]) !== day).length,
+    shore: SHORE_TIDEPOOLS.filter((_, i) => state.shore?.[i] !== day).length,
     spring: state.springDay === day || stamina >= getPickaxe(state.pickLevel).maxStamina ? 0 : 1,
   };
 }
@@ -806,6 +851,7 @@ export function achievementsOf(state) {
     { id: 'orchard', icon: '🍎', name: '果园丰收', goal: 30, value: s.fruits || 0, desc: '从果园摘到 30 个水果' },
     { id: 'ranch', icon: '🐄', name: '牧场之友', goal: 40, value: s.ranch || 0, desc: '照料牧场动物 40 次' },
     { id: 'honey', icon: '🍯', name: '甜蜜守望', goal: 30, value: s.honey || 0, desc: '从蜂场收取 30 罐蜂蜜' },
+    { id: 'shore', icon: '🐚', name: '海岸寻宝', goal: 30, value: s.shore || 0, desc: '在湖岸潮池搜寻 30 次' },
   ];
   return defs.map((d) => ({ ...d, done: d.value >= d.goal }));
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { tileToScreen, screenToTile, TILE_W, TILE_H } from '../src/world/iso.js';
 import { findPath } from '../src/world/pathfind.js';
-import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
+import { isBlocked, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SHORE_TIDEPOOLS, SPAWN, ROWS, MAP_SIZE, SPOTS, BUILDINGS, PROPS, LAMPS } from '../src/world/map.js';
 import {
   createWorldState,
   plantSeed,
@@ -43,6 +43,9 @@ import {
   apiaryReady,
   sellHoney,
   soakHotSpring,
+  collectShoreFind,
+  shoreReady,
+  sellShoreFind,
   describeBag,
 } from '../src/world/sim.js';
 import { loadWorld, WORLD_STORAGE_KEY } from '../src/world/save.js';
@@ -105,6 +108,14 @@ describe('小镇地图', () => {
     expect(spring).toBeTruthy();
     expect(findPath(SPAWN, { tx: spring.tx, ty: spring.ty }, isBlocked).length).toBeGreaterThan(0);
     expect(isBlocked(35, 27)).toBe(true);
+  });
+
+  it('湖岸潮池都能从出生点抵达且地面可行走', () => {
+    expect(SHORE_TIDEPOOLS).toHaveLength(3);
+    for (const pool of SHORE_TIDEPOOLS) {
+      expect(isBlocked(pool.tx, pool.ty)).toBe(false);
+      expect(findPath(SPAWN, pool, isBlocked).length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -297,6 +308,7 @@ describe('存档与邻居', () => {
     expect(kept.coin).toBe(999);
     expect(kept.plots).toHaveLength(12);
     expect(kept.springDay).toBe('');
+    expect(kept.shore).toEqual({});
     localStorage.removeItem(WORLD_STORAGE_KEY);
   });
 
@@ -542,6 +554,50 @@ describe('牧场', () => {
     expect(ach).toBeTruthy();
     expect(ach.value).toBeGreaterThan(0);
     expect(dailyRemaining(state, NOW).ranch).toBe(RANCH_ANIMALS.length - 1);
+  });
+});
+
+describe('湖岸浅滩', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('潮池可分别拾取、每天限一次并在隔天恢复', () => {
+    let state = createWorldState(NOW);
+    expect(dailyRemaining(state, NOW).shore).toBe(SHORE_TIDEPOOLS.length);
+    expect(shoreReady(state, 0, NOW)).toBe(true);
+
+    const first = collectShoreFind(state, 0, NOW);
+    expect(first.ok).toBe(true);
+    state = first.state;
+    expect(shoreReady(state, 0, NOW)).toBe(false);
+    expect(collectShoreFind(state, 0, NOW).ok).toBe(false);
+    expect(shoreReady(state, 1, NOW)).toBe(true);
+    expect(dailyRemaining(state, NOW).shore).toBe(SHORE_TIDEPOOLS.length - 1);
+    expect(shoreReady(state, 0, NOW + DAY)).toBe(true);
+  });
+
+  it('潮池能掉落配置物品，拾取物可以出售并计入成就', () => {
+    const oldRandom = Math.random;
+    let state = createWorldState(NOW);
+    try {
+      Math.random = () => 0.99;
+      state = collectShoreFind(state, 0, NOW).state;
+      expect(state.bag.shore_pearl).toBe(1);
+    } finally {
+      Math.random = oldRandom;
+    }
+
+    const listed = describeBag(state).find((item) => item.key === 'shore_pearl');
+    expect(listed).toMatchObject({ sell: 110, sellKind: 'shore' });
+    const sold = sellShoreFind(state, 'shore_pearl', 1);
+    expect(sold.ok).toBe(true);
+    expect(sold.state.coin).toBe(310);
+    expect(achievementsOf(state).find((item) => item.id === 'shore').value).toBe(1);
+  });
+
+  it('不存在的潮池或拾取物不能使用', () => {
+    const state = createWorldState(NOW);
+    expect(collectShoreFind(state, SHORE_TIDEPOOLS.length, NOW).ok).toBe(false);
+    expect(sellShoreFind(state, 'shore_unknown', 1).ok).toBe(false);
   });
 });
 

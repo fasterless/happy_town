@@ -9,7 +9,7 @@
 // 移动逐格插值、摄像机平滑跟随，避免瞬移带来的眩晕。
 
 import { screenToTile, TILE_W, TILE_H } from './iso.js';
-import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SPAWN, MAP_SIZE } from './map.js';
+import { isBlocked, isAdjacent, SPOTS, FARM_PLOTS, GREENHOUSE_PLOTS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SHORE_TIDEPOOLS, SPAWN, MAP_SIZE } from './map.js';
 import { findPath } from './pathfind.js';
 import { renderFrame } from './renderer.js';
 import { drawOverview } from './minimap.js';
@@ -47,6 +47,7 @@ import {
   forageForest,
   completeBoardRequest,
   sellForage,
+  sellShoreFind,
   describeBag,
   itemLabel,
   weatherOf,
@@ -65,6 +66,7 @@ import {
   collectHoney,
   sellHoney,
   soakHotSpring,
+  collectShoreFind,
 } from './sim.js';
 // 每格移动耗时（毫秒）。原来 180 偏快容易眩晕，放慢到 240 更从容。
 const MOVE_MS = 240;
@@ -162,8 +164,8 @@ function renderHud() {
   hudClock.textContent = `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
   if (hudDaily) {
     const r = dailyRemaining(state.world, Date.now());
-    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🍎${r.orchard} 🐄${r.ranch} 🍯${r.apiary} ⛏️${r.stamina} ♨️${r.spring}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
-    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、蜂场 ${r.apiary} 箱、体力 ${r.stamina}、温泉 ${r.spring} 次${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
+    hudDaily.textContent = `🎣${r.fish} 🌿${r.forage} 🐚${r.shore} 🍎${r.orchard} 🐄${r.ranch} 🍯${r.apiary} ⛏️${r.stamina} ♨️${r.spring}${r.boardDone ? '' : ' 📌'}${r.wished ? '' : ' 🌟'}`;
+    hudDaily.title = `今日剩余：钓鱼 ${r.fish} 次、采集 ${r.forage} 次、湖岸寻宝 ${r.shore} 处、果园 ${r.orchard} 棵、牧场 ${r.ranch} 只、蜂场 ${r.apiary} 箱、体力 ${r.stamina}、温泉 ${r.spring} 次${r.boardDone ? '，公告栏已完成' : '，公告栏待完成'}${r.wished ? '，喷泉已许愿' : '，喷泉可许愿'}`;
   }
   syncHudHeight();
 }
@@ -496,6 +498,20 @@ function nearestHive() {
   return bestDist <= 1 ? best : -1;
 }
 
+function nearestShorePool() {
+  const { tx, ty } = state.player;
+  let best = -1;
+  let bestDist = Infinity;
+  SHORE_TIDEPOOLS.forEach((pool, i) => {
+    const dist = Math.abs(pool.tx - tx) + Math.abs(pool.ty - ty);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  });
+  return bestDist <= 1 ? best : -1;
+}
+
 function openPanel(title, buttons) {
   panel.hidden = false;
   panel.innerHTML = '';
@@ -531,6 +547,7 @@ function nearbyLabel() {
   if (nearestOrchard() >= 0) return '果园摘果';
   if (nearestAnimal() >= 0) return '照料动物';
   if (nearestHive() >= 0) return '收取蜂蜜';
+  if (nearestShorePool() >= 0) return '湖岸拾贝';
   const spot = nearestSpot();
   if (spot && spot.kind !== 'npc') return spot.name;
   const npc = nearbyNpc(state.npcs, state.player.tx, state.player.ty);
@@ -668,6 +685,8 @@ function interact() {
   if (animalIndex >= 0) return apply(careAnimal(state.world, animalIndex, Date.now()), 'harvest');
   const hiveIndex = nearestHive();
   if (hiveIndex >= 0) return apply(collectHoney(state.world, hiveIndex, Date.now()), 'harvest');
+  const shoreIndex = nearestShorePool();
+  if (shoreIndex >= 0) return apply(collectShoreFind(state.world, shoreIndex, Date.now()), 'harvest');
 
   // 2) 功能地标（货摊、钓鱼、矿洞……），店门口点先跳过。
   const spot = nearestSpot();
@@ -799,13 +818,15 @@ function sellItem(item, amount) {
       ? sellFish(state.world, item.sellId, amount)
       : kind === 'forage'
         ? sellForage(state.world, item.sellId, amount)
-        : kind === 'fruit'
-          ? sellFruit(state.world, item.sellId, amount)
-          : kind === 'ranch'
-            ? sellRanch(state.world, item.sellId, amount)
-            : kind === 'apiary'
-              ? sellHoney(state.world, item.sellId, amount)
-              : sellOre(state.world, item.sellId, amount);
+        : kind === 'shore'
+          ? sellShoreFind(state.world, item.sellId, amount)
+          : kind === 'fruit'
+            ? sellFruit(state.world, item.sellId, amount)
+            : kind === 'ranch'
+              ? sellRanch(state.world, item.sellId, amount)
+              : kind === 'apiary'
+                ? sellHoney(state.world, item.sellId, amount)
+                : sellOre(state.world, item.sellId, amount);
   apply(result, 'coin');
   openStall(); // 卖完刷新货摊数量
 }

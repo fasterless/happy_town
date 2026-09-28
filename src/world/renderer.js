@@ -4,10 +4,10 @@
 // 路面、水面按邻居做描边（autotile 式），草地散布花草，画面更精致。
 
 import { TILE_W, TILE_H } from './iso.js';
-import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
+import { MAP_SIZE, getGround, BUILDINGS, SPOTS, LAMPS, PROPS, ORCHARD_TREES, RANCH_ANIMALS, APIARY_HIVES, SHORE_TIDEPOOLS, FARM_PLOTS, GREENHOUSE_PLOTS } from './map.js';
 import { greenhouseCrops } from '../config/greenhouse.js';
 import { orchardFruits, ranchAnimals } from '../config/world.js';
-import { allCrops, growthStage, orchardReady, ranchReady, apiaryReady } from './sim.js';
+import { allCrops, growthStage, orchardReady, ranchReady, apiaryReady, shoreReady } from './sim.js';
 import { atlasReady, drawSprite } from './atlas.js';
 
 const COLORS = {
@@ -862,6 +862,30 @@ function drawHive(ctx, cx, cy, ready, now) {
   }
 }
 
+function drawTidepool(ctx, cx, cy, ready, now) {
+  const x = Math.round(cx);
+  const y = Math.round(cy);
+  ctx.fillStyle = 'rgba(48, 65, 62, 0.3)';
+  ctx.fillRect(x - 13, y + 7, 26, 5);
+  ctx.fillStyle = ready ? '#e8d6a6' : '#c8c0a2';
+  ctx.fillRect(x - 12, y - 4, 24, 10);
+  ctx.fillRect(x - 9, y - 7, 18, 3);
+  ctx.fillStyle = ready ? '#f5e8bf' : '#d8d0b4';
+  ctx.fillRect(x - 8, y - 3, 16, 5);
+  ctx.fillStyle = '#74aeb2';
+  ctx.fillRect(x - 7, y + 2, 14, 2);
+  if (!ready) return;
+
+  ctx.font = '15px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🐚', x, y - 11);
+  const sparkle = Math.floor(now / 360 + x) % 2;
+  ctx.fillStyle = sparkle ? '#fff2a8' : '#ffffff';
+  ctx.fillRect(x + 9, y - 16, 2, 2);
+  ctx.fillRect(x + 11, y - 18, 2, 2);
+}
+
 /** 画一整帧。 */
 export function renderFrame(ctx, view) {
   const { width, height, player, npcs, world, seasonId, now, weather } = view;
@@ -951,6 +975,14 @@ export function renderFrame(ctx, view) {
     const y = pos.y + cameraY;
     if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
     drawHive(ctx, x, y, apiaryReady(world, i, now), now);
+  });
+
+  SHORE_TIDEPOOLS.forEach((pool, i) => {
+    const pos = tileCenter(pool.tx, pool.ty);
+    const x = pos.x + cameraX;
+    const y = pos.y + cameraY;
+    if (x < -TILE_W * 2 || y < -TILE_H * 2 || x > width + TILE_W * 2 || y > height + TILE_H * 2) return;
+    drawTidepool(ctx, x, y, shoreReady(world, i, now), now);
   });
 
   for (const spot of SPOTS) {

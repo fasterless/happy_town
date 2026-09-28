@@ -221,6 +221,13 @@ export const APIARY_HIVES = [
   { tx: 35, ty: 13 },
 ];
 
+// 湖畔浅滩的三个潮池：每天各可拾取一次，物件本身不阻挡寻路。
+export const SHORE_TIDEPOOLS = [
+  { tx: 22, ty: 19 },
+  { tx: 24, ty: 19 },
+  { tx: 26, ty: 19 },
+];
+
 /** 玩家出生点：广场南边的主路上，进城就能看见店铺。 */
 export const SPAWN = { tx: 15, ty: 22 };
 
