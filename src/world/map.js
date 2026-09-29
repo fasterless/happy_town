@@ -18,6 +18,7 @@ const TILES = {
   't': 'forest',
   'p': 'plaza',
   'a': 'pasture',
+  'o': 'observatory',
 };
 
 function makeMap() {
@@ -46,6 +47,9 @@ function makeMap() {
   // Northern ridges and mine approach.
   fill(2, 2, 10, 4, 'm');
   fill(19, 2, 23, 4, 'm');
+  // 山顶观景台：石阶从山脊南侧接入主路。
+  fill(5, 2, 10, 4, 'o');
+  grid[4][7] = ',';
   line(1, 5, 11, 5, ',');
   line(18, 5, 24, 5, ',');
 
@@ -160,6 +164,7 @@ export const SPOTS = [
   { id: 'noticeBoard', name: '公告栏', kind: 'board', tx: 18, ty: 12, icon: '📌' },
   { id: 'pier', name: '湖畔', kind: 'fish', tx: 21, ty: 15, icon: '🎣' },
   { id: 'mine', name: '后山矿洞', kind: 'mine', tx: 12, ty: 4, icon: '⛏️' },
+  { id: 'observatory', name: '山顶观星台', kind: 'observatory', tx: 6, ty: 3, icon: '🔭' },
   { id: 'lookout', name: '风车坡', kind: 'lookout', tx: 25, ty: 4, icon: '🌬️' },
   { id: 'forestEdge', name: '萤火林', kind: 'forage', tx: 29, ty: 17, icon: '🌿' },
   { id: 'ranch', name: '牧场', kind: 'ranch', tx: 10, ty: 36, icon: '🐄' },
@@ -256,6 +261,9 @@ export const PROPS = [
   { type: 'fence', tx: 5, ty: 32 }, { type: 'fence', tx: 8, ty: 32 }, { type: 'fence', tx: 11, ty: 32 },
   { type: 'fence', tx: 20, ty: 32 }, { type: 'fence', tx: 23, ty: 32 }, { type: 'fence', tx: 26, ty: 32 },
   { type: 'haystack', tx: 14, ty: 37 }, { type: 'barrel', tx: 7, ty: 34 }, { type: 'crate', tx: 22, ty: 34 },
+  // 山顶观星台：入口路牌与望远镜。
+  { type: 'signpost', tx: 5, ty: 3 },
+  { type: 'telescope', tx: 9, ty: 3 },
 ];
 
 // 装饰路灯：只用于渲染，夜里会亮起暖黄的灯光，不参与寻路与阻挡。

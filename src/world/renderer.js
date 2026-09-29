@@ -19,6 +19,7 @@ const COLORS = {
   farm: ['#8a5c40', '#996749', '#7c5039'],
   greenhouse: ['#cfe8d1', '#dcf0db', '#c2ddc7'],
   pasture: ['#93c96a', '#9fd473', '#88bf60'],
+  observatory: ['#8999a0', '#96a5aa', '#7d8e95'],
   rock: ['#7c8683', '#8e9892', '#6f7a76'],
   forest: ['#3f7548', '#4a8150', '#376a44'],
   wall: ['#586359', '#66705f', '#4c5750'],
@@ -207,6 +208,21 @@ function drawPasture(ctx, x, y, tx, ty) {
   }
 }
 
+function drawObservatoryFloor(ctx, x, y, tx, ty) {
+  tileRect(ctx, x, y, COLORS.observatory[(tx + ty) % 3]);
+  ctx.fillStyle = 'rgba(45, 59, 68, 0.42)';
+  ctx.fillRect(x + 2, y + 2, TILE_W - 4, 2);
+  ctx.fillRect(x + 2, y + TILE_H - 4, TILE_W - 4, 2);
+  ctx.fillRect(x + 2, y + 4, 2, TILE_H - 8);
+  ctx.fillRect(x + TILE_W - 4, y + 4, 2, TILE_H - 8);
+  ctx.fillStyle = 'rgba(228, 237, 226, 0.46)';
+  ctx.fillRect(x + 6, y + 7, 9, 2);
+  if ((tx + ty) % 3 === 0) {
+    ctx.fillStyle = '#d5d6bc';
+    ctx.fillRect(x + 27, y + 25, 3, 2);
+  }
+}
+
 function drawRock(ctx, x, y, tx, ty) {
   tileRect(ctx, x, y, COLORS.rock[(tx + ty) % 3]);
   const ox = 5 + Math.floor(hash(tx, ty, 8) * 13);
@@ -240,6 +256,7 @@ function groundSprite(ground, tx, ty) {
   if (ground === 'farm') return (tx + ty) % 2 ? 'farm0' : 'farm1';
   if (ground === 'greenhouse') return 'green';
   if (ground === 'pasture') return 'pasture';
+  if (ground === 'observatory') return 'observatory';
   if (ground === 'rock') return 'rock';
   if (ground === 'wall') return 'wall';
   return 'grass0';
@@ -256,6 +273,7 @@ function drawTile(ctx, ground, x, y, tx, ty, grass, now) {
   else if (ground === 'farm') drawFarm(ctx, x, y, tx, ty);
   else if (ground === 'greenhouse') drawGreenhouseFloor(ctx, x, y, tx, ty);
   else if (ground === 'pasture') drawPasture(ctx, x, y, tx, ty);
+  else if (ground === 'observatory') drawObservatoryFloor(ctx, x, y, tx, ty);
   else if (ground === 'rock') drawRock(ctx, x, y, tx, ty);
   else if (ground === 'forest') drawForestFloor(ctx, x, y, tx, ty);
   else if (ground === 'wall') drawRock(ctx, x, y, tx, ty);
@@ -647,6 +665,22 @@ function drawScarecrow(ctx, x, y) {
   ctx.fillRect(x + 2, y - 14, 2, 2);
 }
 
+function drawTelescope(ctx, x, y) {
+  propShadow(ctx, x, y, 22);
+  ctx.fillStyle = '#4d5960';
+  ctx.fillRect(x - 2, y - 1, 4, 13);
+  ctx.fillRect(x - 9, y + 9, 18, 3);
+  ctx.fillRect(x - 7, y + 2, 3, 9);
+  ctx.fillRect(x + 4, y + 2, 3, 9);
+  ctx.fillStyle = '#9ba8a8';
+  ctx.fillRect(x - 8, y - 15, 17, 6);
+  ctx.fillRect(x + 5, y - 17, 5, 10);
+  ctx.fillStyle = '#d1b86c';
+  ctx.fillRect(x - 8, y - 15, 3, 6);
+  ctx.fillStyle = '#496d7a';
+  ctx.fillRect(x + 7, y - 15, 2, 6);
+}
+
 function drawProp(ctx, prop, x, y) {
   switch (prop.type) {
     case 'bench': return drawBench(ctx, x, y);
@@ -659,6 +693,7 @@ function drawProp(ctx, prop, x, y) {
     case 'scarecrow': return drawScarecrow(ctx, x, y);
     case 'fence': return drawFence(ctx, x, y);
     case 'haystack': return drawHaystack(ctx, x, y);
+    case 'telescope': return drawTelescope(ctx, x, y);
     default: return undefined;
   }
 }

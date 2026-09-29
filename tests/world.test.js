@@ -33,6 +33,7 @@ import {
   makeWish,
   wishGiftOf,
   forecast,
+  skyViewOf,
   harvestOrchard,
   orchardReady,
   sellFruit,
@@ -108,6 +109,16 @@ describe('小镇地图', () => {
     expect(spring).toBeTruthy();
     expect(findPath(SPAWN, { tx: spring.tx, ty: spring.ty }, isBlocked).length).toBeGreaterThan(0);
     expect(isBlocked(35, 27)).toBe(true);
+  });
+
+  it('山顶观星台有专属石台并能从出生点抵达', () => {
+    const observatory = SPOTS.find((spot) => spot.kind === 'observatory');
+    expect(observatory).toBeTruthy();
+    expect(findPath(SPAWN, observatory, isBlocked).length).toBeGreaterThan(0);
+    expect(ROWS[3][6]).toBe('o');
+    const observatoryProps = PROPS.filter((prop) => (prop.tx === 5 || prop.tx === 9) && prop.ty === 3);
+    expect(observatoryProps.map((prop) => prop.type)).toEqual(['signpost', 'telescope']);
+    expect(observatoryProps.every((prop) => !isBlocked(prop.tx, prop.ty))).toBe(true);
   });
 
   it('湖岸潮池都能从出生点抵达且地面可行走', () => {
@@ -442,6 +453,20 @@ describe('天气瞭望台', () => {
     expect(list[0].id).toBe(weatherOf(NOW).id);
     const tomorrow = weatherOf(NOW + 24 * 60 * 60 * 1000);
     expect(list[1].id).toBe(tomorrow.id);
+  });
+});
+
+describe('山顶观星台', () => {
+  it('描述随昼夜、天气和季节变化，且不依赖存档状态', () => {
+    const clearNight = skyViewOf(22, 'summer_cool', { id: 'sunny' });
+    const rainyNight = skyViewOf(22, 'summer_cool', { id: 'rainy' });
+    const daytime = skyViewOf(12, 'summer_cool', { id: 'sunny' });
+    expect(clearNight).toMatchObject({ phase: 'night' });
+    expect(clearNight.text).toContain('银河');
+    expect(rainyNight.text).toContain('雨云');
+    expect(daytime).toMatchObject({ phase: 'day' });
+    expect(daytime.text).not.toBe(clearNight.text);
+    expect(skyViewOf(22, 'winter_feast', { id: 'sunny' }).text).toContain('冬夜');
   });
 });
 

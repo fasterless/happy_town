@@ -59,6 +59,7 @@ import {
   achievementsOf,
   makeWish,
   forecast,
+  skyViewOf,
   harvestOrchard,
   sellFruit,
   careAnimal,
@@ -644,6 +645,11 @@ function runSpot(spot) {
   if (spot.kind === 'board') return openBoard();
   if (spot.kind === 'forage') return apply(forageForest(state.world, Date.now()), 'harvest');
   if (spot.kind === 'lookout') return openLookout();
+  if (spot.kind === 'observatory') {
+    const event = getCurrentSeasonalEvent();
+    const view = skyViewOf(gameHour(), event?.id || '', currentWeather());
+    return say(`🔭 ${view.text}`);
+  }
   if (spot.kind === 'fish') return openFishing();
   if (spot.kind === 'mine') return openMine();
   if (spot.kind === 'craft') return openCraft();

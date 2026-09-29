@@ -70,6 +70,29 @@ export function forecast(now, days = 3) {
   return list;
 }
 
+/** 山顶观星台的环境描述，只读取时刻、季节和天气，不写入存档。 */
+export function skyViewOf(hour, seasonId, weather) {
+  const seasonLine = {
+    spring_bloom: '春日星图清亮，远处花田还留着淡淡香气。',
+    summer_cool: '夏夜的银河横过山顶，湖面映着细碎星光。',
+    autumn_harvest: '秋夜空气清透，星星像麦芒一样闪烁。',
+    winter_feast: '冬夜星光格外清晰，屋顶的灯火暖暖地亮着。',
+    new_year: '新年的灯火与星光交叠，山下传来隐约的欢声。',
+  };
+  if (weather?.id === 'rainy') {
+    return { phase: 'cloudy', text: '雨云遮住了星空，望远镜里只映着一层柔和的水光。' };
+  }
+  if (weather?.id === 'cloudy') {
+    return { phase: 'cloudy', text: '云层间偶尔露出几颗星，今晚的天空显得格外安静。' };
+  }
+  if (hour < 5 || hour >= 20) {
+    return { phase: 'night', text: seasonLine[seasonId] || '夜空铺满星光，小镇在山脚下安静入眠。' };
+  }
+  if (hour < 7) return { phase: 'dawn', text: '天边刚刚泛白，最后几颗星还挂在晨光里。' };
+  if (hour < 18) return { phase: 'day', text: '白日里看不见星星，望远镜正对着远处的云与山脊。' };
+  return { phase: 'dusk', text: '夕阳落到山后，第一颗星正慢慢亮起来。' };
+}
+
 export function createWorldState(now = Date.now()) {
   return {
     version: 1,
